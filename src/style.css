@@ -114,3 +114,7 @@ dialog input,dialog select { width:100%; }
 .annual-table .month-cell.has-vacation{background:#d6f2e1;color:#116b39;}
 .annual-table .day{text-align:center;cursor:pointer;}
 .annual-table .day.vacation{background:#16a34a;color:white;font-weight:700;}
+
+.table-filters{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:12px 0;}
+.table-filters label{display:flex;gap:8px;align-items:center;font-weight:600;}
+.table-filters select{max-width:260px;min-width:130px;padding:8px;border:1px solid #b7c7d9;border-radius:7px;background:white;}
