@@ -2,11 +2,17 @@ import './style.css';
 
 const app = document.querySelector('#app');
 const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-const drivers = [
+const defaultDrivers = [
   { id: 1, name: 'Иванов И.И.', group: '9' },
   { id: 2, name: 'Петров П.П.', group: '9' },
   { id: 3, name: 'Сидоров С.С.', group: '9.1' }
 ];
+const staffKey='vacationStaff2027';
+let drivers;
+try { const stored=JSON.parse(localStorage.getItem(staffKey)||'null'); drivers=Array.isArray(stored)&&stored.length?stored:defaultDrivers.map(d=>({...d,allowance:36,department:''})); } catch { drivers=defaultDrivers.map(d=>({...d,allowance:36,department:''})); }
+drivers=drivers.map(d=>({...d,allowance:Number.isFinite(Number(d.allowance))?Number(d.allowance):36}));
+function saveStaff(){localStorage.setItem(staffKey,JSON.stringify(drivers));}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 const key = 'vacations2027';
 let selectedMonth = 0;
 let vacations;
@@ -100,7 +106,7 @@ function render() {
     <header><h1>График отпусков — 2027</h1><p>Планирование отпусков водителей</p></header>
     <main>
       <div class="toolbar"><label>Месяц: <select id="month">${months.map((m,i) => `<option value="${i}" ${i===selectedMonth?'selected':''}>${m}</option>`).join('')}</select></label>
-      <button id="period">Добавить период отпуска</button><button id="help-open" type="button">Справка · Правила отпусков</button><button id="calendar-open" type="button">Производственный календарь</button></div>
+      <button id="staff-open" type="button">Сотрудники</button><button id="period">Добавить период отпуска</button><button id="help-open" type="button">Справка · Правила отпусков</button><button id="calendar-open" type="button">Производственный календарь</button></div>
       <div class="scroll"><table>
         <thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>
           ${Array.from({length:count},(_,i)=>`<th class="${dayType(dateAt(i+1))==='weekend'?'weekend':''} ${dayType(dateAt(i+1))==='holiday'?'holiday':''}">${i+1}</th>`).join('')}</tr></thead>
@@ -118,6 +124,18 @@ function render() {
       <p class="notice" role="status">${notice}</p>
       <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
     </main>
+    <dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
+      <div id="staff-list"></div>
+      <form id="staff-form">
+        <input type="hidden" id="staff-id">
+        <label>ФИО <input id="staff-name" required maxlength="100"></label>
+        <label>Подразделение <input id="staff-department" maxlength="100"></label>
+        <label>Группа отпусков <input id="staff-group" required maxlength="30"></label>
+        <label>Дней ежегодного отпуска <input id="staff-allowance" type="number" min="1" max="120" required value="36"></label>
+        <p id="staff-error" role="alert"></p>
+        <div class="actions"><button type="button" id="staff-reset">Новый сотрудник</button><button type="submit">Сохранить</button><button type="button" id="staff-close">Закрыть</button></div>
+      </form>
+    </dialog>
     <dialog id="editor"><form id="vacation-form">
       <h2 id="editor-title">Добавить период отпуска</h2>
       <label>Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
@@ -144,6 +162,29 @@ function render() {
       <p><a href="https://www.consultant.ru/document/cons_doc_LAW_34683/1f8b77b8e94f97ce88b74f92e54177e36b1d93b7/" target="_blank" rel="noopener">Трудовой кодекс РФ</a> · <a href="https://онлайнинспекция.рф/" target="_blank" rel="noopener">Онлайнинспекция.рф</a></p>
       <div class="actions"><button type="button" id="help-close">Закрыть</button></div></dialog>
     <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div id="period-total" class="day-count"></div><div id="split-rule"></div><div class="actions"><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
+  function drawStaff(){
+    document.querySelector('#staff-list').innerHTML=drivers.map(d=>'<div class="period-row"><span>'+escapeHtml(d.name)+' · '+escapeHtml(d.group)+' · '+d.allowance+' дн.</span><button type="button" data-staff="'+d.id+'">Изменить</button></div>').join('');
+    document.querySelectorAll('[data-staff]').forEach(b=>b.onclick=()=>{
+      const d=drivers.find(x=>x.id===Number(b.dataset.staff));
+      document.querySelector('#staff-id').value=d.id;
+      document.querySelector('#staff-name').value=d.name;
+      document.querySelector('#staff-department').value=d.department||'';
+      document.querySelector('#staff-group').value=d.group;
+      document.querySelector('#staff-allowance').value=d.allowance;
+    });
+  }
+  document.querySelector('#staff-open').onclick=()=>{drawStaff();document.querySelector('#staff-dialog').showModal();};
+  document.querySelector('#staff-close').onclick=()=>document.querySelector('#staff-dialog').close();
+  document.querySelector('#staff-reset').onclick=()=>document.querySelector('#staff-form').reset();
+  document.querySelector('#staff-form').onsubmit=e=>{
+    e.preventDefault();
+    const id=Number(document.querySelector('#staff-id').value);
+    const name=document.querySelector('#staff-name').value.trim(),department=document.querySelector('#staff-department').value.trim(),group=document.querySelector('#staff-group').value.trim(),allowance=Number(document.querySelector('#staff-allowance').value);
+    if(!name||!group||!Number.isInteger(allowance)||allowance<1||allowance>120)return;
+    if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,department,group,allowance});}
+    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,department,group,allowance});
+    saveStaff();document.querySelector('#staff-dialog').close();render();
+  };
   let pendingCalendar=null;
   document.querySelector('#calendar-open').onclick=()=>document.querySelector('#calendar-dialog').showModal();
   document.querySelector('#calendar-close').onclick=()=>document.querySelector('#calendar-dialog').close();
@@ -203,7 +244,8 @@ function render() {
     const driver=drivers.find(d=>d.id===id);
     document.querySelector('#driver-title').textContent='Отпуска: '+driver.name;
     document.querySelector('#period-list').innerHTML=periodList(id);
-    document.querySelector('#period-total').textContent='Итого дней отпуска: '+periodsFor(id).reduce((sum,p)=>sum+leaveDays(p.start,p.end),0)+' (праздники исключены)';
+    const planned=periodsFor(id).reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
+    document.querySelector('#period-total').textContent='Положено: '+driver.allowance+' · Запланировано: '+planned+' · Осталось: '+(driver.allowance-planned)+' дн. (праздники исключены)';
     document.querySelector('#split-rule').innerHTML=splitRule(id);
     document.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>{
       const p=periodsFor(id)[Number(el.dataset.edit)];
