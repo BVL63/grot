@@ -46,3 +46,9 @@ dialog input,dialog select { width:100%; }
 /* Центрируем количество дней между датами и действиями */
 .period-row .period-dates { flex:1 1 0; min-width:0; }
 .period-row .period-days { flex:0 0 64px; margin-right:0; text-align:center; }
+
+/* Три зоны строки: даты | дни по центру | кнопки справа */
+.period-row { display:grid; grid-template-columns:minmax(170px,1fr) 76px auto auto; align-items:center; column-gap:8px; }
+.period-row .period-dates { min-width:0; }
+.period-row .period-days { width:76px; text-align:center; margin:0; justify-self:center; }
+@media(max-width:460px) { .period-row { grid-template-columns:minmax(130px,1fr) 54px auto auto; column-gap:4px; } .period-row .period-days { width:54px; } .period-row button { padding:6px 5px; } }
