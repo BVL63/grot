@@ -68,11 +68,19 @@ function splitRule(id) {
     ? '<p class="rule-ok">✓ Есть часть отпуска продолжительностью не менее 14 календарных дней.</p>'
     : '<p class="rule-warning">⚠ Пока нет части отпуска продолжительностью не менее 14 календарных дней. Перед утверждением графика необходимо предусмотреть такую часть.</p>';
 }
-const holidays2027 = new Set(['2027-01-01','2027-01-02','2027-01-03','2027-01-04','2027-01-05','2027-01-06','2027-01-07','2027-01-08','2027-02-23','2027-03-08','2027-05-01','2027-05-09','2027-06-12','2027-11-04']);
+const defaultHolidays2027 = new Set(['2027-01-01','2027-01-02','2027-01-03','2027-01-04','2027-01-05','2027-01-06','2027-01-07','2027-01-08','2027-02-23','2027-03-08','2027-05-01','2027-05-09','2027-06-12','2027-11-04']);
+const calendarKey='productionCalendar2027';
+let calendarOverrides={};
+try { calendarOverrides=JSON.parse(localStorage.getItem(calendarKey)||'{}')||{}; } catch {}
+function dayType(date) {
+  if (Object.prototype.hasOwnProperty.call(calendarOverrides,date)) return calendarOverrides[date];
+  if(defaultHolidays2027.has(date)) return 'holiday';
+  return [0,6].includes(new Date(date+'T12:00:00Z').getUTCDay())?'weekend':'workday';
+}
 function leaveDays(start,end) {
   if (!start || !end || end<start) return 0;
   let total=0;
-  for(let d=start,n=0;d<=end && n<366;d=shift(d,1),n++) if(!holidays2027.has(d)) total++;
+  for(let d=start,n=0;d<=end && n<366;d=shift(d,1),n++) if(dayType(d)!=='holiday') total++;
   return total;
 }
 function calendarDays(p) {
@@ -92,16 +100,16 @@ function render() {
     <header><h1>График отпусков — 2027</h1><p>Планирование отпусков водителей</p></header>
     <main>
       <div class="toolbar"><label>Месяц: <select id="month">${months.map((m,i) => `<option value="${i}" ${i===selectedMonth?'selected':''}>${m}</option>`).join('')}</select></label>
-      <button id="period">Добавить период отпуска</button><button id="help-open" type="button">Справка · Правила отпусков</button></div>
+      <button id="period">Добавить период отпуска</button><button id="help-open" type="button">Справка · Правила отпусков</button><button id="calendar-open" type="button">Производственный календарь</button></div>
       <div class="scroll"><table>
         <thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>
-          ${Array.from({length:count},(_,i)=>`<th class="${[0,6].includes(new Date(2027,selectedMonth,i+1).getDay())?'weekend':''}">${i+1}</th>`).join('')}</tr></thead>
+          ${Array.from({length:count},(_,i)=>`<th class="${dayType(dateAt(i+1))==='weekend'?'weekend':''} ${dayType(dateAt(i+1))==='holiday'?'holiday':''}">${i+1}</th>`).join('')}</tr></thead>
         <tbody>${drivers.map(d => `<tr><th class="fixed name"><button class="driver" data-driver="${d.id}">${d.name}</button></th><td class="fixed group">${d.group}</td>
           ${Array.from({length:count},(_,i)=>{
             const date=dateAt(i+1);
             const active=sets.get(d.id).has(date);
-            const weekend=[0,6].includes(new Date(2027,selectedMonth,i+1).getDay());
-            return `<td class="day ${active?'vacation':''} ${weekend?'weekend':''}" data-id="${d.id}" data-date="${date}" title="${d.name}: ${date}">${i+1}</td>`;
+            const weekend=dayType(date)==='weekend'; const holiday=dayType(date)==='holiday';
+            return `<td class="day ${active?'vacation':''} ${weekend?'weekend':''} ${holiday?'holiday':''}" data-id="${d.id}" data-date="${date}" title="${d.name}: ${date}">${i+1}</td>`;
           }).join('')}</tr>`).join('')}</tbody>
         <tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>
           ${Array.from({length:count},(_,i)=>`<td>${drivers.filter(d=>sets.get(d.id).has(dateAt(i+1))).length}</td>`).join('')}</tr></tfoot>
@@ -119,6 +127,14 @@ function render() {
       <p id="form-error" role="alert"></p>
       <div class="actions"><button type="button" id="cancel">Отмена</button><button type="submit">Сохранить</button></div>
     </form></dialog>
+    <dialog id="calendar-dialog"><h2>Производственный календарь — 2027</h2>
+      <p>CSV с колонками date;type. Дата в формате ГГГГ-ММ-ДД; тип holiday (праздник), weekend (выходной), workday (рабочий).</p>
+      <p>Пример: 2027-01-01;holiday</p>
+      <p>Неуказанные даты берутся из базового календаря. Импорт заменяет предыдущие пользовательские настройки календаря, но не отпуска.</p>
+      <input type="file" id="calendar-file" accept=".csv,text/csv,text/plain">
+      <p id="calendar-status" role="status"></p>
+      <div class="actions"><button type="button" id="calendar-close">Закрыть</button><button type="button" id="calendar-import" disabled>Подтвердить импорт</button></div>
+    </dialog>
     <dialog id="help-dialog"><h2>Справка · Правила отпусков</h2>
       <p><strong>Разделение отпуска — статья 125 ТК РФ.</strong> По соглашению работника и работодателя ежегодный оплачиваемый отпуск может быть разделён на части. Хотя бы одна из частей должна быть не менее <strong>14 календарных дней</strong>. Это не обязательно первая часть по времени.</p>
       <p>Например, при отпуске 36 дней допустимо 7 + 14 + 15 дней; 12 + 12 + 12 дней — недопустимо.</p>
@@ -128,6 +144,41 @@ function render() {
       <p><a href="https://www.consultant.ru/document/cons_doc_LAW_34683/1f8b77b8e94f97ce88b74f92e54177e36b1d93b7/" target="_blank" rel="noopener">Трудовой кодекс РФ</a> · <a href="https://онлайнинспекция.рф/" target="_blank" rel="noopener">Онлайнинспекция.рф</a></p>
       <div class="actions"><button type="button" id="help-close">Закрыть</button></div></dialog>
     <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div id="period-total" class="day-count"></div><div id="split-rule"></div><div class="actions"><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
+  let pendingCalendar=null;
+  document.querySelector('#calendar-open').onclick=()=>document.querySelector('#calendar-dialog').showModal();
+  document.querySelector('#calendar-close').onclick=()=>document.querySelector('#calendar-dialog').close();
+  document.querySelector('#calendar-file').onchange=async e=>{
+    pendingCalendar=null;
+    document.querySelector('#calendar-import').disabled=true;
+    const file=e.target.files[0]; if(!file) return;
+    try {
+      const lines=(await file.text()).replace(/^\uFEFF/,'').trim().split(/\r?\n/);
+      const separator=lines[0].includes(';')?';':',';
+      const header=lines.shift().split(separator).map(v=>v.trim().toLowerCase());
+      const di=header.indexOf('date'),ti=header.indexOf('type');
+      if(di<0||ti<0) throw Error('Нужны колонки date и type.');
+      const next={}; let n=0;
+      for(const line of lines) {
+        if(!line.trim()) continue;
+        const cols=line.split(separator).map(v=>v.trim());
+        const date=cols[di],type=cols[ti]?.toLowerCase();
+        if(!/^2027-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date))||new Date(date+'T12:00:00Z').toISOString().slice(0,10)!==date||!['holiday','weekend','workday'].includes(type)) throw Error('Некорректная строка: '+line);
+        if(next[date]) throw Error('Повтор даты: '+date);
+        next[date]=type;n++;
+      }
+      if(!n) throw Error('В файле нет дат.');
+      pendingCalendar=next;
+      document.querySelector('#calendar-status').textContent='Проверено дат: '+n+'. Для применения нажмите «Подтвердить импорт».';
+      document.querySelector('#calendar-import').disabled=false;
+    } catch(err) { document.querySelector('#calendar-status').textContent=err.message; }
+  };
+  document.querySelector('#calendar-import').onclick=()=>{
+    if(!pendingCalendar) return;
+    calendarOverrides=pendingCalendar;
+    localStorage.setItem(calendarKey,JSON.stringify(calendarOverrides));
+    notice='Производственный календарь загружен; расчёт отпусков обновлён.';
+    document.querySelector('#calendar-dialog').close();render();
+  };
   document.querySelector('#help-open').onclick=()=>document.querySelector('#help-dialog').showModal();
   document.querySelector('#help-close').onclick=()=>document.querySelector('#help-dialog').close();
   document.querySelector('#month').onchange = e => {selectedMonth=Number(e.target.value);render();};
