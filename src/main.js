@@ -139,7 +139,7 @@ function render() {
     <dialog id="editor"><form id="vacation-form">
       <h2 id="editor-title">Добавить период отпуска</h2>
       <label>Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
-      <label>Месяц <select id="range-month">${months.map((m,i)=>`<option value="${i}">${m}</option>`).join('')}</select></label>
+      <p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
       <p id="range-hint">Выберите начало отпуска, затем окончание.</p>
       <div id="range-calendar" class="range-calendar"></div><div id="range-selected"></div>
       <input id="start" type="hidden"><input id="end" type="hidden">
@@ -237,9 +237,7 @@ function render() {
     document.querySelector('#person').closest('label').hidden=Boolean(period) || fromCard;
     document.querySelector('#start').value=period?period.start:'';
     document.querySelector('#end').value=period?period.end:'';
-    rangeMonth=period?Number(period.start.slice(5,7))-1:selectedMonth;
     rangeStep=period?2:0;
-    document.querySelector('#range-month').value=String(rangeMonth);
     drawRangeCalendar();
     document.querySelector('#form-error').textContent='';
 
@@ -283,18 +281,23 @@ function render() {
   }
   function drawRangeCalendar() {
     const start=document.querySelector('#start').value,end=document.querySelector('#end').value;
-    const first=new Date(Date.UTC(2027,rangeMonth,1)).getUTCDay(),offset=(first+6)%7;
-    const count=new Date(Date.UTC(2027,rangeMonth+1,0)).getUTCDate();
-    let html=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(x=>'<span class="range-weekday">'+x+'</span>').join('');
-    for(let i=0;i<offset;i++)html+='<span></span>';
-    for(let i=1;i<=count;i++){
-      const date='2027-'+String(rangeMonth+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
-      const selected=start&&end?date>=start&&date<=end:date===start;
-      html+='<button type="button" data-range-date="'+date+'" class="'+(selected?'range-active ':'')+(dayType(date)==='holiday'?'range-holiday':dayType(date)==='weekend'?'range-weekend':'')+'">'+i+'</button>';
+    let html='';
+    for(let month=0;month<12;month++){
+      const first=new Date(Date.UTC(2027,month,1)).getUTCDay();
+      const offset=(first+6)%7;
+      const count=new Date(Date.UTC(2027,month+1,0)).getUTCDate();
+      let cells=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(x=>'<span class="range-weekday">'+x+'</span>').join('');
+      for(let i=0;i<offset;i++) cells+='<span></span>';
+      for(let i=1;i<=count;i++){
+        const date='2027-'+String(month+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
+        const selected=start&&end?date>=start&&date<=end:date===start;
+        cells+='<button type="button" data-range-date="'+date+'" class="'+(selected?'range-active ':'')+(dayType(date)==='holiday'?'range-holiday':dayType(date)==='weekend'?'range-weekend':'')+'">'+i+'</button>';
+      }
+      html+='<section class="range-month"><h3>'+months[month]+'</h3><div class="range-month-days">'+cells+'</div></section>';
     }
     document.querySelector('#range-calendar').innerHTML=html;
     document.querySelector('#range-selected').textContent=start?'Начало: '+displayDate(start)+(end?' · Окончание: '+displayDate(end):' · Выберите окончание'):'Выберите дату начала';
-    document.querySelector('#range-hint').textContent=rangeStep===1?'Теперь выберите дату окончания (можно в другом месяце).':'Первое нажатие — начало, второе — окончание. Для нового выбора нажмите ещё раз.';
+    document.querySelector('#range-hint').textContent=rangeStep===1?'Теперь выберите дату окончания в любом месяце.':'Первое нажатие — начало, второе — окончание. Для нового выбора нажмите ещё раз.';
     document.querySelectorAll('[data-range-date]').forEach(b=>b.onclick=()=>{
       const date=b.dataset.rangeDate;
       if(rangeStep!==1){document.querySelector('#start').value=date;document.querySelector('#end').value='';rangeStep=1;}
@@ -307,7 +310,6 @@ function render() {
       drawRangeCalendar();updateCount();
     });
   }
-  document.querySelector('#range-month').onchange=e=>{rangeMonth=Number(e.target.value);drawRangeCalendar();};
   document.querySelector('#cancel').onclick=()=>dialog.close();
   document.querySelector('#vacation-form').onsubmit=e=>{
     e.preventDefault();
