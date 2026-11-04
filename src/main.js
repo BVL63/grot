@@ -246,6 +246,8 @@ function render() {
     document.querySelector('#period-list').innerHTML=periodList(id);
     const planned=periodsFor(id).reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
     document.querySelector('#period-total').textContent='Положено: '+driver.allowance+' · Запланировано: '+planned+' · Осталось: '+(driver.allowance-planned)+' дн. (праздники исключены)';
+    document.querySelector('#driver-add').disabled=planned>=driver.allowance;
+    document.querySelector('#driver-add').title=planned>=driver.allowance?'Все дни отпуска уже запланированы':'';
     document.querySelector('#split-rule').innerHTML=splitRule(id);
     document.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>{
       const p=periodsFor(id)[Number(el.dataset.edit)];
