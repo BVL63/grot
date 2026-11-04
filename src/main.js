@@ -63,17 +63,24 @@ function displayDate(value) {
 function splitRule(id) {
   const periods=periodsFor(id);
   if (!periods.length) return '';
-  const hasLongPart=periods.some(p => (Date.parse(p.end+'T12:00:00Z')-Date.parse(p.start+'T12:00:00Z'))/86400000+1 >= 14);
+  const hasLongPart=periods.some(p => leaveDays(p.start,p.end) >= 14);
   return hasLongPart
     ? '<p class="rule-ok">✓ Есть часть отпуска продолжительностью не менее 14 календарных дней.</p>'
     : '<p class="rule-warning">⚠ Пока нет части отпуска продолжительностью не менее 14 календарных дней. Перед утверждением графика необходимо предусмотреть такую часть.</p>';
+}
+const holidays2027 = new Set(['2027-01-01','2027-01-02','2027-01-03','2027-01-04','2027-01-05','2027-01-06','2027-01-07','2027-01-08','2027-02-23','2027-03-08','2027-05-01','2027-05-09','2027-06-12','2027-11-04']);
+function leaveDays(start,end) {
+  if (!start || !end || end<start) return 0;
+  let total=0;
+  for(let d=start,n=0;d<=end && n<366;d=shift(d,1),n++) if(!holidays2027.has(d)) total++;
+  return total;
 }
 function calendarDays(p) {
   return Math.round((Date.parse(p.end+'T12:00:00Z')-Date.parse(p.start+'T12:00:00Z'))/86400000)+1;
 }
 function periodList(id) {
   const items=periodsFor(id);
-  return items.length ? items.map((v,i)=>`<div class="period-row"><span>${displayDate(v.start)} — ${displayDate(v.end)}</span><strong class="period-days">${calendarDays(v)} дн.</strong><button type="button" data-edit="${i}">Изменить</button><button type="button" data-remove="${i}">Удалить</button></div>`).join('') : '<p>Периодов пока нет.</p>';
+  return items.length ? items.map((v,i)=>`<div class="period-row"><span>${displayDate(v.start)} — ${displayDate(v.end)}</span><strong class="period-days">${leaveDays(v.start,v.end)} дн.</strong><button type="button" data-edit="${i}">Изменить</button><button type="button" data-remove="${i}">Удалить</button></div>`).join('') : '<p>Периодов пока нет.</p>';
 }
 function dateAt(day) {
   return '2027-' + String(selectedMonth+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
@@ -116,11 +123,11 @@ function render() {
       <p><strong>Разделение отпуска — статья 125 ТК РФ.</strong> По соглашению работника и работодателя ежегодный оплачиваемый отпуск может быть разделён на части. Хотя бы одна из частей должна быть не менее <strong>14 календарных дней</strong>. Это не обязательно первая часть по времени.</p>
       <p>Например, при отпуске 36 дней допустимо 7 + 14 + 15 дней; 12 + 12 + 12 дней — недопустимо.</p>
       <p>Проверка пока носит предупредительный характер: график может быть заполнен не полностью. Перед утверждением необходимо выполнить правило.</p>
-      <p><strong>Праздники — статья 120 ТК РФ.</strong> Нерабочие праздничные дни, приходящиеся на ежегодный оплачиваемый отпуск, в число календарных дней отпуска не включаются. В текущей тестовой версии подсчёт праздничных дней ещё не подключён.</p>
+      <p><strong>Праздники — статья 120 ТК РФ.</strong> Нерабочие праздничные дни, приходящиеся на ежегодный оплачиваемый отпуск, в число календарных дней отпуска не включаются. В расчёте учитываются праздничные даты по статье 112 ТК РФ. Перенесённые выходные не исключаются из отпуска.</p>
       <p><strong>Продолжительность отпуска</strong> определяется для каждого сотрудника индивидуально. Планируемая норма водителей — 36 календарных дней, с возможностью изменения в справочнике сотрудников.</p>
       <p><a href="https://www.consultant.ru/document/cons_doc_LAW_34683/1f8b77b8e94f97ce88b74f92e54177e36b1d93b7/" target="_blank" rel="noopener">Трудовой кодекс РФ</a> · <a href="https://онлайнинспекция.рф/" target="_blank" rel="noopener">Онлайнинспекция.рф</a></p>
       <div class="actions"><button type="button" id="help-close">Закрыть</button></div></dialog>
-    <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div id="split-rule"></div><div class="actions"><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
+    <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div id="period-total" class="day-count"></div><div id="split-rule"></div><div class="actions"><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
   document.querySelector('#help-open').onclick=()=>document.querySelector('#help-dialog').showModal();
   document.querySelector('#help-close').onclick=()=>document.querySelector('#help-dialog').close();
   document.querySelector('#month').onchange = e => {selectedMonth=Number(e.target.value);render();};
@@ -145,6 +152,7 @@ function render() {
     const driver=drivers.find(d=>d.id===id);
     document.querySelector('#driver-title').textContent='Отпуска: '+driver.name;
     document.querySelector('#period-list').innerHTML=periodList(id);
+    document.querySelector('#period-total').textContent='Итого дней отпуска: '+periodsFor(id).reduce((sum,p)=>sum+leaveDays(p.start,p.end),0)+' (праздники исключены)';
     document.querySelector('#split-rule').innerHTML=splitRule(id);
     document.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>{
       const p=periodsFor(id)[Number(el.dataset.edit)];
@@ -167,8 +175,9 @@ function render() {
     const start=document.querySelector('#start').value, end=document.querySelector('#end').value;
     const out=document.querySelector('#day-count');
     if (!start || !end || end<start) { out.textContent='Проверьте даты периода'; return; }
-    const total=Math.round((Date.parse(end+'T12:00:00Z')-Date.parse(start+'T12:00:00Z'))/86400000)+1;
-    out.textContent='Календарных дней: '+total+'. Дни отпуска с учётом праздников будут рассчитаны после подключения производственного календаря.';
+    const total=calendarDays({start,end});
+    const leave=leaveDays(start,end);
+    out.textContent='Дней в периоде: '+total+'. Дней оплачиваемого отпуска: '+leave+(total!==leave?' (праздники: '+(total-leave)+')':'')+'.';
   }
   document.querySelector('#start').addEventListener('change',()=>{
     const startInput=document.querySelector('#start');
