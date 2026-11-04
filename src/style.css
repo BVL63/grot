@@ -39,3 +39,6 @@ dialog input,dialog select { width:100%; }
 #driver-card { width:min(520px,calc(100vw - 24px)); }
 #driver-card h2 { margin-top:0; }
 .day-count { font-weight:bold; margin-top:10px; }
+
+.period-row .period-dates { flex:0 1 auto; min-width:0; }
+.period-row .period-days { margin-right:auto; white-space:nowrap; }
