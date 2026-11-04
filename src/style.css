@@ -1,0 +1,21 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f5f7fa;
+  color: #243247;
+}
+
+header {
+  background: #176b9a;
+  color: white;
+  padding: 16px;
+}
+
+main {
+  padding: 16px;
+}
+
+button, select, input {
+  font-size: 16px;
+  padding: 8px;
+}
