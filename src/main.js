@@ -60,6 +60,14 @@ function displayDate(value) {
   const [y,m,d]=value.split('-');
   return d+'.'+m+'.'+y.slice(2);
 }
+function splitRule(id) {
+  const periods=periodsFor(id);
+  if (!periods.length) return '';
+  const hasLongPart=periods.some(p => (Date.parse(p.end+'T12:00:00Z')-Date.parse(p.start+'T12:00:00Z'))/86400000+1 >= 14);
+  return hasLongPart
+    ? '<p class="rule-ok">✓ Есть часть отпуска продолжительностью не менее 14 календарных дней.</p>'
+    : '<p class="rule-warning">⚠ Пока нет части отпуска продолжительностью не менее 14 календарных дней. Перед утверждением графика необходимо предусмотреть такую часть.</p>';
+}
 function periodList(id) {
   const items=periodsFor(id);
   return items.length ? items.map((v,i)=>`<div class="period-row"><span>${displayDate(v.start)} — ${displayDate(v.end)}</span><button type="button" data-edit="${i}">Изменить</button><button type="button" data-remove="${i}">Удалить</button></div>`).join('') : '<p>Периодов пока нет.</p>';
@@ -74,7 +82,7 @@ function render() {
     <header><h1>График отпусков — 2027</h1><p>Планирование отпусков водителей</p></header>
     <main>
       <div class="toolbar"><label>Месяц: <select id="month">${months.map((m,i) => `<option value="${i}" ${i===selectedMonth?'selected':''}>${m}</option>`).join('')}</select></label>
-      <button id="period">Добавить период отпуска</button></div>
+      <button id="period">Добавить период отпуска</button><button id="help-open" type="button">Справка · Правила отпусков</button></div>
       <div class="scroll"><table>
         <thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>
           ${Array.from({length:count},(_,i)=>`<th class="${[0,6].includes(new Date(2027,selectedMonth,i+1).getDay())?'weekend':''}">${i+1}</th>`).join('')}</tr></thead>
@@ -101,7 +109,17 @@ function render() {
       <p id="form-error" role="alert"></p>
       <div class="actions"><button type="button" id="cancel">Отмена</button><button type="submit">Сохранить</button></div>
     </form></dialog>
-    <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div class="actions"><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
+    <dialog id="help-dialog"><h2>Справка · Правила отпусков</h2>
+      <p><strong>Разделение отпуска — статья 125 ТК РФ.</strong> По соглашению работника и работодателя ежегодный оплачиваемый отпуск может быть разделён на части. Хотя бы одна из частей должна быть не менее <strong>14 календарных дней</strong>. Это не обязательно первая часть по времени.</p>
+      <p>Например, при отпуске 36 дней допустимо 7 + 14 + 15 дней; 12 + 12 + 12 дней — недопустимо.</p>
+      <p>Проверка пока носит предупредительный характер: график может быть заполнен не полностью. Перед утверждением необходимо выполнить правило.</p>
+      <p><strong>Праздники — статья 120 ТК РФ.</strong> Нерабочие праздничные дни, приходящиеся на ежегодный оплачиваемый отпуск, в число календарных дней отпуска не включаются. В текущей тестовой версии подсчёт праздничных дней ещё не подключён.</p>
+      <p><strong>Продолжительность отпуска</strong> определяется для каждого сотрудника индивидуально. Планируемая норма водителей — 36 календарных дней, с возможностью изменения в справочнике сотрудников.</p>
+      <p><a href="https://www.consultant.ru/document/cons_doc_LAW_34683/1f8b77b8e94f97ce88b74f92e54177e36b1d93b7/" target="_blank" rel="noopener">Трудовой кодекс РФ</a> · <a href="https://онлайнинспекция.рф/" target="_blank" rel="noopener">Онлайнинспекция.рф</a></p>
+      <div class="actions"><button type="button" id="help-close">Закрыть</button></div></dialog>
+    <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div id="split-rule"></div><div class="actions"><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
+  document.querySelector('#help-open').onclick=()=>document.querySelector('#help-dialog').showModal();
+  document.querySelector('#help-close').onclick=()=>document.querySelector('#help-dialog').close();
   document.querySelector('#month').onchange = e => {selectedMonth=Number(e.target.value);render();};
   const dialog = document.querySelector('#editor');
   const driverCard=document.querySelector('#driver-card');
@@ -124,6 +142,7 @@ function render() {
     const driver=drivers.find(d=>d.id===id);
     document.querySelector('#driver-title').textContent='Отпуска: '+driver.name;
     document.querySelector('#period-list').innerHTML=periodList(id);
+    document.querySelector('#split-rule').innerHTML=splitRule(id);
     document.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>{
       const p=periodsFor(id)[Number(el.dataset.edit)];
       driverCard.close(); openEditor(id,p,true);
