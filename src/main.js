@@ -55,9 +55,14 @@ function periodsFor(id) {
   return vacations.filter(v => Number(v.driverId) === id && v.start && v.end).sort((a,b)=>a.start.localeCompare(b.start));
 }
 function store() { localStorage.setItem(key, JSON.stringify(vacations)); }
+function displayDate(value) {
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value || '')) return value;
+  const [y,m,d]=value.split('-');
+  return d+'.'+m+'.'+y.slice(2);
+}
 function periodList(id) {
   const items=periodsFor(id);
-  return items.length ? items.map((v,i)=>`<div class="period-row"><span>${v.start} — ${v.end}</span><button type="button" data-edit="${i}">Изменить</button><button type="button" data-remove="${i}">Удалить</button></div>`).join('') : '<p>Периодов пока нет.</p>';
+  return items.length ? items.map((v,i)=>`<div class="period-row"><span>${displayDate(v.start)} — ${displayDate(v.end)}</span><button type="button" data-edit="${i}">Изменить</button><button type="button" data-remove="${i}">Удалить</button></div>`).join('') : '<p>Периодов пока нет.</p>';
 }
 function dateAt(day) {
   return '2027-' + String(selectedMonth+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
@@ -123,7 +128,7 @@ function render() {
     });
     document.querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>{
       const p=periodsFor(id)[Number(el.dataset.remove)];
-      if (!confirm('Удалить период '+p.start+' — '+p.end+'?')) return;
+      if (!confirm('Удалить период '+displayDate(p.start)+' — '+displayDate(p.end)+'?')) return;
       const index=vacations.indexOf(p);
       if(index>=0) vacations.splice(index,1);
       store(); notice='Период удалён.'; driverCard.close(); render();
