@@ -15,6 +15,7 @@ function saveStaff(){localStorage.setItem(staffKey,JSON.stringify(drivers));}
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 const key = 'vacations2027';
 let selectedMonth = 0;
+const expandedMonths = new Set();
 let vacations;
 try {
   const saved = JSON.parse(localStorage.getItem(key) || '[]');
@@ -100,27 +101,22 @@ function dateAt(day) {
   return '2027-' + String(selectedMonth+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
 }
 function render() {
-  const count = new Date(2027, selectedMonth+1, 0).getDate();
   const sets = new Map(drivers.map(d => [d.id, daysFor(d.id)]));
+  const dateOf=(m,d)=>'2027-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  const monthDays=m=>new Date(2027,m+1,0).getDate();
+  const monthlyCount=(set,m)=>{let n=0;for(let d=1;d<=monthDays(m);d++){const date=dateOf(m,d);if(set.has(date)&&dayType(date)!=='holiday')n++;}return n;};
+  const columns=months.flatMap((_,m)=>expandedMonths.has(m)?Array.from({length:monthDays(m)},(_,i)=>({m,day:i+1})): [{m,day:0}]);
+  const headings=columns.map(c=>'<th class="'+(c.day?'day-heading':'month-heading')+'"><button type="button" data-month="'+c.m+'" title="'+(expandedMonths.has(c.m)?'Свернуть ':'Развернуть ')+months[c.m]+'">'+(c.day||months[c.m].slice(0,3))+'</button></th>').join('');
+  const rows=drivers.map(d=>'<tr><th class="fixed name"><button class="driver" data-driver="'+d.id+'">'+escapeHtml(d.name)+'</button></th><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'—')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'</tr>').join('');
+  const totals=columns.map(c=>'<td>'+(c.day?drivers.filter(d=>sets.get(d.id).has(dateOf(c.m,c.day))).length:drivers.filter(d=>monthlyCount(sets.get(d.id),c.m)>0).length)+'</td>').join('');
   app.innerHTML = `
     <header><h1>График отпусков — 2027</h1><p>Планирование отпусков водителей</p></header>
     <main>
-      <div class="toolbar"><label>Месяц: <select id="month">${months.map((m,i) => `<option value="${i}" ${i===selectedMonth?'selected':''}>${m}</option>`).join('')}</select></label>
+      <div class="toolbar"><button id="collapse-month" type="button">Свернуть все месяцы</button>
       <button id="staff-open" type="button">Сотрудники</button><button id="period">Добавить период отпуска</button><button id="help-open" type="button">Справка · Правила отпусков</button><button id="calendar-open" type="button">Производственный календарь</button></div>
-      <div class="scroll"><table>
-        <thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>
-          ${Array.from({length:count},(_,i)=>`<th class="${dayType(dateAt(i+1))==='weekend'?'weekend':''} ${dayType(dateAt(i+1))==='holiday'?'holiday':''}">${i+1}</th>`).join('')}</tr></thead>
-        <tbody>${drivers.map(d => `<tr><th class="fixed name"><button class="driver" data-driver="${d.id}">${d.name}</button></th><td class="fixed group">${d.group}</td>
-          ${Array.from({length:count},(_,i)=>{
-            const date=dateAt(i+1);
-            const active=sets.get(d.id).has(date);
-            const weekend=dayType(date)==='weekend'; const holiday=dayType(date)==='holiday';
-            return `<td class="day ${active?'vacation':''} ${weekend?'weekend':''} ${holiday?'holiday':''}" data-id="${d.id}" data-date="${date}" title="${d.name}: ${date}">${i+1}</td>`;
-          }).join('')}</tr>`).join('')}</tbody>
-        <tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>
-          ${Array.from({length:count},(_,i)=>`<td>${drivers.filter(d=>sets.get(d.id).has(dateAt(i+1))).length}</td>`).join('')}</tr></tfoot>
-      </table></div>
-      <p>Нажмите на день для отметки или снятия отпуска. Нажмите на фамилию для ввода периода.</p>
+      <div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>${headings}</tr></thead>
+      <tbody>${rows}</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>${totals}</tr></tfoot></table></div>
+      <p>Нажмите на название месяца, чтобы развернуть его дни; повторное нажатие свернёт только этот месяц. Можно открыть несколько месяцев одновременно. Нажмите на фамилию для просмотра отпусков.</p>
       <p class="notice" role="status">${notice}</p>
       <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
     </main>
@@ -225,7 +221,8 @@ function render() {
   };
   document.querySelector('#help-open').onclick=()=>document.querySelector('#help-dialog').showModal();
   document.querySelector('#help-close').onclick=()=>document.querySelector('#help-dialog').close();
-  document.querySelector('#month').onchange = e => {selectedMonth=Number(e.target.value);render();};
+  document.querySelector('#collapse-month').onclick=()=>{expandedMonths.clear();render();};
+  document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();});
   const dialog = document.querySelector('#editor');
   const driverCard=document.querySelector('#driver-card');
   let currentDriver=drivers[0].id;
@@ -308,7 +305,7 @@ function render() {
     document.querySelector('#range-periods').innerHTML=draftPeriods.map((p,i)=>'<div class="draft-period '+(selectedDraft===i?'draft-selected':'')+'"><span>'+(i+1)+'. '+displayDate(p.start)+' — '+displayDate(p.end)+' · '+leaveDays(p.start,p.end)+' дн.</span><button type="button" data-draft-edit="'+i+'">Изменить</button><button type="button" data-draft-remove="'+i+'">Удалить</button></div>').join('');
     document.querySelectorAll('[data-draft-edit]').forEach(b=>b.onclick=()=>{selectedDraft=Number(b.dataset.draftEdit);changingDraft=selectedDraft;rangeStep=0;document.querySelector('#start').value='';document.querySelector('#end').value='';drawRangeCalendar();updateCount();});
     document.querySelectorAll('[data-draft-remove]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.draftRemove);draftPeriods.splice(i,1);selectedDraft=-1;changingDraft=-1;rangeStep=0;drawRangeCalendar();updateCount();});
-    document.querySelectorAll('[data-draft-remove]').forEach(b=>b.onclick=()=>{draftPeriods.splice(Number(b.dataset.draftRemove),1);drawRangeCalendar();updateCount();});
+
     document.querySelector('#range-hint').textContent=rangeStep===1?'Выберите окончание периода.':changingDraft>=0?'Выбран период №'+(changingDraft+1)+'. Нажмите новые начало и окончание.':'Нажмите на зелёный период для изменения или выберите даты нового периода.';
     document.querySelectorAll('[data-range-date]').forEach(b=>b.onclick=()=>{
       const date=b.dataset.rangeDate;
