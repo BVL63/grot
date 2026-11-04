@@ -52,3 +52,6 @@ dialog input,dialog select { width:100%; }
 .period-row .period-dates { min-width:0; }
 .period-row .period-days { width:76px; text-align:center; margin:0; justify-self:center; }
 @media(max-width:460px) { .period-row { grid-template-columns:minmax(130px,1fr) 54px auto auto; column-gap:4px; } .period-row .period-days { width:54px; } .period-row button { padding:6px 5px; } }
+
+/* Центр числа дней в промежутке между концом дат и кнопкой «Изменить» */
+.period-row .period-days { transform:translateX(-25px); }
