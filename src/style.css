@@ -118,3 +118,11 @@ dialog input,dialog select { width:100%; }
 .table-filters{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:12px 0;}
 .table-filters label{display:flex;gap:8px;align-items:center;font-weight:600;}
 .table-filters select{max-width:260px;min-width:130px;padding:8px;border:1px solid #b7c7d9;border-radius:7px;background:white;}
+
+.header-filter{display:flex;align-items:center;justify-content:space-between;gap:4px;white-space:nowrap;}
+.annual-table .filter-trigger{width:auto;min-width:26px;padding:3px 5px;border:1px solid #b8c8d7;border-radius:5px;background:#f5f8fc;font-weight:700;}
+#filter-dialog{min-width:min(330px,90vw);max-height:80vh;}
+.filter-actions{display:flex;gap:8px;margin:12px 0;}
+#filter-options{max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+.filter-option{display:flex;align-items:center;gap:10px;padding:7px 4px;cursor:pointer;}
+.filter-option input{width:19px;height:19px;}
