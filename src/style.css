@@ -101,3 +101,7 @@ dialog input,dialog select { width:100%; }
   #editor .editor-calendar-scroll { padding:0 14px 10px; }
   #editor .editor-bottom { padding:8px 14px 12px; max-height:40%; }
 }
+
+.draft-period.draft-selected { background:#e9f7ef; border-radius:6px; }
+.draft-period button { white-space:nowrap; }
+@media(max-width:600px){.draft-period {flex-wrap:wrap;}.draft-period span{flex:1 0 100%;}}
