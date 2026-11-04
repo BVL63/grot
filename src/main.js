@@ -144,7 +144,7 @@ function render() {
       <div class="editor-calendar-scroll"><div id="range-calendar" class="range-calendar"></div></div>
       <div class="editor-bottom"><div id="range-selected"></div><div id="range-periods"></div>
       <input id="start" type="hidden"><input id="end" type="hidden">
-      <div id="day-count" class="day-count" aria-live="polite"></div><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
+      <div id="day-count" class="day-count" aria-live="polite"></div><p id="editor-split-warning" class="rule-warning" role="status"></p><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
       <p id="form-error" role="alert"></p>
       <div class="actions"><button type="button" id="cancel">Отмена</button><button type="submit">Сохранить</button></div></div>
     </form></dialog>
@@ -283,6 +283,7 @@ function render() {
     const planned=combined.reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
     const remain=(driver?.allowance||36)-planned;
     document.querySelector('#day-count').textContent='Положено: '+(driver?.allowance||36)+' · Запланировано: '+planned+' · Осталось: '+remain+' дн.';
+    document.querySelector('#editor-split-warning').textContent=combined.length>0&&!combined.some(p=>leaveDays(p.start,p.end)>=14)?'⚠ Нет ни одной части отпуска продолжительностью не менее 14 дней. Перед утверждением графика необходимо исправить.':'';
     document.querySelector('#form-error').textContent=remain<0?'Превышена продолжительность отпуска. Уменьшите периоды.':'';
     document.querySelector('#vacation-form button[type="submit"]').disabled=remain<0||!draftPeriods.length;
   }
