@@ -65,7 +65,7 @@ function splitRule(id) {
   if (!periods.length) return '';
   const hasLongPart=periods.some(p => leaveDays(p.start,p.end) >= 14);
   return hasLongPart
-    ? '<p class="rule-ok">✓ Есть часть отпуска продолжительностью не менее 14 календарных дней.</p>'
+    ? ''
     : '<p class="rule-warning">⚠ Пока нет части отпуска продолжительностью не менее 14 календарных дней. Перед утверждением графика необходимо предусмотреть такую часть.</p>';
 }
 const defaultHolidays2027 = new Set(['2027-01-01','2027-01-02','2027-01-03','2027-01-04','2027-01-05','2027-01-06','2027-01-07','2027-01-08','2027-02-23','2027-03-08','2027-05-01','2027-05-09','2027-06-12','2027-11-04']);
@@ -88,7 +88,7 @@ function calendarDays(p) {
 }
 function periodList(id) {
   const items=periodsFor(id);
-  return items.length ? items.map((v,i)=>`<div class="period-row"><span>${displayDate(v.start)} — ${displayDate(v.end)}</span><strong class="period-days">${leaveDays(v.start,v.end)} дн.</strong><button type="button" data-edit="${i}">Изменить</button><button type="button" data-remove="${i}">Удалить</button></div>`).join('') : '<p>Периодов пока нет.</p>';
+  return items.length ? items.map((v,i)=>`<div class="period-row"><span class="period-dates">${displayDate(v.start)} — ${displayDate(v.end)}</span><strong class="period-days">${leaveDays(v.start,v.end)} дн.</strong><button type="button" data-edit="${i}">Изменить</button><button type="button" data-remove="${i}">Удалить</button></div>`).join('') : '<p>Периодов пока нет.</p>';
 }
 function dateAt(day) {
   return '2027-' + String(selectedMonth+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
