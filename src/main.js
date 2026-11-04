@@ -232,7 +232,7 @@ function render() {
   let rangeMonth=selectedMonth, rangeStep=0, draftPeriods=[];
   function openEditor(id, period=null, fromCard=false) {
     editingPeriod=period;
-    document.querySelector('#editor-title').textContent=period?'Изменить период отпуска':'Добавить период отпуска';
+    document.querySelector('#editor-title').textContent=fromCard?'Отпуска: '+drivers.find(d=>d.id===id).name:(period?'Изменить период отпуска':'Выбор периодов отпуска');
     document.querySelector('#person').value=String(id);
     document.querySelector('#person').disabled=Boolean(period) || fromCard;
     document.querySelector('#person').closest('label').hidden=Boolean(period) || fromCard;
@@ -272,7 +272,7 @@ function render() {
   }
   document.querySelector('#period').onclick=()=>openEditor(drivers[0].id);
   document.querySelector('#person').onchange=()=>{draftPeriods=periodsFor(Number(document.querySelector('#person').value)).map(p=>({start:p.start,end:p.end}));rangeStep=0;drawRangeCalendar();updateCount();};
-  document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>showDriver(Number(el.dataset.driver)));
+  document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>openEditor(Number(el.dataset.driver),null,true));
   document.querySelector('#driver-close').onclick=()=>driverCard.close();
   document.querySelector('#driver-add').onclick=()=>{driverCard.close();openEditor(currentDriver,null,true);};
   function updateCount() {
