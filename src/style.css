@@ -42,3 +42,7 @@ dialog input,dialog select { width:100%; }
 
 .period-row .period-dates { flex:0 1 auto; min-width:0; }
 .period-row .period-days { margin-right:auto; white-space:nowrap; }
+
+/* Центрируем количество дней между датами и действиями */
+.period-row .period-dates { flex:1 1 0; min-width:0; }
+.period-row .period-days { flex:0 0 64px; margin-right:0; text-align:center; }
