@@ -84,7 +84,7 @@ function render() {
       <label>Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
       <label>Начало <input id="start" type="date" min="2027-01-01" max="2027-12-31" required></label>
       <label>Окончание <input id="end" type="date" min="2027-01-01" max="2027-12-31" required></label>
-      <p class="muted">Период добавляется к существующим отметкам. Для удаления отдельного дня нажмите на него в таблице.</p>
+      <div id="day-count" class="day-count" aria-live="polite"></div><p class="muted">Период добавляется к существующим отметкам. Для удаления отдельного дня нажмите на него в таблице.</p>
       <p id="form-error" role="alert"></p>
       <div class="actions"><button type="button" id="cancel">Отмена</button><button type="submit">Сохранить</button></div>
     </form></dialog>`;
@@ -95,10 +95,20 @@ function render() {
     document.querySelector('#start').value=dateAt(1);
     document.querySelector('#end').value=dateAt(Math.min(14,count));
     document.querySelector('#form-error').textContent='';
+    updateCount();
     dialog.showModal();
   }
   document.querySelector('#period').onclick=()=>openEditor(drivers[0].id);
   document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>openEditor(Number(el.dataset.driver)));
+  function updateCount() {
+    const start=document.querySelector('#start').value, end=document.querySelector('#end').value;
+    const out=document.querySelector('#day-count');
+    if (!start || !end || end<start) { out.textContent='Проверьте даты периода'; return; }
+    const total=Math.round((Date.parse(end+'T12:00:00Z')-Date.parse(start+'T12:00:00Z'))/86400000)+1;
+    out.textContent='Календарных дней: '+total+'. Дни отпуска с учётом праздников будут рассчитаны после подключения производственного календаря.';
+  }
+  document.querySelector('#start').addEventListener('change',updateCount);
+  document.querySelector('#end').addEventListener('change',updateCount);
   document.querySelector('#cancel').onclick=()=>dialog.close();
   document.querySelector('#vacation-form').onsubmit=e=>{
     e.preventDefault();
