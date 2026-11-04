@@ -105,3 +105,12 @@ dialog input,dialog select { width:100%; }
 .draft-period.draft-selected { background:#e9f7ef; border-radius:6px; }
 .draft-period button { white-space:nowrap; }
 @media(max-width:600px){.draft-period {flex-wrap:wrap;}.draft-period span{flex:1 0 100%;}}
+
+/* Annual table: independent expandable month columns */
+.annual-table .month-heading{min-width:64px;background:#e7eef5;}
+.annual-table .day-heading{min-width:39px;}
+.annual-table thead th button{border:0;background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:5px 3px;width:100%;}
+.annual-table .month-cell{text-align:center;cursor:pointer;font-weight:600;}
+.annual-table .month-cell.has-vacation{background:#d6f2e1;color:#116b39;}
+.annual-table .day{text-align:center;cursor:pointer;}
+.annual-table .day.vacation{background:#16a34a;color:white;font-weight:700;}
