@@ -16,7 +16,7 @@ try {
 } catch {
   vacations = [];
 }
-let editingDriver = null;
+let editingPeriod = null;
 let notice = '';
 
 function iso(date) {
@@ -51,6 +51,14 @@ function replaceDays(id, days) {
   vacations = vacations.filter(v => Number(v.driverId) !== id).concat(periods);
   localStorage.setItem(key, JSON.stringify(vacations));
 }
+function periodsFor(id) {
+  return vacations.filter(v => Number(v.driverId) === id && v.start && v.end).sort((a,b)=>a.start.localeCompare(b.start));
+}
+function store() { localStorage.setItem(key, JSON.stringify(vacations)); }
+function periodList(id) {
+  const items=periodsFor(id);
+  return items.length ? items.map((v,i)=>`<div class="period-row"><span>${v.start} — ${v.end}</span><button type="button" data-edit="${i}">Изменить</button><button type="button" data-remove="${i}">Удалить</button></div>`).join('') : '<p>Периодов пока нет.</p>';
+}
 function dateAt(day) {
   return '2027-' + String(selectedMonth+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
 }
@@ -80,26 +88,52 @@ function render() {
       <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
     </main>
     <dialog id="editor"><form id="vacation-form">
-      <h2>Период отпуска</h2>
+      <h2 id="editor-title">Добавить период отпуска</h2>
       <label>Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
       <label>Начало <input id="start" type="date" min="2027-01-01" max="2027-12-31" required></label>
       <label>Окончание <input id="end" type="date" min="2027-01-01" max="2027-12-31" required></label>
-      <div id="day-count" class="day-count" aria-live="polite"></div><p class="muted">Период добавляется к существующим отметкам. Для удаления отдельного дня нажмите на него в таблице.</p>
+      <div id="day-count" class="day-count" aria-live="polite"></div><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
       <p id="form-error" role="alert"></p>
       <div class="actions"><button type="button" id="cancel">Отмена</button><button type="submit">Сохранить</button></div>
-    </form></dialog>`;
+    </form></dialog>
+    <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div class="actions"><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
   document.querySelector('#month').onchange = e => {selectedMonth=Number(e.target.value);render();};
   const dialog = document.querySelector('#editor');
-  function openEditor(id) {
+  const driverCard=document.querySelector('#driver-card');
+  let currentDriver=drivers[0].id;
+  function openEditor(id, period=null) {
+    editingPeriod=period;
+    document.querySelector('#editor-title').textContent=period?'Изменить период отпуска':'Добавить период отпуска';
     document.querySelector('#person').value=String(id);
-    document.querySelector('#start').value=dateAt(1);
-    document.querySelector('#end').value=dateAt(Math.min(14,count));
+    document.querySelector('#person').disabled=Boolean(period);
+    document.querySelector('#start').value=period?period.start:dateAt(1);
+    document.querySelector('#end').value=period?period.end:dateAt(Math.min(14,count));
     document.querySelector('#form-error').textContent='';
     updateCount();
     dialog.showModal();
   }
+  function showDriver(id) {
+    currentDriver=id;
+    const driver=drivers.find(d=>d.id===id);
+    document.querySelector('#driver-title').textContent='Отпуска: '+driver.name;
+    document.querySelector('#period-list').innerHTML=periodList(id);
+    document.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>{
+      const p=periodsFor(id)[Number(el.dataset.edit)];
+      driverCard.close(); openEditor(id,p);
+    });
+    document.querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>{
+      const p=periodsFor(id)[Number(el.dataset.remove)];
+      if (!confirm('Удалить период '+p.start+' — '+p.end+'?')) return;
+      const index=vacations.indexOf(p);
+      if(index>=0) vacations.splice(index,1);
+      store(); notice='Период удалён.'; driverCard.close(); render();
+    });
+    driverCard.showModal();
+  }
   document.querySelector('#period').onclick=()=>openEditor(drivers[0].id);
-  document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>openEditor(Number(el.dataset.driver)));
+  document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>showDriver(Number(el.dataset.driver)));
+  document.querySelector('#driver-close').onclick=()=>driverCard.close();
+  document.querySelector('#driver-add').onclick=()=>{driverCard.close();openEditor(currentDriver);};
   function updateCount() {
     const start=document.querySelector('#start').value, end=document.querySelector('#end').value;
     const out=document.querySelector('#day-count');
@@ -117,6 +151,10 @@ function render() {
     if (!start.startsWith('2027-') || !end.startsWith('2027-') || start>end) {
       document.querySelector('#form-error').textContent='Проверьте даты: начало должно быть не позже окончания, обе даты — в 2027 году.';
       return;
+    }
+    if (editingPeriod) {
+      const idx=vacations.indexOf(editingPeriod);
+      if(idx>=0) vacations.splice(idx,1);
     }
     const set=daysFor(id);
     for(let d=start,n=0;d<=end && n<366;d=shift(d,1),n++) set.add(d);
