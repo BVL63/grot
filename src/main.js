@@ -229,7 +229,7 @@ function render() {
   const dialog = document.querySelector('#editor');
   const driverCard=document.querySelector('#driver-card');
   let currentDriver=drivers[0].id;
-  let rangeMonth=selectedMonth, rangeStep=0, draftPeriods=[];
+  let rangeMonth=selectedMonth, rangeStep=0, draftPeriods=[], selectedDraft=-1, changingDraft=-1;
   function openEditor(id, period=null, fromCard=false) {
     editingPeriod=period;
     document.querySelector('#editor-title').textContent=fromCard?'Отпуска: '+drivers.find(d=>d.id===id).name:(period?'Изменить период отпуска':'Выбор периодов отпуска');
@@ -238,7 +238,7 @@ function render() {
     document.querySelector('#person').closest('label').hidden=Boolean(period) || fromCard;
     document.querySelector('#start').value=period?period.start:'';
     document.querySelector('#end').value=period?period.end:'';
-    rangeStep=0;
+    rangeStep=0;selectedDraft=-1;changingDraft=-1;
     draftPeriods=period?[{start:period.start,end:period.end}]:periodsFor(id).map(p=>({start:p.start,end:p.end}));
     document.querySelector('#start').value='';document.querySelector('#end').value='';
     drawRangeCalendar();
@@ -304,19 +304,23 @@ function render() {
     }
     document.querySelector('#range-calendar').innerHTML=html;
     document.querySelector('#range-selected').textContent=start?'Начало: '+displayDate(start)+' · Выберите окончание':'Выберите начало следующего периода';
-    document.querySelector('#range-periods').innerHTML=draftPeriods.map((p,i)=>'<div class="draft-period"><span>'+(i+1)+'. '+displayDate(p.start)+' — '+displayDate(p.end)+' · '+leaveDays(p.start,p.end)+' дн.</span><button type="button" data-draft-remove="'+i+'">Убрать</button></div>').join('');
+    document.querySelector('#range-periods').innerHTML=draftPeriods.map((p,i)=>'<div class="draft-period '+(selectedDraft===i?'draft-selected':'')+'"><span>'+(i+1)+'. '+displayDate(p.start)+' — '+displayDate(p.end)+' · '+leaveDays(p.start,p.end)+' дн.</span><button type="button" data-draft-edit="'+i+'">Изменить</button><button type="button" data-draft-remove="'+i+'">Удалить</button></div>').join('');
+    document.querySelectorAll('[data-draft-edit]').forEach(b=>b.onclick=()=>{selectedDraft=Number(b.dataset.draftEdit);changingDraft=selectedDraft;rangeStep=0;document.querySelector('#start').value='';document.querySelector('#end').value='';drawRangeCalendar();updateCount();});
+    document.querySelectorAll('[data-draft-remove]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.draftRemove);draftPeriods.splice(i,1);selectedDraft=-1;changingDraft=-1;rangeStep=0;drawRangeCalendar();updateCount();});
     document.querySelectorAll('[data-draft-remove]').forEach(b=>b.onclick=()=>{draftPeriods.splice(Number(b.dataset.draftRemove),1);drawRangeCalendar();updateCount();});
-    document.querySelector('#range-hint').textContent=rangeStep===1?'Выберите окончание текущего периода.':'Выберите начало и конец периода. Повторите для остальных частей отпуска.';
+    document.querySelector('#range-hint').textContent=rangeStep===1?'Выберите окончание периода.':changingDraft>=0?'Выбран период №'+(changingDraft+1)+'. Нажмите новые начало и окончание.':'Нажмите на зелёный период для изменения или выберите даты нового периода.';
     document.querySelectorAll('[data-range-date]').forEach(b=>b.onclick=()=>{
       const date=b.dataset.rangeDate;
+      if(rangeStep!==1 && changingDraft<0){const found=draftPeriods.findIndex(p=>date>=p.start&&date<=p.end);if(found>=0){selectedDraft=found;changingDraft=found;drawRangeCalendar();updateCount();return;}}
       if(rangeStep!==1){document.querySelector('#start').value=date;document.querySelector('#end').value='';rangeStep=1;}
       else {
         const a=document.querySelector('#start').value;
         document.querySelector('#start').value=date<a?date:a;
         document.querySelector('#end').value=date<a?a:date;
         const proposed={start:document.querySelector('#start').value,end:document.querySelector('#end').value};
-        if(draftPeriods.some(p=>proposed.start<=p.end&&proposed.end>=p.start)){document.querySelector('#form-error').textContent='Периоды не должны пересекаться.';return;}
-        draftPeriods.push(proposed);
+        if(draftPeriods.some((p,i)=>i!==changingDraft&&proposed.start<=p.end&&proposed.end>=p.start)){document.querySelector('#form-error').textContent='Периоды не должны пересекаться.';return;}
+        if(changingDraft>=0)draftPeriods[changingDraft]=proposed;else draftPeriods.push(proposed);
+        changingDraft=-1;selectedDraft=-1;
         document.querySelector('#start').value='';document.querySelector('#end').value='';
         rangeStep=0;
       }
@@ -327,7 +331,7 @@ function render() {
   document.querySelector('#vacation-form').onsubmit=e=>{
     e.preventDefault();
     const id=Number(document.querySelector('#person').value);
-    if(rangeStep===1||!draftPeriods.length){document.querySelector('#form-error').textContent='Завершите выбор периода.';return;}
+    if(rangeStep===1||changingDraft>=0||!draftPeriods.length){document.querySelector('#form-error').textContent='Завершите выбор периода.';return;}
     const original=periodsFor(id);
     const proposed=editingPeriod?original.filter(p=>p!==editingPeriod).concat(draftPeriods):draftPeriods;
     const sorted=[...proposed].sort((x,y)=>x.start.localeCompare(y.start));
