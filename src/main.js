@@ -139,13 +139,14 @@ function render() {
     <dialog id="editor"><form id="vacation-form">
       <h2 id="editor-title">Добавить период отпуска</h2>
       <label>Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
-      <p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
-      <p id="range-hint">Выберите начало отпуска, затем окончание.</p>
-      <div id="range-calendar" class="range-calendar"></div><div id="range-selected"></div><div id="range-periods"></div>
+      <div class="editor-top"><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
+      <p id="range-hint">Выберите начало отпуска, затем окончание.</p></div>
+      <div class="editor-calendar-scroll"><div id="range-calendar" class="range-calendar"></div></div>
+      <div class="editor-bottom"><div id="range-selected"></div><div id="range-periods"></div>
       <input id="start" type="hidden"><input id="end" type="hidden">
       <div id="day-count" class="day-count" aria-live="polite"></div><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
       <p id="form-error" role="alert"></p>
-      <div class="actions"><button type="button" id="cancel">Отмена</button><button type="submit">Сохранить</button></div>
+      <div class="actions"><button type="button" id="cancel">Отмена</button><button type="submit">Сохранить</button></div></div>
     </form></dialog>
     <dialog id="calendar-dialog"><h2>Производственный календарь — 2027</h2>
       <p>CSV с колонками date;type. Дата в формате ГГГГ-ММ-ДД; тип holiday (праздник), weekend (выходной), workday (рабочий).</p>
