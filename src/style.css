@@ -126,3 +126,11 @@ dialog input,dialog select { width:100%; }
 #filter-options{max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
 .filter-option{display:flex;align-items:center;gap:10px;padding:7px 4px;cursor:pointer;}
 .filter-option input{width:19px;height:19px;}
+
+/* Fix sticky filter headers: fixed column widths prevent overlap on iPad */
+.annual-table .name{left:0;width:205px;min-width:205px;max-width:205px;}
+.annual-table .group{left:205px;width:105px;min-width:105px;max-width:105px;}
+.annual-table thead .fixed{z-index:6;overflow:visible;}
+.annual-table .header-filter{display:flex;align-items:center;justify-content:space-between;width:100%;min-width:0;gap:6px;}
+.annual-table .header-filter .filter-trigger{display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;min-width:28px;height:28px;padding:0;line-height:1;visibility:visible;opacity:1;}
+.annual-table .driver{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
