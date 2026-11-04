@@ -141,7 +141,7 @@ function render() {
       <label>Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
       <p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
       <p id="range-hint">Выберите начало отпуска, затем окончание.</p>
-      <div id="range-calendar" class="range-calendar"></div><div id="range-selected"></div>
+      <div id="range-calendar" class="range-calendar"></div><div id="range-selected"></div><div id="range-periods"></div>
       <input id="start" type="hidden"><input id="end" type="hidden">
       <div id="day-count" class="day-count" aria-live="polite"></div><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
       <p id="form-error" role="alert"></p>
@@ -228,7 +228,7 @@ function render() {
   const dialog = document.querySelector('#editor');
   const driverCard=document.querySelector('#driver-card');
   let currentDriver=drivers[0].id;
-  let rangeMonth=selectedMonth, rangeStep=0;
+  let rangeMonth=selectedMonth, rangeStep=0, draftPeriods=[];
   function openEditor(id, period=null, fromCard=false) {
     editingPeriod=period;
     document.querySelector('#editor-title').textContent=period?'Изменить период отпуска':'Добавить период отпуска';
@@ -237,7 +237,9 @@ function render() {
     document.querySelector('#person').closest('label').hidden=Boolean(period) || fromCard;
     document.querySelector('#start').value=period?period.start:'';
     document.querySelector('#end').value=period?period.end:'';
-    rangeStep=period?2:0;
+    rangeStep=0;
+    draftPeriods=period?[{start:period.start,end:period.end}]:periodsFor(id).map(p=>({start:p.start,end:p.end}));
+    document.querySelector('#start').value='';document.querySelector('#end').value='';
     drawRangeCalendar();
     document.querySelector('#form-error').textContent='';
 
@@ -268,16 +270,20 @@ function render() {
     driverCard.showModal();
   }
   document.querySelector('#period').onclick=()=>openEditor(drivers[0].id);
+  document.querySelector('#person').onchange=()=>{draftPeriods=periodsFor(Number(document.querySelector('#person').value)).map(p=>({start:p.start,end:p.end}));rangeStep=0;drawRangeCalendar();updateCount();};
   document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>showDriver(Number(el.dataset.driver)));
   document.querySelector('#driver-close').onclick=()=>driverCard.close();
   document.querySelector('#driver-add').onclick=()=>{driverCard.close();openEditor(currentDriver,null,true);};
   function updateCount() {
-    const start=document.querySelector('#start').value, end=document.querySelector('#end').value;
-    const out=document.querySelector('#day-count');
-    if (!start || !end || end<start) { out.textContent='Выберите начало и окончание отпуска'; return; }
-    const total=calendarDays({start,end});
-    const leave=leaveDays(start,end);
-    out.textContent='Дней в периоде: '+total+'. Дней оплачиваемого отпуска: '+leave+(total!==leave?' (праздники: '+(total-leave)+')':'')+'.';
+    const id=Number(document.querySelector('#person').value);
+    const driver=drivers.find(d=>d.id===id);
+    const existing=editingPeriod?periodsFor(id).filter(p=>p!==editingPeriod):[];
+    const combined=editingPeriod?existing.concat(draftPeriods):draftPeriods;
+    const planned=combined.reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
+    const remain=(driver?.allowance||36)-planned;
+    document.querySelector('#day-count').textContent='Положено: '+(driver?.allowance||36)+' · Запланировано: '+planned+' · Осталось: '+remain+' дн.';
+    document.querySelector('#form-error').textContent=remain<0?'Превышена продолжительность отпуска. Уменьшите периоды.':'';
+    document.querySelector('#vacation-form button[type="submit"]').disabled=remain<0||!draftPeriods.length;
   }
   function drawRangeCalendar() {
     const start=document.querySelector('#start').value,end=document.querySelector('#end').value;
@@ -290,14 +296,16 @@ function render() {
       for(let i=0;i<offset;i++) cells+='<span></span>';
       for(let i=1;i<=count;i++){
         const date='2027-'+String(month+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
-        const selected=start&&end?date>=start&&date<=end:date===start;
+        const selected=draftPeriods.some(p=>date>=p.start&&date<=p.end)||(start&&end?date>=start&&date<=end:date===start);
         cells+='<button type="button" data-range-date="'+date+'" class="'+(selected?'range-active ':'')+(dayType(date)==='holiday'?'range-holiday':dayType(date)==='weekend'?'range-weekend':'')+'">'+i+'</button>';
       }
       html+='<section class="range-month"><h3>'+months[month]+'</h3><div class="range-month-days">'+cells+'</div></section>';
     }
     document.querySelector('#range-calendar').innerHTML=html;
-    document.querySelector('#range-selected').textContent=start?'Начало: '+displayDate(start)+(end?' · Окончание: '+displayDate(end):' · Выберите окончание'):'Выберите дату начала';
-    document.querySelector('#range-hint').textContent=rangeStep===1?'Теперь выберите дату окончания в любом месяце.':'Первое нажатие — начало, второе — окончание. Для нового выбора нажмите ещё раз.';
+    document.querySelector('#range-selected').textContent=start?'Начало: '+displayDate(start)+' · Выберите окончание':'Выберите начало следующего периода';
+    document.querySelector('#range-periods').innerHTML=draftPeriods.map((p,i)=>'<div class="draft-period"><span>'+(i+1)+'. '+displayDate(p.start)+' — '+displayDate(p.end)+' · '+leaveDays(p.start,p.end)+' дн.</span><button type="button" data-draft-remove="'+i+'">Убрать</button></div>').join('');
+    document.querySelectorAll('[data-draft-remove]').forEach(b=>b.onclick=()=>{draftPeriods.splice(Number(b.dataset.draftRemove),1);drawRangeCalendar();updateCount();});
+    document.querySelector('#range-hint').textContent=rangeStep===1?'Выберите окончание текущего периода.':'Выберите начало и конец периода. Повторите для остальных частей отпуска.';
     document.querySelectorAll('[data-range-date]').forEach(b=>b.onclick=()=>{
       const date=b.dataset.rangeDate;
       if(rangeStep!==1){document.querySelector('#start').value=date;document.querySelector('#end').value='';rangeStep=1;}
@@ -305,7 +313,11 @@ function render() {
         const a=document.querySelector('#start').value;
         document.querySelector('#start').value=date<a?date:a;
         document.querySelector('#end').value=date<a?a:date;
-        rangeStep=2;
+        const proposed={start:document.querySelector('#start').value,end:document.querySelector('#end').value};
+        if(draftPeriods.some(p=>proposed.start<=p.end&&proposed.end>=p.start)){document.querySelector('#form-error').textContent='Периоды не должны пересекаться.';return;}
+        draftPeriods.push(proposed);
+        document.querySelector('#start').value='';document.querySelector('#end').value='';
+        rangeStep=0;
       }
       drawRangeCalendar();updateCount();
     });
@@ -314,18 +326,15 @@ function render() {
   document.querySelector('#vacation-form').onsubmit=e=>{
     e.preventDefault();
     const id=Number(document.querySelector('#person').value);
-    const start=document.querySelector('#start').value, end=document.querySelector('#end').value;
-    if (!start.startsWith('2027-') || !end.startsWith('2027-') || start>end) {
-      document.querySelector('#form-error').textContent='Проверьте даты: начало должно быть не позже окончания, обе даты — в 2027 году.';
-      return;
-    }
-    if (editingPeriod) {
-      const idx=vacations.indexOf(editingPeriod);
-      if(idx>=0) vacations.splice(idx,1);
-    }
-    const set=daysFor(id);
-    for(let d=start,n=0;d<=end && n<366;d=shift(d,1),n++) set.add(d);
-    replaceDays(id,set);
+    if(rangeStep===1||!draftPeriods.length){document.querySelector('#form-error').textContent='Завершите выбор периода.';return;}
+    const original=periodsFor(id);
+    const proposed=editingPeriod?original.filter(p=>p!==editingPeriod).concat(draftPeriods):draftPeriods;
+    const sorted=[...proposed].sort((x,y)=>x.start.localeCompare(y.start));
+    if(sorted.some((p,i)=>i>0&&p.start<=sorted[i-1].end)){document.querySelector('#form-error').textContent='Периоды пересекаются.';return;}
+    const driver=drivers.find(d=>d.id===id);
+    if(sorted.reduce((n,p)=>n+leaveDays(p.start,p.end),0)>driver.allowance){document.querySelector('#form-error').textContent='Превышена норма отпуска.';return;}
+    vacations=vacations.filter(v=>Number(v.driverId)!==id).concat(sorted.map(p=>({driverId:id,start:p.start,end:p.end})));
+    store();
     notice='Период отпуска сохранён.';
     dialog.close();
     render();
