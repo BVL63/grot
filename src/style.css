@@ -77,3 +77,6 @@ dialog input,dialog select { width:100%; }
 .range-month-days .range-active { background:#16a34a; color:white; font-weight:bold; }
 @media(max-width:800px){ #range-calendar.range-calendar { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:540px){ #range-calendar.range-calendar { grid-template-columns:1fr; } }
+
+.draft-period { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #d5dee7; }
+.draft-period button { padding:5px 9px; }
