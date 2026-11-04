@@ -55,3 +55,11 @@ dialog input,dialog select { width:100%; }
 
 /* Центр числа дней в промежутке между концом дат и кнопкой «Изменить» */
 .period-row .period-days { transform:translateX(-25px); }
+
+.range-calendar { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; margin:10px 0; }
+.range-calendar button { min-width:0; padding:9px 0; border-radius:6px; }
+.range-weekday { text-align:center; font-weight:bold; font-size:13px; padding:5px 0; }
+.range-calendar .range-weekend { background:#edf0f5; }
+.range-calendar .range-holiday { color:#b91c1c; background:#fff0f0; }
+.range-calendar .range-active { background:#176b9a; color:white; }
+#range-selected { font-weight:600; margin:12px 0; }
