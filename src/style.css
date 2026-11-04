@@ -80,3 +80,24 @@ dialog input,dialog select { width:100%; }
 
 .draft-period { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #d5dee7; }
 .draft-period button { padding:5px 9px; }
+
+/* Неподвижные верх и низ формы; прокручиваются только месяцы */
+#editor { padding:0; overflow:hidden; height:min(92vh,1000px); }
+#editor #vacation-form { display:flex; flex-direction:column; height:100%; min-height:0; }
+#editor h2 { flex:none; margin:0; padding:18px 22px 0; }
+#editor #vacation-form > label { flex:none; margin:8px 22px; }
+#editor .editor-top { flex:none; padding:0 22px 8px; }
+#editor .editor-top p { margin:8px 0; }
+#editor .editor-calendar-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:0 22px 12px; }
+#editor .editor-bottom { flex:none; border-top:1px solid #d5dee7; background:white; padding:8px 22px 16px; max-height:34%; overflow-y:auto; }
+#editor .editor-bottom .actions { margin-top:8px; }
+#editor .editor-bottom #range-selected { margin:4px 0; }
+#editor .editor-bottom .day-count { margin-top:6px; }
+#editor .range-month h3 { text-align:center; }
+@media(max-width:540px) {
+  #editor h2 { padding:14px 14px 0; }
+  #editor #vacation-form > label { margin:6px 14px; }
+  #editor .editor-top { padding:0 14px 6px; }
+  #editor .editor-calendar-scroll { padding:0 14px 10px; }
+  #editor .editor-bottom { padding:8px 14px 12px; max-height:40%; }
+}
