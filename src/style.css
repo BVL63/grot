@@ -19,3 +19,34 @@ button, select, input {
   font-size: 16px;
   padding: 8px;
 }
+.scroll {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+table {
+  border-collapse: collapse;
+  width: max-content;
+}
+
+th, td {
+  border: 1px solid #cbd5e1;
+  padding: 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+td[data-date] {
+  cursor: pointer;
+  min-width: 28px;
+}
+
+td.vacation {
+  background: #16a34a;
+  color: white;
+  font-weight: bold;
+}
+
+td[data-date]:active {
+  background: #86efac;
+}
