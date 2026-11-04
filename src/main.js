@@ -16,7 +16,7 @@ function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;',
 const key = 'vacations2027';
 let selectedMonth = 0;
 const expandedMonths = new Set();
-let filterDriver='all',filterGroup='all';
+let selectedDriverIds=null,selectedGroups=null;
 let vacations;
 try {
   const saved = JSON.parse(localStorage.getItem(key) || '[]');
@@ -108,7 +108,7 @@ function render() {
   const monthlyCount=(set,m)=>{let n=0;for(let d=1;d<=monthDays(m);d++){const date=dateOf(m,d);if(set.has(date)&&dayType(date)!=='holiday')n++;}return n;};
   const columns=months.flatMap((_,m)=>expandedMonths.has(m)?Array.from({length:monthDays(m)},(_,i)=>({m,day:i+1})): [{m,day:0}]);
   const headings=columns.map(c=>'<th class="'+(c.day?'day-heading':'month-heading')+'"><button type="button" data-month="'+c.m+'" title="'+(expandedMonths.has(c.m)?'Свернуть ':'Развернуть ')+months[c.m]+'">'+(c.day||months[c.m].slice(0,3))+'</button></th>').join('');
-  const visibleDrivers=drivers.filter(d=>(filterDriver==='all'||String(d.id)===filterDriver)&&(filterGroup==='all'||String(d.group)===filterGroup));
+  const visibleDrivers=drivers.filter(d=>(selectedDriverIds===null||selectedDriverIds.has(String(d.id)))&&(selectedGroups===null||selectedGroups.has(String(d.group))));
   const groups=[...new Set(drivers.map(d=>String(d.group)))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true}));
   const rows=visibleDrivers.map(d=>'<tr><th class="fixed name"><button class="driver" data-driver="'+d.id+'">'+escapeHtml(d.name)+'</button></th><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'—')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'</tr>').join('');
   const totals=columns.map(c=>'<td>'+(c.day?visibleDrivers.filter(d=>sets.get(d.id).has(dateOf(c.m,c.day))).length:visibleDrivers.filter(d=>monthlyCount(sets.get(d.id),c.m)>0).length)+'</td>').join('');
@@ -117,13 +117,15 @@ function render() {
     <main>
       <div class="toolbar"><button id="collapse-month" type="button">Свернуть все месяцы</button>
       <button id="staff-open" type="button">Сотрудники</button><button id="period">Добавить период отпуска</button><button id="help-open" type="button">Справка · Правила отпусков</button><button id="calendar-open" type="button">Производственный календарь</button></div>
-      <div class="table-filters"><label>Водитель <select id="filter-driver"><option value="all">Все водители</option>${drivers.map(d=>`<option value="${d.id}" ${filterDriver===String(d.id)?"selected":""}>${escapeHtml(d.name)}</option>`).join("")}</select></label><label>Группа <select id="filter-group"><option value="all">Все группы</option>${groups.map(g=>`<option value="${escapeHtml(g)}" ${filterGroup===g?"selected":""}>${escapeHtml(g)}</option>`).join("")}</select></label></div>
-      <div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>${headings}</tr></thead>
+      <div class="scroll"><table class="annual-table"><thead><tr>
+      <th class="fixed name"><span class="header-filter">Водитель <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
+      <th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}</tr></thead>
       <tbody>${rows}</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>${totals}</tr></tfoot></table></div>
       <p>Нажмите на название месяца, чтобы развернуть его дни; повторное нажатие свернёт только этот месяц. Можно открыть несколько месяцев одновременно. Нажмите на фамилию для просмотра отпусков.</p>
       <p class="notice" role="status">${notice}</p>
       <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
     </main>
+    <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
     <dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
       <div id="staff-list"></div>
       <form id="staff-form">
@@ -225,8 +227,25 @@ function render() {
   };
   document.querySelector('#help-open').onclick=()=>document.querySelector('#help-dialog').showModal();
   document.querySelector('#help-close').onclick=()=>document.querySelector('#help-dialog').close();
-  document.querySelector('#filter-driver').onchange=e=>{filterDriver=e.target.value;render();};
-  document.querySelector('#filter-group').onchange=e=>{filterGroup=e.target.value;render();};
+  let activeFilter=null;
+  const filterDialog=document.querySelector('#filter-dialog');
+  const getFilterValues=()=>activeFilter==='driver'?drivers.map(d=>({id:String(d.id),label:d.name})):groups.map(g=>({id:g,label:g}));
+  document.querySelectorAll('[data-filter-open]').forEach(b=>b.onclick=()=>{
+    activeFilter=b.dataset.filterOpen;
+    document.querySelector('#filter-title').textContent=activeFilter==='driver'?'Фильтр водителей':'Фильтр групп';
+    const selected=activeFilter==='driver'?selectedDriverIds:selectedGroups;
+    document.querySelector('#filter-options').innerHTML=getFilterValues().map(v=>'<label class="filter-option"><input type="checkbox" value="'+escapeHtml(v.id)+'" '+(selected===null||selected.has(v.id)?'checked':'')+'> '+escapeHtml(v.label)+'</label>').join('');
+    filterDialog.showModal();
+  });
+  document.querySelector('#filter-all').onclick=()=>document.querySelectorAll('#filter-options input').forEach(x=>x.checked=true);
+  document.querySelector('#filter-none').onclick=()=>document.querySelectorAll('#filter-options input').forEach(x=>x.checked=false);
+  document.querySelector('#filter-cancel').onclick=()=>filterDialog.close();
+  document.querySelector('#filter-apply').onclick=()=>{
+    const checked=new Set([...document.querySelectorAll('#filter-options input:checked')].map(x=>x.value));
+    const next=checked.size===getFilterValues().length?null:checked;
+    if(activeFilter==='driver')selectedDriverIds=next;else selectedGroups=next;
+    filterDialog.close();render();
+  };
   document.querySelector('#collapse-month').onclick=()=>{expandedMonths.clear();render();};
   document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();});
   const dialog = document.querySelector('#editor');
