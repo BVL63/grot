@@ -63,3 +63,17 @@ dialog input,dialog select { width:100%; }
 .range-calendar .range-holiday { color:#b91c1c; background:#fff0f0; }
 .range-calendar .range-active { background:#176b9a; color:white; }
 #range-selected { font-weight:600; margin:12px 0; }
+
+/* Годовой календарь в стиле справочника АЛЛО ГАРАЖ */
+#editor { width:min(1040px,calc(100vw - 24px)); max-height:92vh; overflow:auto; }
+#range-calendar.range-calendar { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.range-month { border:1px solid #d0dfed; border-radius:12px; padding:12px; min-width:0; }
+.range-month h3 { margin:0 0 10px; font-size:17px; }
+.range-month-days { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:3px; }
+.range-month-days button { min-width:0; padding:8px 0; border:0; border-radius:5px; background:transparent; }
+.range-month-days .range-weekday { text-align:center; font-size:12px; padding:6px 0; }
+.range-month-days .range-weekend { background:#e3e8ee; color:#a73737; }
+.range-month-days .range-holiday { background:#f6dfe4; color:#a5283e; font-weight:bold; }
+.range-month-days .range-active { background:#16a34a; color:white; font-weight:bold; }
+@media(max-width:800px){ #range-calendar.range-calendar { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:540px){ #range-calendar.range-calendar { grid-template-columns:1fr; } }
