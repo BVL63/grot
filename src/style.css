@@ -32,3 +32,10 @@ dialog input,dialog select { width:100%; }
 .muted { color:#536579; }
 .notice { color:#116a37; }
 #form-error { color:#b91c1c; }
+
+.period-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:10px 0; border-bottom:1px solid #d5dee7; }
+.period-row span { flex:1; min-width:170px; }
+.period-row button { padding:6px 9px; }
+#driver-card { width:min(520px,calc(100vw - 24px)); }
+#driver-card h2 { margin-top:0; }
+.day-count { font-weight:bold; margin-top:10px; }
