@@ -106,11 +106,12 @@ function render() {
   const dialog = document.querySelector('#editor');
   const driverCard=document.querySelector('#driver-card');
   let currentDriver=drivers[0].id;
-  function openEditor(id, period=null) {
+  function openEditor(id, period=null, fromCard=false) {
     editingPeriod=period;
     document.querySelector('#editor-title').textContent=period?'Изменить период отпуска':'Добавить период отпуска';
     document.querySelector('#person').value=String(id);
-    document.querySelector('#person').disabled=Boolean(period);
+    document.querySelector('#person').disabled=Boolean(period) || fromCard;
+    document.querySelector('#person').closest('label').hidden=Boolean(period) || fromCard;
     document.querySelector('#start').value=period?period.start:dateAt(1);
     document.querySelector('#end').value=period?period.end:dateAt(Math.min(14,count));
     document.querySelector('#form-error').textContent='';
@@ -124,7 +125,7 @@ function render() {
     document.querySelector('#period-list').innerHTML=periodList(id);
     document.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>{
       const p=periodsFor(id)[Number(el.dataset.edit)];
-      driverCard.close(); openEditor(id,p);
+      driverCard.close(); openEditor(id,p,true);
     });
     document.querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>{
       const p=periodsFor(id)[Number(el.dataset.remove)];
@@ -138,7 +139,7 @@ function render() {
   document.querySelector('#period').onclick=()=>openEditor(drivers[0].id);
   document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>showDriver(Number(el.dataset.driver)));
   document.querySelector('#driver-close').onclick=()=>driverCard.close();
-  document.querySelector('#driver-add').onclick=()=>{driverCard.close();openEditor(currentDriver);};
+  document.querySelector('#driver-add').onclick=()=>{driverCard.close();openEditor(currentDriver,null,true);};
   function updateCount() {
     const start=document.querySelector('#start').value, end=document.querySelector('#end').value;
     const out=document.querySelector('#day-count');
