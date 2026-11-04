@@ -115,6 +115,7 @@ function render() {
     document.querySelector('#start').value=period?period.start:dateAt(1);
     document.querySelector('#end').value=period?period.end:dateAt(Math.min(14,count));
     document.querySelector('#form-error').textContent='';
+    document.querySelector('#end').min=document.querySelector('#start').value;
     updateCount();
     dialog.showModal();
   }
@@ -147,7 +148,16 @@ function render() {
     const total=Math.round((Date.parse(end+'T12:00:00Z')-Date.parse(start+'T12:00:00Z'))/86400000)+1;
     out.textContent='Календарных дней: '+total+'. Дни отпуска с учётом праздников будут рассчитаны после подключения производственного календаря.';
   }
-  document.querySelector('#start').addEventListener('change',updateCount);
+  document.querySelector('#start').addEventListener('change',()=>{
+    const startInput=document.querySelector('#start');
+    const endInput=document.querySelector('#end');
+    if (!startInput.value) return updateCount();
+    if (!editingPeriod || !endInput.value || endInput.value < startInput.value) {
+      endInput.value=startInput.value;
+    }
+    endInput.min=startInput.value;
+    updateCount();
+  });
   document.querySelector('#end').addEventListener('change',updateCount);
   document.querySelector('#cancel').onclick=()=>dialog.close();
   document.querySelector('#vacation-form').onsubmit=e=>{
