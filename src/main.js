@@ -139,8 +139,10 @@ function render() {
     <dialog id="editor"><form id="vacation-form">
       <h2 id="editor-title">Добавить период отпуска</h2>
       <label>Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
-      <label>Начало <input id="start" type="date" min="2027-01-01" max="2027-12-31" required></label>
-      <label>Окончание <input id="end" type="date" min="2027-01-01" max="2027-12-31" required></label>
+      <label>Месяц <select id="range-month">${months.map((m,i)=>`<option value="${i}">${m}</option>`).join('')}</select></label>
+      <p id="range-hint">Выберите начало отпуска, затем окончание.</p>
+      <div id="range-calendar" class="range-calendar"></div><div id="range-selected"></div>
+      <input id="start" type="hidden"><input id="end" type="hidden">
       <div id="day-count" class="day-count" aria-live="polite"></div><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
       <p id="form-error" role="alert"></p>
       <div class="actions"><button type="button" id="cancel">Отмена</button><button type="submit">Сохранить</button></div>
@@ -226,16 +228,21 @@ function render() {
   const dialog = document.querySelector('#editor');
   const driverCard=document.querySelector('#driver-card');
   let currentDriver=drivers[0].id;
+  let rangeMonth=selectedMonth, rangeStep=0;
   function openEditor(id, period=null, fromCard=false) {
     editingPeriod=period;
     document.querySelector('#editor-title').textContent=period?'Изменить период отпуска':'Добавить период отпуска';
     document.querySelector('#person').value=String(id);
     document.querySelector('#person').disabled=Boolean(period) || fromCard;
     document.querySelector('#person').closest('label').hidden=Boolean(period) || fromCard;
-    document.querySelector('#start').value=period?period.start:dateAt(1);
-    document.querySelector('#end').value=period?period.end:dateAt(Math.min(14,count));
+    document.querySelector('#start').value=period?period.start:'';
+    document.querySelector('#end').value=period?period.end:'';
+    rangeMonth=period?Number(period.start.slice(5,7))-1:selectedMonth;
+    rangeStep=period?2:0;
+    document.querySelector('#range-month').value=String(rangeMonth);
+    drawRangeCalendar();
     document.querySelector('#form-error').textContent='';
-    document.querySelector('#end').min=document.querySelector('#start').value;
+
     updateCount();
     dialog.showModal();
   }
@@ -269,22 +276,38 @@ function render() {
   function updateCount() {
     const start=document.querySelector('#start').value, end=document.querySelector('#end').value;
     const out=document.querySelector('#day-count');
-    if (!start || !end || end<start) { out.textContent='Проверьте даты периода'; return; }
+    if (!start || !end || end<start) { out.textContent='Выберите начало и окончание отпуска'; return; }
     const total=calendarDays({start,end});
     const leave=leaveDays(start,end);
     out.textContent='Дней в периоде: '+total+'. Дней оплачиваемого отпуска: '+leave+(total!==leave?' (праздники: '+(total-leave)+')':'')+'.';
   }
-  document.querySelector('#start').addEventListener('change',()=>{
-    const startInput=document.querySelector('#start');
-    const endInput=document.querySelector('#end');
-    if (!startInput.value) return updateCount();
-    if (!editingPeriod || !endInput.value || endInput.value < startInput.value) {
-      endInput.value=startInput.value;
+  function drawRangeCalendar() {
+    const start=document.querySelector('#start').value,end=document.querySelector('#end').value;
+    const first=new Date(Date.UTC(2027,rangeMonth,1)).getUTCDay(),offset=(first+6)%7;
+    const count=new Date(Date.UTC(2027,rangeMonth+1,0)).getUTCDate();
+    let html=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(x=>'<span class="range-weekday">'+x+'</span>').join('');
+    for(let i=0;i<offset;i++)html+='<span></span>';
+    for(let i=1;i<=count;i++){
+      const date='2027-'+String(rangeMonth+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
+      const selected=start&&end?date>=start&&date<=end:date===start;
+      html+='<button type="button" data-range-date="'+date+'" class="'+(selected?'range-active ':'')+(dayType(date)==='holiday'?'range-holiday':dayType(date)==='weekend'?'range-weekend':'')+'">'+i+'</button>';
     }
-    endInput.min=startInput.value;
-    updateCount();
-  });
-  document.querySelector('#end').addEventListener('change',updateCount);
+    document.querySelector('#range-calendar').innerHTML=html;
+    document.querySelector('#range-selected').textContent=start?'Начало: '+displayDate(start)+(end?' · Окончание: '+displayDate(end):' · Выберите окончание'):'Выберите дату начала';
+    document.querySelector('#range-hint').textContent=rangeStep===1?'Теперь выберите дату окончания (можно в другом месяце).':'Первое нажатие — начало, второе — окончание. Для нового выбора нажмите ещё раз.';
+    document.querySelectorAll('[data-range-date]').forEach(b=>b.onclick=()=>{
+      const date=b.dataset.rangeDate;
+      if(rangeStep!==1){document.querySelector('#start').value=date;document.querySelector('#end').value='';rangeStep=1;}
+      else {
+        const a=document.querySelector('#start').value;
+        document.querySelector('#start').value=date<a?date:a;
+        document.querySelector('#end').value=date<a?a:date;
+        rangeStep=2;
+      }
+      drawRangeCalendar();updateCount();
+    });
+  }
+  document.querySelector('#range-month').onchange=e=>{rangeMonth=Number(e.target.value);drawRangeCalendar();};
   document.querySelector('#cancel').onclick=()=>dialog.close();
   document.querySelector('#vacation-form').onsubmit=e=>{
     e.preventDefault();
