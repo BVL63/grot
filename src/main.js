@@ -217,7 +217,7 @@ function render() {
         if(!d||!Number.isSafeInteger(d.id)||d.id<1||typeof d.name!=='string'||!d.name.trim()||typeof d.group!=='string'||!d.group.trim()||!Number.isInteger(Number(d.allowance))||Number(d.allowance)<1||Number(d.allowance)>120||ids.has(d.id))throw Error('Ошибка в справочнике сотрудников.');
         ids.add(d.id);
       }
-      const validDate=x=>typeof x==='string'&&/^2027-\\d{2}-\\d{2}$/.test(x)&&!Number.isNaN(Date.parse(x+'T12:00:00Z'))&&new Date(x+'T12:00:00Z').toISOString().slice(0,10)===x;
+      const validDate=x=>typeof x==='string'&&/^2027-\d{2}-\d{2}$/.test(x)&&!Number.isNaN(Date.parse(x+'T12:00:00Z'))&&new Date(x+'T12:00:00Z').toISOString().slice(0,10)===x;
       for(const p of data.vacations){
         if(!p||!ids.has(Number(p.driverId))||!validDate(p.start)||!validDate(p.end)||p.end<p.start)throw Error('Ошибка в периодах отпусков.');
       }
