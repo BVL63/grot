@@ -248,3 +248,12 @@ dialog input,dialog select { width:100%; }
 .staff-table .staff-name-link{border:0;background:transparent;color:#174e76;text-align:left;font-weight:600;cursor:pointer;}
 #staff-card form label{display:block;margin:10px 0;}
 #staff-card form label input{display:block;width:100%;box-sizing:border-box;margin-top:5px;}
+
+/* Approved GROT identity: compact header with original logo */
+.grot-header{display:flex;align-items:center;gap:14px;padding:9px 20px;background:#0b1b3a;min-height:88px;}
+.grot-header-logo{width:132px;height:74px;object-fit:cover;object-position:center;border-radius:5px;flex:none;}
+.grot-header-text{min-width:0;}
+.grot-header h1{margin:0 0 5px;font-size:25px;line-height:1.2;color:#e5faf9;}
+.grot-header h1 span{font-size:19px;font-weight:500;}
+.grot-header p{margin:0;font-size:13px;color:#c8e4e8;}
+@media(max-width:600px){.grot-header{gap:9px;padding:8px 12px;min-height:70px}.grot-header-logo{width:88px;height:54px}.grot-header h1{font-size:19px}.grot-header h1 span{font-size:14px}.grot-header p{font-size:11px}}
