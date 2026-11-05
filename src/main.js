@@ -169,7 +169,7 @@ function render() {
       <div class="actions"><button type="button" id="help-close">Закрыть</button></div></dialog>
     <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div id="period-total" class="day-count"></div><div id="split-rule"></div><div class="actions"><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
   function drawStaff(){
-    document.querySelector('#staff-list').innerHTML=drivers.map(d=>'<div class="period-row"><span>'+escapeHtml(d.name)+' · '+escapeHtml(d.group)+' · '+d.allowance+' дн.</span><button type="button" data-staff="'+d.id+'">Изменить</button></div>').join('');
+    document.querySelector('#staff-list').innerHTML=drivers.map(d=>'<div class="period-row"><span>'+escapeHtml(d.name)+' · '+escapeHtml(d.group)+' · '+d.allowance+' дн.</span><button type="button" data-staff="'+d.id+'">Изменить</button><button type="button" data-staff-delete="'+d.id+'">Удалить</button></div>').join('');
     document.querySelectorAll('[data-staff]').forEach(b=>b.onclick=()=>{
       const d=drivers.find(x=>x.id===Number(b.dataset.staff));
       document.querySelector('#staff-id').value=d.id;
@@ -179,9 +179,27 @@ function render() {
       document.querySelector('#staff-allowance').value=d.allowance;
     });
   }
+  document.querySelector('#staff-list').addEventListener('click',e=>{
+    const button=e.target.closest('[data-staff-delete]');
+    if(!button)return;
+    const id=Number(button.dataset.staffDelete);
+    const d=drivers.find(x=>x.id===id);
+    if(!d)return;
+    if(drivers.length<=1){alert('Нельзя удалить последнего сотрудника. Сначала добавьте другого.');return;}
+    const count=periodsFor(id).length;
+    if(!confirm('Удалить сотрудника «'+d.name+'» и его периоды отпуска ('+count+')? Это действие нельзя отменить.'))return;
+    drivers=drivers.filter(x=>x.id!==id);
+    vacations=vacations.filter(v=>Number(v.driverId)!==id);
+    saveStaff();store();
+    if(selectedDriverIds!==null)selectedDriverIds.delete(String(id));
+    document.querySelector('#staff-id').value='';
+    document.querySelector('#staff-form').reset();
+    notice='Сотрудник и его отпуска удалены.';
+    document.querySelector('#staff-dialog').close();render();
+  });
   document.querySelector('#staff-open').onclick=()=>{drawStaff();document.querySelector('#staff-dialog').showModal();};
   document.querySelector('#staff-close').onclick=()=>document.querySelector('#staff-dialog').close();
-  document.querySelector('#staff-reset').onclick=()=>document.querySelector('#staff-form').reset();
+  document.querySelector('#staff-reset').onclick=()=>{document.querySelector('#staff-form').reset();document.querySelector('#staff-id').value='';};
   document.querySelector('#staff-form').onsubmit=e=>{
     e.preventDefault();
     const id=Number(document.querySelector('#staff-id').value);
