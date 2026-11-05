@@ -128,9 +128,9 @@ function personnelPrint(){
  const w=window.open('','_blank');if(!w){alert('Разрешите всплывающие окна для печати.');return}w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),300);
 }
 function showDriverHistory(name){
- const surname=String(name||'').trim().split(/\\s+/)[0].toLocaleLowerCase('ru');
+ const surname=String(name||'').trim().split(/\s+/)[0].toLocaleLowerCase('ru');
  const matches=drivers.filter(d=>staffParts(d).last.toLocaleLowerCase('ru')===surname);
- const entries=loadHistory().filter(p=>String(p.driver||'').trim().split(/\\s+/)[0].toLocaleLowerCase('ru')===surname);
+ const entries=loadHistory().filter(p=>String(p.driver||'').trim().split(/\s+/)[0].toLocaleLowerCase('ru')===surname);
  const current=matches.flatMap(d=>periodsFor(Number(d.id)).map(p=>({...p,year:2027})));
  const all=[...entries.map(p=>({...p,year:Number(p.year)||2026})),...current].filter(p=>p.start&&p.end);
  const years=[...new Set(all.map(p=>Number(p.year)))].sort((a,b)=>b-a);
