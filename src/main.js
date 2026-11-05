@@ -117,7 +117,7 @@ function render() {
     <header><h1>График отпусков — 2027</h1><p>Планирование отпусков водителей</p></header>
     <main>
       <div class="toolbar"><button id="collapse-month" type="button">Свернуть все месяцы</button>
-      <button id="staff-open" type="button">Сотрудники</button><button id="period">Добавить период отпуска</button><button id="help-open" type="button">Справка · Правила отпусков</button><button id="calendar-open" type="button">Производственный календарь</button></div>
+      <button id="staff-open" type="button">Сотрудники</button><button type="button" id="backup-export">Резервная копия</button><button type="button" id="backup-restore">Восстановить</button><input type="file" id="backup-file" accept=".json,application/json" hidden><button id="period">Добавить период отпуска</button><button id="help-open" type="button">Справка · Правила отпусков</button><button id="calendar-open" type="button">Производственный календарь</button></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name"><span class="header-filter">Водитель <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
       <th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}<th class="annual-total-heading">Всего дней</th></tr></thead>
