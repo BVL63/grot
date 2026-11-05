@@ -1,0 +1,18 @@
+{
+  "name": "ГРОТ — График отпусков",
+  "short_name": "ГРОТ",
+  "description": "График отпусков водителей",
+  "start_url": "/grot/",
+  "scope": "/grot/",
+  "display": "standalone",
+  "background_color": "#0b1b3a",
+  "theme_color": "#0b1b3a",
+  "icons": [
+    {
+      "src": "/grot/1EC9F8D3-2C2F-4BCC-A89E-6C623087B96F.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
