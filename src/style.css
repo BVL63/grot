@@ -156,3 +156,7 @@ dialog input,dialog select { width:100%; }
 #editor .period-choice:not(:disabled):hover,#editor .draft-selected .period-choice{background:#dceef8;}
 #editor .editor-bottom .day-count,#editor .editor-bottom .actions{flex:none;}
 @media(max-width:540px){#editor .period-scroll{max-height:120px;}#editor .editor-bottom{max-height:40%;}}
+
+.annual-table .annual-total-heading{min-width:105px;background:#d6e7f5;font-weight:700;}
+.annual-table .annual-total{min-width:105px;background:#eef6fc;font-weight:700;text-align:center;}
+.annual-table tfoot .annual-total{background:#dceaf3;}
