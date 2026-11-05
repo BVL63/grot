@@ -139,8 +139,8 @@ function render() {
       </form>
     </dialog>
     <dialog id="editor"><form id="vacation-form">
-      <h2 id="editor-title">Добавить период отпуска</h2>
-      <label>Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
+      <div class="editor-header"><h2 id="editor-title">Отпуска 2027</h2></div>
+      <label class="editor-person-label">Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
       <div class="editor-top"><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить период</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button></div><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
       <p id="range-hint">Выберите начало отпуска, затем окончание.</p></div>
       <div class="editor-calendar-scroll"><div id="range-calendar" class="range-calendar"></div></div>
@@ -254,7 +254,7 @@ function render() {
   let rangeMonth=selectedMonth, rangeStep=0, draftPeriods=[], selectedDraft=-1, changingDraft=-1, editorMode="view";
   function openEditor(id, period=null, fromCard=false) {
     editingPeriod=period;
-    document.querySelector('#editor-title').textContent=fromCard?'Отпуска: '+drivers.find(d=>d.id===id).name:(period?'Изменить период отпуска':'Выбор периодов отпуска');
+    document.querySelector('#editor-title').textContent=drivers.find(d=>d.id===id).name+' — отпуска 2027';
     document.querySelector('#person').value=String(id);
     document.querySelector('#person').disabled=Boolean(period) || fromCard;
     document.querySelector('#person').closest('label').hidden=Boolean(period) || fromCard;
