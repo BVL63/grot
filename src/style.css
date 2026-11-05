@@ -263,3 +263,7 @@ dialog input,dialog select { width:100%; }
 .grot-header-text h1{font-size:60px;line-height:1;margin:0;font-weight:700;letter-spacing:-2px;white-space:nowrap;}
 .grot-header-text p{display:none;}
 @media(max-width:600px){.grot-header-text h1{font-size:54px;line-height:1;}.grot-header-text{min-height:60px;}}
+
+/* Year should match the lettering height in the original GROT logo */
+.grot-header-text h1{font-size:32px;line-height:1.1;letter-spacing:0;}
+@media(max-width:600px){.grot-header-text h1{font-size:30px;line-height:1.1;}}
