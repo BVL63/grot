@@ -1,6 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
+const APP_VERSION='0.2.0';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -160,6 +161,7 @@ function render() {
             <button type="button" id="backup-export">Резервная копия</button>
             <button type="button" id="backup-restore">Восстановить</button>
             <button type="button" id="seasonality-open">КСН / КОН</button>
+            <button type="button" id="app-refresh">Обновить</button><span>Версия ${APP_VERSION}</span>
             <button type="button" id="help-open">Справка · Правила отпусков</button>
           </div>
         </details>
@@ -371,6 +373,7 @@ function render() {
   document.querySelector('#collapse-month').onclick=()=>{expandedMonths.clear();render();};
   document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();});
   document.querySelector('#seasonality-open').onclick=seasonalityDialog;
+  document.querySelector('#app-refresh').onclick=()=>location.reload();
   document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
   const dialog = document.querySelector('#editor');
   const driverCard=document.querySelector('#driver-card');
