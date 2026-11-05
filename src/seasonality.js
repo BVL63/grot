@@ -4,7 +4,7 @@ const STORAGE='grot-seasonality-history-v1';
 export function loadHistory(){try{return JSON.parse(localStorage.getItem(STORAGE)||'[]')}catch{return []}}
 export function saveHistory(rows){localStorage.setItem(STORAGE,JSON.stringify(rows))}
 export function calculateSeasonality(rows,year=2026){
- const data=rows.filter(r=>Number(r.year)===year&&r.driver&&/^\\d{4}-\\d{2}-\\d{2}$/.test(r.start)&&/^\\d{4}-\\d{2}-\\d{2}$/.test(r.end)&&r.start<=r.end);
+ const data=rows.filter(r=>Number(r.year)===year&&r.driver&&/^\d{4}-\d{2}-\d{2}$/.test(r.start)&&/^\d{4}-\d{2}-\d{2}$/.test(r.end)&&r.start<=r.end);
  const counts=Array(12).fill(0),byDriver=new Map(),unique=new Set();
  for(const r of data){let date=new Date(r.start+'T12:00:00Z'),end=new Date(r.end+'T12:00:00Z');let n=0;
   while(date<=end&&n++<366){if(date.getUTCFullYear()===year){const iso=date.toISOString().slice(0,10),key=r.driver+'|'+iso;if(!unique.has(key)){unique.add(key);const m=date.getUTCMonth();counts[m]++;if(!byDriver.has(r.driver))byDriver.set(r.driver,Array(12).fill(0));byDriver.get(r.driver)[m]++;}}date.setUTCDate(date.getUTCDate()+1)}
@@ -29,9 +29,9 @@ export function seasonalityDialog(){
  }
  el('season-year').onchange=draw;el('season-close').onclick=()=>dialog.close();
  el('season-file').onchange=async e=>{const file=e.target.files[0];if(!file)return;const text=await file.text();const year=Number(el('season-year').value);
- const parseDate=v=>{v=v.trim();const m=v.match(/^(\\d{2})\\.(\\d{2})\\.(\\d{4})$/);return m?m[3]+'-'+m[2]+'-'+m[1]:v};
- const lines=text.replace(/^\\uFEFF/,'').split(/\\r?\\n/).filter(x=>x.trim());const sep=(lines[0]||'').includes(';')?';':',';
- const rows=lines.map(l=>l.split(sep).map(s=>s.trim().replace(/^"|"$/g,''))).filter(p=>p.length>=3).map(p=>({year,driver:p[0],start:parseDate(p[1]),end:parseDate(p[2])})).filter(r=>r.driver&&r.start.startsWith(year+'-')&&/^\\d{4}-\\d{2}-\\d{2}$/.test(r.end)&&r.end>=r.start);
+ const parseDate=v=>{v=v.trim();const m=v.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);return m?m[3]+'-'+m[2]+'-'+m[1]:v};
+ const lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim());const sep=(lines[0]||'').includes(';')?';':',';
+ const rows=lines.map(l=>l.split(sep).map(s=>s.trim().replace(/^"|"$/g,''))).filter(p=>p.length>=3).map(p=>({year,driver:p[0],start:parseDate(p[1]),end:parseDate(p[2])})).filter(r=>r.driver&&r.start.startsWith(year+'-')&&/^\d{4}-\d{2}-\d{2}$/.test(r.end)&&r.end>=r.start);
  if(!rows.length){el('season-status').textContent='Не найдены корректные периоды. Проверьте CSV и год.';return}
  saveHistory(loadHistory().filter(r=>Number(r.year)!==year).concat(rows));el('season-status').textContent='Загружено периодов: '+rows.length+'. Данные сохранены в этом браузере.';draw();};
  draw();dialog.showModal();
