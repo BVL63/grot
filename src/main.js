@@ -168,6 +168,54 @@ function render() {
       <p><a href="https://www.consultant.ru/document/cons_doc_LAW_34683/1f8b77b8e94f97ce88b74f92e54177e36b1d93b7/" target="_blank" rel="noopener">Трудовой кодекс РФ</a> · <a href="https://онлайнинспекция.рф/" target="_blank" rel="noopener">Онлайнинспекция.рф</a></p>
       <div class="actions"><button type="button" id="help-close">Закрыть</button></div></dialog>
     <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div id="period-total" class="day-count"></div><div id="split-rule"></div><div class="actions"><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
+  document.querySelector('#backup-export').onclick=()=>{
+    const payload={format:'grot-backup',version:1,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='grot-backup-2027-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    notice='Резервная копия подготовлена. Сохраните файл в надёжном месте.';
+    document.querySelector('.notice').textContent=notice;
+  };
+  document.querySelector('#backup-restore').onclick=()=>document.querySelector('#backup-file').click();
+  document.querySelector('#backup-file').onchange=async e=>{
+    const file=e.target.files?.[0];e.target.value='';
+    if(!file)return;
+    try{
+      if(file.size>5_000_000)throw Error('Файл слишком большой (более 5 МБ).');
+      const data=JSON.parse(await file.text());
+      if(!data||data.format!=='grot-backup'||data.version!==1||data.year!==2027)throw Error('Это не резервная копия ГРОТ за 2027 год.');
+      if(!Array.isArray(data.staff)||!data.staff.length||!Array.isArray(data.vacations)||!data.calendarOverrides||typeof data.calendarOverrides!=='object'||Array.isArray(data.calendarOverrides))throw Error('В файле отсутствуют обязательные данные.');
+      const ids=new Set();
+      for(const d of data.staff){
+        if(!d||!Number.isSafeInteger(d.id)||d.id<1||typeof d.name!=='string'||!d.name.trim()||typeof d.group!=='string'||!d.group.trim()||!Number.isInteger(Number(d.allowance))||Number(d.allowance)<1||Number(d.allowance)>120||ids.has(d.id))throw Error('Ошибка в справочнике сотрудников.');
+        ids.add(d.id);
+      }
+      const validDate=x=>typeof x==='string'&&/^2027-\\d{2}-\\d{2}$/.test(x)&&!Number.isNaN(Date.parse(x+'T12:00:00Z'))&&new Date(x+'T12:00:00Z').toISOString().slice(0,10)===x;
+      for(const p of data.vacations){
+        if(!p||!ids.has(Number(p.driverId))||!validDate(p.start)||!validDate(p.end)||p.end<p.start)throw Error('Ошибка в периодах отпусков.');
+      }
+      for(const [date,type] of Object.entries(data.calendarOverrides)){
+        if(!validDate(date)||!['holiday','weekend','workday'].includes(type))throw Error('Ошибка в производственном календаре.');
+      }
+      if(!confirm('Восстановить копию от '+(data.createdAt?new Date(data.createdAt).toLocaleString('ru-RU'):'неизвестной даты')+'?\\nСотрудников: '+data.staff.length+'\\nПериодов отпусков: '+data.vacations.length+'\\n\\nТЕКУЩИЕ данные браузера будут заменены. Продолжить?'))return;
+      const previous=[localStorage.getItem(staffKey),localStorage.getItem(key),localStorage.getItem(calendarKey)];
+      try{
+        localStorage.setItem(staffKey,JSON.stringify(data.staff));
+        localStorage.setItem(key,JSON.stringify(data.vacations));
+        localStorage.setItem(calendarKey,JSON.stringify(data.calendarOverrides));
+      }catch(err){
+        [staffKey,key,calendarKey].forEach((k,i)=>{try{if(previous[i]===null)localStorage.removeItem(k);else localStorage.setItem(k,previous[i]);}catch{}});
+        throw Error('Не удалось сохранить данные. Предыдущие записи восстановлены, насколько позволило хранилище.');
+      }
+      drivers=data.staff;vacations=data.vacations;calendarOverrides=data.calendarOverrides;
+      selectedDriverIds=null;selectedGroups=null;
+      notice='Резервная копия восстановлена: '+drivers.length+' сотрудников, '+vacations.length+' периодов.';
+      render();
+    }catch(err){alert('Восстановление отменено: '+err.message);}
+  };
   function drawStaff(){
     document.querySelector('#staff-list').innerHTML=drivers.map(d=>'<div class="period-row"><span>'+escapeHtml(d.name)+' · '+escapeHtml(d.group)+' · '+d.allowance+' дн.</span><button type="button" data-staff="'+d.id+'">Изменить</button><button type="button" data-staff-delete="'+d.id+'">Удалить</button></div>').join('');
     document.querySelectorAll('[data-staff]').forEach(b=>b.onclick=()=>{
