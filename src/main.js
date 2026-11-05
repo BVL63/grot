@@ -383,13 +383,6 @@ function render() {
     dialog.close();
     render();
   };
-  document.querySelectorAll('[data-date]').forEach(cell=>cell.onclick=()=>{openEditor(Number(cell.dataset.id),null,true);return;
-    const id=Number(cell.dataset.id), date=cell.dataset.date;
-    const set=daysFor(id);
-    if(set.has(date)) set.delete(date); else set.add(date);
-    replaceDays(id,set);
-    notice='';
-    render();
-  });
+  document.querySelectorAll('[data-date]').forEach(cell=>cell.onclick=()=>openEditor(Number(cell.dataset.id),null,true));
 }
 render();
