@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build for repository subpath
-        run: npm run build -- --base=/grafik-otpuskov/
+        run: npm run build -- --base=/grot/
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site
