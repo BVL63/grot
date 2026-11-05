@@ -1,5 +1,6 @@
 import './style.css';
-import { seasonalityDialog } from './seasonality.js';
+import { seasonalityDialog, loadHistory } from './seasonality.js';
+let displayYear = 2027;
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -105,7 +106,25 @@ function periodList(id) {
 function dateAt(day) {
   return '2027-' + String(selectedMonth+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
 }
+function renderHistory2026(){
+ const entries=loadHistory().filter(p=>Number(p.year)===2026);
+ const names=[...new Set(entries.map(p=>p.driver))].sort((a,b)=>a.localeCompare(b,'ru'));
+ const groups={'Бахметьев':'8','Винник':'8','Данилюк':'9.1','Дунаев':'9.1','Илюхин':'9','Каминик':'11','Карнацкий':'8','Киселев':'1','Кулеш':'11','Ломов':'9','Мальцев':'9.1','Шпаков':'1'};
+ const dateAt=(m,d)=>'2026-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+ const days=new Map(names.map(n=>[n,new Set()]));
+ for(const p of entries){for(let d=p.start,n=0;d<=p.end&&n++<366;d=shift(d,1))days.get(p.driver)?.add(d)}
+ const columns=months.flatMap((_,m)=>expandedMonths.has(m)?Array.from({length:new Date(2026,m+1,0).getDate()},(_,i)=>({m,d:i+1})):[{m,d:0}]);
+ const cells=columns.map(c=>'<th><button type="button" data-history-month="'+c.m+'">'+(c.d||months[c.m].slice(0,3))+'</button></th>').join('');
+ const rows=names.map(n=>'<tr><th class="fixed name">'+escapeHtml(n)+'</th><td class="fixed group">'+(groups[n]||'—')+'</td>'+columns.map(c=>{const set=days.get(n);const count=c.d?Number(set.has(dateAt(c.m,c.d))):[...set].filter(x=>Number(x.slice(5,7))===c.m+1).length;return '<td class="'+(count?'has-vacation':'')+'">'+(c.d?(count?'●':''):count||'—')+'</td>'}).join('')+'<td class="annual-total">'+days.get(n).size+'</td></tr>').join('');
+ const totals=columns.map(c=>'<td>'+names.filter(n=>c.d?days.get(n).has(dateAt(c.m,c.d)):[...days.get(n)].some(x=>Number(x.slice(5,7))===c.m+1)).length+'</td>').join('');
+ app.innerHTML='<header class="grot-header" style="display:flex;align-items:center;gap:12px;padding:9px 14px;background:#0b1b3a;color:white"><img src="'+grotLogo+'" alt="ГРОТ" style="width:100px;height:60px;object-fit:cover"><div><h1><select id="grot-year" aria-label="Год графика" style="font:inherit;background:#0b1b3a;color:white;border:1px solid #74829c;border-radius:6px"><option value="2026">2026</option><option value="2027">2027</option></select></h1><p>КГБУЗ «Владивостокская поликлиника № 9»</p></div></header><main><p><strong>Архивный график 2026 года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КСН / КОН</button></p><div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>'+cells+'<th>Всего дней</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>'+totals+'<td>'+names.length+'</td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p></main>';
+ document.querySelector('#grot-year').value='2026';
+ document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
+ document.querySelector('#history-metrics').onclick=seasonalityDialog;
+ document.querySelectorAll('[data-history-month]').forEach(b=>b.onclick=()=>{const m=Number(b.dataset.historyMonth);expandedMonths.has(m)?expandedMonths.delete(m):expandedMonths.add(m);render()});
+}
 function render() {
+  if(displayYear===2026){renderHistory2026();return;}
   const sets = new Map(drivers.map(d => [d.id, daysFor(d.id)]));
   const dateOf=(m,d)=>'2027-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
   const monthDays=m=>new Date(2027,m+1,0).getDate();
@@ -118,7 +137,7 @@ function render() {
   const rows=visibleDrivers.map(d=>'<tr><th class="fixed name"><button class="driver" data-driver="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button></th><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'—')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'<td class="annual-total">'+annualCount(d.id)+'</td></tr>').join('');
   const totals=columns.map(c=>'<td>'+(c.day?visibleDrivers.filter(d=>sets.get(d.id).has(dateOf(c.m,c.day))).length:visibleDrivers.filter(d=>monthlyCount(sets.get(d.id),c.m)>0).length)+'</td>').join('');
   app.innerHTML = `
-    <header class="grot-header" style="display:flex;flex-direction:row;align-items:center;gap:12px;padding:9px 14px;min-height:76px;max-width:100%;overflow:hidden;background:#0b1b3a"><img class="grot-header-logo" style="display:block;width:100px;height:60px;max-width:100px;max-height:60px;min-width:100px;object-fit:cover;flex:0 0 100px" src="${grotLogo}" alt="Логотип ГРОТ — График отпусков"><div class="grot-header-text" style="min-width:0;flex:1"><h1>2027</h1><p>КГБУЗ «Владивостокская поликлиника № 9»</p></div></header>
+    <header class="grot-header" style="display:flex;flex-direction:row;align-items:center;gap:12px;padding:9px 14px;min-height:76px;max-width:100%;overflow:hidden;background:#0b1b3a"><img class="grot-header-logo" style="display:block;width:100px;height:60px;max-width:100px;max-height:60px;min-width:100px;object-fit:cover;flex:0 0 100px" src="${grotLogo}" alt="Логотип ГРОТ — График отпусков"><div class="grot-header-text" style="min-width:0;flex:1"><h1><select id="grot-year" aria-label="Год графика" style="font:inherit;background:#0b1b3a;color:white;border:1px solid #74829c;border-radius:6px"><option value="2026">2026</option><option value="2027" selected>2027</option></select></h1><p>КГБУЗ «Владивостокская поликлиника № 9»</p></div></header>
     <main>
       <nav class="toolbar grot-toolbar" aria-label="Главное меню">
         <details class="grot-menu">
@@ -352,6 +371,7 @@ function render() {
   document.querySelector('#collapse-month').onclick=()=>{expandedMonths.clear();render();};
   document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();});
   document.querySelector('#seasonality-open').onclick=seasonalityDialog;
+  document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
   const dialog = document.querySelector('#editor');
   const driverCard=document.querySelector('#driver-card');
   let currentDriver=drivers[0].id;
