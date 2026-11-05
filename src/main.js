@@ -113,18 +113,18 @@ function personnelExportRows(){
   position:d.position||'Водитель автомобиля',personnel:d.personnelNumber||d.tabNumber||'',
   group:d.group||'',days:leaveDays(p.start,p.end),start:displayDate(p.start),end:displayDate(p.end),
   part:i+1
- }))).sort((a,b)=>a.department.localeCompare(b.department,'ru')||a.name.localeCompare(b.name,'ru')||a.start.localeCompare(b.start));
+ }))).sort((a,b)=>a.department.localeCompare(b.department,'ru')||a.name.localeCompare(b.name,'ru')||a.part-b.part);
 }
 function personnelCsv(){
  const rows=personnelExportRows(),head=['Подразделение','ФИО','Должность','Табельный номер','Группа','Часть отпуска','Календарных дней без праздников','Начало','Окончание'];
  const safe=v=>{let t=String(v??'');if(/^[=+@-]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"';};
- const data=[head,...rows.map(r=>[r.department,r.name,r.position,r.personnel,r.group,r.part,r.days,r.start,r.end])];
+ const data=[head,...rows.map(r=>[r.department,r.name,r.position,r.personnel,r.group,'Часть '+r.part,r.days,r.start,r.end])];
  const blob=new Blob(['\\uFEFF'+data.map(r=>r.map(safe).join(';')).join('\\r\\n')],{type:'text/csv;charset=utf-8'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='grot-kadry-2027.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 function personnelPrint(){
  const rows=personnelExportRows(),esc=escapeHtml;
- const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков 2027 — отдел кадров</title><style>@page{size:A4 landscape;margin:12mm}body{font:12px Arial,sans-serif}h2{text-align:center}table{border-collapse:collapse;width:100%}th,td{border:1px solid #555;padding:5px;text-align:left}th{background:#eee}.sign{margin-top:24px}</style></head><body><h2>Проект графика отпусков на 2027 год</h2><p>КГБУЗ «Владивостокская поликлиника № 9» · Подготовлено: '+new Date().toLocaleDateString('ru-RU')+'</p><table><thead><tr><th>Подразделение</th><th>ФИО</th><th>Должность</th><th>Таб. №</th><th>Группа</th><th>Часть</th><th>Дней</th><th>Начало</th><th>Окончание</th></tr></thead><tbody>'+rows.map(r=>'<tr>'+[r.department,r.name,r.position,r.personnel,r.group,r.part,r.days,r.start,r.end].map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table><p class="sign">Составил: _____________________ &nbsp;&nbsp; Дата: ______________</p><p>Документ для согласования. Не является утверждённым графиком отпусков без оформления работодателем.</p></body></html>';
+ const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков 2027 — отдел кадров</title><style>@page{size:A4 landscape;margin:12mm}body{font:12px Arial,sans-serif}h2{text-align:center}table{border-collapse:collapse;width:100%}th,td{border:1px solid #555;padding:5px;text-align:left}th{background:#eee}.sign{margin-top:24px}</style></head><body><h2>Проект графика отпусков на 2027 год</h2><p>КГБУЗ «Владивостокская поликлиника № 9» · Подготовлено: '+new Date().toLocaleDateString('ru-RU')+'</p><table><thead><tr><th>Подразделение</th><th>ФИО</th><th>Должность</th><th>Таб. №</th><th>Группа</th><th>Часть</th><th>Дней</th><th>Начало</th><th>Окончание</th></tr></thead><tbody>'+rows.map(r=>'<tr>'+[r.department,r.name,r.position,r.personnel,r.group,'Часть '+r.part,r.days,r.start,r.end].map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table><p class="sign">Составил: _____________________ &nbsp;&nbsp; Дата: ______________</p><p>Документ для согласования. Не является утверждённым графиком отпусков без оформления работодателем.</p></body></html>';
  const w=window.open('','_blank');if(!w){alert('Разрешите всплывающие окна для печати.');return}w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),300);
 }
 function renderHistory2026(){
