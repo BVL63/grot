@@ -181,3 +181,11 @@ dialog input,dialog select { width:100%; }
 .grot-menu-title:first-child{border-top:0;padding-top:4px;}
 .grot-menu-panel button{display:block;width:100%;text-align:left;border:0;border-radius:5px;background:transparent;padding:11px 10px;color:#243247;font-size:15px;}
 .grot-menu-panel button:hover,.grot-menu-panel button:focus{background:#e8f2fa;}
+
+/* Horizontal three-section menu */
+.grot-toolbar{display:flex;flex-wrap:nowrap;gap:8px;align-items:center;overflow:visible;}
+.grot-menu{flex:0 0 auto;}
+.grot-menu>summary{white-space:nowrap;}
+.grot-menu>summary::after{content:' ▾';font-size:12px;margin-left:7px;}
+.grot-menu:last-of-type .grot-menu-panel{left:auto;right:0;}
+@media(max-width:600px){.grot-toolbar{gap:4px;}.grot-menu>summary{padding:9px 7px;font-size:13px;}.grot-menu-panel{width:min(300px,calc(100vw - 24px));}}
