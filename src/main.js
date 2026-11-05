@@ -153,15 +153,16 @@ function render() {
     </main>
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
     <dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
-      <div id="staff-list"></div>
-      <form id="staff-form">
+      <div id="staff-list"></div><div class="actions"><button type="button" id="staff-add">Добавить сотрудника</button><button type="button" id="staff-close">Закрыть</button></div>
+    </dialog>
+    <dialog id="staff-card"><h2 id="staff-card-title">Карточка сотрудника</h2><form id="staff-form">
         <input type="hidden" id="staff-id">
         <label>Фамилия <input id="staff-last" required maxlength="100"></label><label>Имя <input id="staff-first" required maxlength="100"></label><label>Отчество <input id="staff-middle" maxlength="100"></label>
         <label>Подразделение <input id="staff-department" maxlength="100"></label>
         <label>Группа отпусков <input id="staff-group" required maxlength="30"></label>
         <label>Дней ежегодного отпуска <input id="staff-allowance" type="number" min="1" max="120" required value="36"></label>
         <p id="staff-error" role="alert"></p>
-        <div class="actions"><button type="button" id="staff-reset">Новый сотрудник</button><button type="submit">Сохранить</button><button type="button" id="staff-close">Закрыть</button></div>
+        <div class="actions"><button type="submit">Сохранить</button><button type="button" id="staff-card-close">Закрыть</button></div>
       </form>
     </dialog>
     <dialog id="editor"><form id="vacation-form">
@@ -242,16 +243,17 @@ function render() {
       render();
     }catch(err){alert('Восстановление отменено: '+err.message);}
   };
+  function openStaffCard(d){
+    const form=document.querySelector('#staff-form');form.reset();
+    document.querySelector('#staff-id').value=d?.id||'';
+    document.querySelector('#staff-card-title').textContent=d?'Карточка сотрудника':'Новый сотрудник';
+    if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-allowance').value=d.allowance;}
+    document.querySelector('#staff-dialog').close();document.querySelector('#staff-card').showModal();
+  }
   function drawStaff(){
-    document.querySelector('#staff-list').innerHTML=drivers.map(d=>'<div class="period-row"><span>'+escapeHtml(shortStaffName(d))+' · '+escapeHtml(d.group)+' · '+d.allowance+' дн.</span><button type="button" data-staff="'+d.id+'">Изменить</button><button type="button" data-staff-delete="'+d.id+'">Удалить</button></div>').join('');
-    document.querySelectorAll('[data-staff]').forEach(b=>b.onclick=()=>{
-      const d=drivers.find(x=>x.id===Number(b.dataset.staff));
-      document.querySelector('#staff-id').value=d.id;
-      const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;
-      document.querySelector('#staff-department').value=d.department||'';
-      document.querySelector('#staff-group').value=d.group;
-      document.querySelector('#staff-allowance').value=d.allowance;
-    });
+    const sorted=[...drivers].sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru'));
+    document.querySelector('#staff-list').innerHTML='<div class="staff-table-scroll"><table class="staff-table"><thead><tr><th>№</th><th>Фамилия И.О.</th><th>Подразделение</th><th>Группа отпусков</th><th>Дней отпуска</th><th>Действия</th></tr></thead><tbody>'+sorted.map((d,i)=>'<tr><td>'+(i+1)+'</td><td><button type="button" class="staff-name-link" data-staff="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button></td><td>'+escapeHtml(d.department||'—')+'</td><td>'+escapeHtml(d.group)+'</td><td>'+d.allowance+'</td><td><button type="button" data-staff="'+d.id+'">Изменить</button> <button type="button" data-staff-delete="'+d.id+'">Удалить</button></td></tr>').join('')+'</tbody></table></div>';
+    document.querySelectorAll('[data-staff]').forEach(btn=>btn.onclick=()=>openStaffCard(drivers.find(d=>d.id===Number(btn.dataset.staff))));
   }
   document.querySelector('#staff-list').addEventListener('click',e=>{
     const button=e.target.closest('[data-staff-delete]');
@@ -269,11 +271,12 @@ function render() {
     document.querySelector('#staff-id').value='';
     document.querySelector('#staff-form').reset();
     notice='Сотрудник и его отпуска удалены.';
-    document.querySelector('#staff-dialog').close();render();
+    drawStaff();render();
   });
   document.querySelector('#staff-open').onclick=()=>{drawStaff();document.querySelector('#staff-dialog').showModal();};
   document.querySelector('#staff-close').onclick=()=>document.querySelector('#staff-dialog').close();
-  document.querySelector('#staff-reset').onclick=()=>{document.querySelector('#staff-form').reset();document.querySelector('#staff-id').value='';};
+  document.querySelector('#staff-add').onclick=()=>openStaffCard(null);
+  document.querySelector('#staff-card-close').onclick=()=>{document.querySelector('#staff-card').close();drawStaff();document.querySelector('#staff-dialog').showModal();};
   document.querySelector('#staff-form').onsubmit=e=>{
     e.preventDefault();
     const id=Number(document.querySelector('#staff-id').value);
@@ -281,7 +284,7 @@ function render() {
     if(!lastName||!firstName||!group||!Number.isInteger(allowance)||allowance<1||allowance>120)return;
     if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department,group,allowance});}
     else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,allowance});
-    saveStaff();document.querySelector('#staff-dialog').close();render();
+    saveStaff();document.querySelector('#staff-card').close();render();drawStaff();document.querySelector('#staff-dialog').showModal();
   };
   let pendingCalendar=null;
   document.querySelector('#calendar-open').onclick=()=>document.querySelector('#calendar-dialog').showModal();
