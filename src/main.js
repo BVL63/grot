@@ -1,4 +1,5 @@
 import './style.css';
+import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
 const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -116,7 +117,7 @@ function render() {
   const rows=visibleDrivers.map(d=>'<tr><th class="fixed name"><button class="driver" data-driver="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button></th><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'—')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'<td class="annual-total">'+annualCount(d.id)+'</td></tr>').join('');
   const totals=columns.map(c=>'<td>'+(c.day?visibleDrivers.filter(d=>sets.get(d.id).has(dateOf(c.m,c.day))).length:visibleDrivers.filter(d=>monthlyCount(sets.get(d.id),c.m)>0).length)+'</td>').join('');
   app.innerHTML = `
-    <header><h1>График отпусков — 2027</h1><p>Планирование отпусков водителей</p></header>
+    <header class="grot-header"><img class="grot-header-logo" src="${grotLogo}" alt="Логотип ГРОТ — График отпусков"><div class="grot-header-text"><h1>ГРОТ <span>· График отпусков — 2027</span></h1><p>КГБУЗ «Владивостокская поликлиника № 9»</p></div></header>
     <main>
       <nav class="toolbar grot-toolbar" aria-label="Главное меню">
         <details class="grot-menu">
