@@ -235,3 +235,16 @@ dialog input,dialog select { width:100%; }
   #editor .editor-top p{margin:2px 0;}
   #editor .editor-bottom{padding-top:5px;padding-bottom:7px;}
 }
+
+/* Staff directory: table only; separate employee card */
+#staff-dialog{width:min(900px,calc(100vw - 24px));max-width:none;max-height:88vh;}
+#staff-card{width:min(480px,calc(100vw - 24px));max-height:90vh;overflow-y:auto;}
+.staff-table-scroll{max-height:65vh;overflow:auto;}
+.staff-table{border-collapse:collapse;width:100%;font-size:14px;white-space:nowrap;}
+.staff-table th,.staff-table td{padding:9px 10px;border-bottom:1px solid #d9e1e8;text-align:left;}
+.staff-table th{position:sticky;top:0;background:#eef3f8;z-index:1;}
+.staff-table td:nth-child(5){text-align:center;}
+.staff-table button{padding:5px 7px;font-size:13px;}
+.staff-table .staff-name-link{border:0;background:transparent;color:#174e76;text-align:left;font-weight:600;cursor:pointer;}
+#staff-card form label{display:block;margin:10px 0;}
+#staff-card form label input{display:block;width:100%;box-sizing:border-box;margin-top:5px;}
