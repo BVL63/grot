@@ -160,3 +160,7 @@ dialog input,dialog select { width:100%; }
 .annual-table .annual-total-heading{min-width:105px;background:#d6e7f5;font-weight:700;}
 .annual-table .annual-total{min-width:105px;background:#eef6fc;font-weight:700;text-align:center;}
 .annual-table tfoot .annual-total{background:#dceaf3;}
+
+/* Left-align driver names in the annual table */
+.annual-table tbody th.name{text-align:left;}
+.annual-table tbody th.name .driver{display:block;text-align:left;width:100%;}
