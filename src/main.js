@@ -110,7 +110,8 @@ function render() {
   const headings=columns.map(c=>'<th class="'+(c.day?'day-heading':'month-heading')+'"><button type="button" data-month="'+c.m+'" title="'+(expandedMonths.has(c.m)?'Свернуть ':'Развернуть ')+months[c.m]+'">'+(c.day||months[c.m].slice(0,3))+'</button></th>').join('');
   const visibleDrivers=drivers.filter(d=>(selectedDriverIds===null||selectedDriverIds.has(String(d.id)))&&(selectedGroups===null||selectedGroups.has(String(d.group))));
   const groups=[...new Set(drivers.map(d=>String(d.group)))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true}));
-  const rows=visibleDrivers.map(d=>'<tr><th class="fixed name"><button class="driver" data-driver="'+d.id+'">'+escapeHtml(d.name)+'</button></th><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'—')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'</tr>').join('');
+  const annualCount=id=>periodsFor(id).reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
+  const rows=visibleDrivers.map(d=>'<tr><th class="fixed name"><button class="driver" data-driver="'+d.id+'">'+escapeHtml(d.name)+'</button></th><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'—')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'<td class="annual-total">'+annualCount(d.id)+'</td></tr>').join('');
   const totals=columns.map(c=>'<td>'+(c.day?visibleDrivers.filter(d=>sets.get(d.id).has(dateOf(c.m,c.day))).length:visibleDrivers.filter(d=>monthlyCount(sets.get(d.id),c.m)>0).length)+'</td>').join('');
   app.innerHTML = `
     <header><h1>График отпусков — 2027</h1><p>Планирование отпусков водителей</p></header>
@@ -119,8 +120,8 @@ function render() {
       <button id="staff-open" type="button">Сотрудники</button><button id="period">Добавить период отпуска</button><button id="help-open" type="button">Справка · Правила отпусков</button><button id="calendar-open" type="button">Производственный календарь</button></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name"><span class="header-filter">Водитель <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
-      <th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}</tr></thead>
-      <tbody>${rows}</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>${totals}</tr></tfoot></table></div>
+      <th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}<th class="annual-total-heading">Всего дней</th></tr></thead>
+      <tbody>${rows}</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>${totals}<td class="annual-total">${visibleDrivers.filter(d=>annualCount(d.id)>0).length}</td></tr></tfoot></table></div>
       <p>Нажмите на название месяца, чтобы развернуть его дни; повторное нажатие свернёт только этот месяц. Можно открыть несколько месяцев одновременно. Нажмите на фамилию для просмотра отпусков.</p>
       <p class="notice" role="status">${notice}</p>
       <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
