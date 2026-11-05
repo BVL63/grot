@@ -237,7 +237,7 @@ function render() {
       </form>
     </dialog>
     <dialog id="editor"><form id="vacation-form">
-      <div class="editor-header"><h2 id="editor-title">Отпуска 2027</h2></div>
+      <div class="editor-header"><h2 id="editor-title">Отпуска 2027</h2><button type="button" id="editor-close-x" class="dialog-close-x" aria-label="Закрыть календарь" title="Закрыть">×</button></div>
       <label class="editor-person-label">Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
       <div class="editor-top"><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
       <p id="range-hint">Выберите начало отпуска, затем окончание.</p></div>
@@ -588,6 +588,7 @@ function render() {
     });
   }
   document.querySelector('#cancel').onclick=()=>dialog.close();
+  document.querySelector('#editor-close-x').onclick=()=>dialog.close();
   document.querySelector('#vacation-form').onsubmit=e=>{
     e.preventDefault();
     const id=Number(document.querySelector('#person').value);
