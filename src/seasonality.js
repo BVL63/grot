@@ -1,7 +1,8 @@
+import { historical2026 } from './history2026.js';
 // КСН — месячная сезонная нагрузка; КОН — индивидуальная нагрузка без самого водителя.
 // Источник: отдельный исторический график. Данные 2027 не подменяют историю 2026.
 const STORAGE='grot-seasonality-history-v1';
-export function loadHistory(){try{return JSON.parse(localStorage.getItem(STORAGE)||'[]')}catch{return []}}
+export function loadHistory(){let saved=[];try{saved=JSON.parse(localStorage.getItem(STORAGE)||'[]');if(!Array.isArray(saved))saved=[]}catch{}return saved.some(r=>Number(r.year)===2026)?saved:historical2026.concat(saved)}
 export function saveHistory(rows){localStorage.setItem(STORAGE,JSON.stringify(rows))}
 export function calculateSeasonality(rows,year=2026){
  const data=rows.filter(r=>Number(r.year)===year&&r.driver&&/^\d{4}-\d{2}-\d{2}$/.test(r.start)&&/^\d{4}-\d{2}-\d{2}$/.test(r.end)&&r.start<=r.end);
