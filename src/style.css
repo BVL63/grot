@@ -257,3 +257,9 @@ dialog input,dialog select { width:100%; }
 .grot-header h1 span{font-size:19px;font-weight:500;}
 .grot-header p{margin:0;font-size:13px;color:#c8e4e8;}
 @media(max-width:600px){.grot-header{gap:9px;padding:8px 12px;min-height:70px}.grot-header-logo{width:88px;height:54px}.grot-header h1{font-size:19px}.grot-header h1 span{font-size:14px}.grot-header p{font-size:11px}}
+
+/* Year to the right of the logo, matching its visible height */
+.grot-header-text{display:flex;align-items:center;gap:0;min-height:60px;}
+.grot-header-text h1{font-size:60px;line-height:1;margin:0;font-weight:700;letter-spacing:-2px;white-space:nowrap;}
+.grot-header-text p{display:none;}
+@media(max-width:600px){.grot-header-text h1{font-size:54px;line-height:1;}.grot-header-text{min-height:60px;}}
