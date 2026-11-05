@@ -209,3 +209,12 @@ dialog input,dialog select { width:100%; }
   #editor .range-month-days button{padding:5px 0;font-size:13px;}
   #editor .range-month-days .range-weekday{padding:3px 0;font-size:11px;}
 }
+
+/* Compact footer: periods sit immediately above Close; calendar gets remaining height */
+#editor .editor-bottom{flex:0 0 auto;max-height:38%;overflow:hidden;padding-bottom:10px;}
+#editor .editor-bottom>.muted{display:none;}
+#editor .editor-bottom #editor-split-warning:empty,#editor .editor-bottom #form-error:empty{display:none;margin:0;padding:0;}
+#editor .editor-bottom #range-selected:empty{display:none;margin:0;}
+#editor .editor-bottom .periods-toolbar{flex:0 1 auto;}
+#editor .editor-bottom .actions{margin-top:8px;}
+#editor .editor-calendar-scroll{flex:1 1 auto;min-height:0;}
