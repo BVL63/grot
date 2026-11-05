@@ -107,6 +107,26 @@ function periodList(id) {
 function dateAt(day) {
   return '2027-' + String(selectedMonth+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
 }
+function personnelExportRows(){
+ return drivers.flatMap(d=>periodsFor(d.id).map((p,i)=>({
+  department:d.department||'',name:[d.lastName,d.firstName,d.middleName].filter(Boolean).join(' ')||d.name||'',
+  position:d.position||'Водитель автомобиля',personnel:d.personnelNumber||d.tabNumber||'',
+  group:d.group||'',days:leaveDays(p.start,p.end),start:displayDate(p.start),end:displayDate(p.end),
+  part:i+1
+ }))).sort((a,b)=>a.department.localeCompare(b.department,'ru')||a.name.localeCompare(b.name,'ru')||a.start.localeCompare(b.start));
+}
+function personnelCsv(){
+ const rows=personnelExportRows(),head=['Подразделение','ФИО','Должность','Табельный номер','Группа','Часть отпуска','Календарных дней без праздников','Начало','Окончание'];
+ const safe=v=>{let t=String(v??'');if(/^[=+@-]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"';};
+ const data=[head,...rows.map(r=>[r.department,r.name,r.position,r.personnel,r.group,r.part,r.days,r.start,r.end])];
+ const blob=new Blob(['\\uFEFF'+data.map(r=>r.map(safe).join(';')).join('\\r\\n')],{type:'text/csv;charset=utf-8'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='grot-kadry-2027.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+function personnelPrint(){
+ const rows=personnelExportRows(),esc=escapeHtml;
+ const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков 2027 — отдел кадров</title><style>@page{size:A4 landscape;margin:12mm}body{font:12px Arial,sans-serif}h2{text-align:center}table{border-collapse:collapse;width:100%}th,td{border:1px solid #555;padding:5px;text-align:left}th{background:#eee}.sign{margin-top:24px}</style></head><body><h2>Проект графика отпусков на 2027 год</h2><p>КГБУЗ «Владивостокская поликлиника № 9» · Подготовлено: '+new Date().toLocaleDateString('ru-RU')+'</p><table><thead><tr><th>Подразделение</th><th>ФИО</th><th>Должность</th><th>Таб. №</th><th>Группа</th><th>Часть</th><th>Дней</th><th>Начало</th><th>Окончание</th></tr></thead><tbody>'+rows.map(r=>'<tr>'+[r.department,r.name,r.position,r.personnel,r.group,r.part,r.days,r.start,r.end].map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table><p class="sign">Составил: _____________________ &nbsp;&nbsp; Дата: ______________</p><p>Документ для согласования. Не является утверждённым графиком отпусков без оформления работодателем.</p></body></html>';
+ const w=window.open('','_blank');if(!w){alert('Разрешите всплывающие окна для печати.');return}w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),300);
+}
 function renderHistory2026(){
  const entries=loadHistory().filter(p=>Number(p.year)===2026);
  const names=[...new Set(entries.map(p=>p.driver))].sort((a,b)=>a.localeCompare(b,'ru'));
@@ -146,6 +166,8 @@ function render() {
           <div class="grot-menu-panel">
             <button type="button" id="period">Добавить период отпуска</button>
             <button type="button" id="collapse-month">Свернуть все месяцы</button>
+            <button type="button" id="personnel-csv">Передать в кадры · Excel (CSV)</button>
+            <button type="button" id="personnel-print">Передать в кадры · Печать / PDF</button>
           </div>
         </details>
         <details class="grot-menu">
@@ -218,6 +240,8 @@ function render() {
       <p><a href="https://www.consultant.ru/document/cons_doc_LAW_34683/1f8b77b8e94f97ce88b74f92e54177e36b1d93b7/" target="_blank" rel="noopener">Трудовой кодекс РФ</a> · <a href="https://онлайнинспекция.рф/" target="_blank" rel="noopener">Онлайнинспекция.рф</a></p>
       <div class="actions"><button type="button" id="help-close">Закрыть</button></div></dialog>
     <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div id="period-total" class="day-count"></div><div id="split-rule"></div><div class="actions"><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
+  document.querySelector('#personnel-csv').onclick=personnelCsv;
+  document.querySelector('#personnel-print').onclick=personnelPrint;
   document.querySelector('#backup-export').onclick=()=>{
     const payload={format:'grot-backup',version:1,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
