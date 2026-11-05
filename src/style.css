@@ -134,3 +134,14 @@ dialog input,dialog select { width:100%; }
 .annual-table .header-filter{display:flex;align-items:center;justify-content:space-between;width:100%;min-width:0;gap:6px;}
 .annual-table .header-filter .filter-trigger{display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;min-width:28px;height:28px;padding:0;line-height:1;visibility:visible;opacity:1;}
 .annual-table .driver{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* Compact editor top on tablet */
+#editor .editor-person-label[hidden]{display:none!important;}
+#editor .editor-header{flex:none;padding:14px 22px 0;}
+#editor .editor-header h2{padding:0;margin:0;font-size:23px;line-height:1.2;}
+#editor .editor-top{padding:8px 22px 8px;}
+#editor .editor-mode-actions{display:flex;flex-wrap:wrap;gap:8px;}
+#editor .editor-mode-actions button{padding:8px 12px;}
+#editor .editor-top p{margin:6px 0;}
+#editor .editor-top .muted{display:none;}
+@media(max-width:540px){#editor .editor-header{padding:12px 14px 0;}#editor .editor-top{padding:6px 14px;}#editor .editor-header h2{font-size:20px;}}
