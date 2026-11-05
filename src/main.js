@@ -132,11 +132,17 @@ function showDriverHistory(name){
  const matches=drivers.filter(d=>staffParts(d).last.toLocaleLowerCase('ru')===surname);
  const entries=loadHistory().filter(p=>String(p.driver||'').trim().split(/\\s+/)[0].toLocaleLowerCase('ru')===surname);
  const current=matches.flatMap(d=>periodsFor(Number(d.id)).map(p=>({...p,year:2027})));
- const all=[...entries.map(p=>({...p,year:Number(p.year)||2026})),...current].filter(p=>p.start&&p.end).sort((a,b)=>a.start.localeCompare(b.start));
- const years=[...new Set(all.map(p=>p.year))].sort((a,b)=>b-a);
- const rows=years.length?years.map(y=>{const items=all.filter(p=>p.year===y);return '<tr><th>'+y+'</th><td>'+items.map(p=>escapeHtml(displayDate(p.start))+' — '+escapeHtml(displayDate(p.end))).join('<hr>')+'</td><td>'+items.reduce((n,p)=>n+calendarDays(p),0)+'</td></tr>'}).join(''):'<tr><td colspan="3">Записей об отпусках пока нет</td></tr>';
+ const all=[...entries.map(p=>({...p,year:Number(p.year)||2026})),...current].filter(p=>p.start&&p.end);
+ const years=[...new Set(all.map(p=>Number(p.year)))].sort((a,b)=>b-a);
+ const headers=months.map(m=>'<th>'+escapeHtml(m.slice(0,3))+'</th>').join('');
+ const rows=years.length?years.map(y=>{
+   const dates=new Set();
+   all.filter(p=>Number(p.year)===y).forEach(p=>{for(let d=p.start,n=0;d<=p.end&&n++<366;d=shift(d,1)){if(Number(d.slice(0,4))===y)dates.add(d)}});
+   const counts=months.map((_,m)=>[...dates].filter(d=>Number(d.slice(5,7))===m+1).length);
+   return '<tr><th>'+y+'</th>'+counts.map(n=>'<td class="'+(n?'has-vacation':'')+'">'+(n||'—')+'</td>').join('')+'<td class="annual-total">'+dates.size+'</td></tr>';
+ }).join(''):'<tr><td colspan="14">Записей об отпусках пока нет</td></tr>';
  let dialog=document.querySelector('#driver-history-dialog');if(!dialog){dialog=document.createElement('dialog');dialog.id='driver-history-dialog';document.body.appendChild(dialog)}
- dialog.innerHTML='<h2>История отпусков: '+escapeHtml(name)+'</h2><p>Данные по годам · только просмотр</p><div class="staff-table-scroll"><table class="staff-table"><thead><tr><th>Год</th><th>Периоды отпуска</th><th>Календарных дней</th></tr></thead><tbody>'+rows+'</tbody></table></div><div class="actions"><button type="button" id="driver-history-close">Закрыть</button></div>';
+ dialog.innerHTML='<h2>История отпусков: '+escapeHtml(name)+'</h2><p>Количество календарных дней отпуска по месяцам · только просмотр</p><div class="scroll"><table class="annual-table history-summary"><thead><tr><th>Год</th>'+headers+'<th>Всего</th></tr></thead><tbody>'+rows+'</tbody></table></div><div class="actions"><button type="button" id="driver-history-close">Закрыть</button></div>';
  dialog.querySelector('#driver-history-close').onclick=()=>dialog.close();dialog.showModal();
 }
 function renderHistory2026(){
