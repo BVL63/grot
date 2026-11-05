@@ -144,7 +144,7 @@ function render() {
       <div class="editor-top"><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить период</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button></div><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
       <p id="range-hint">Выберите начало отпуска, затем окончание.</p></div>
       <div class="editor-calendar-scroll"><div id="range-calendar" class="range-calendar"></div></div>
-      <div class="editor-bottom"><div id="range-selected"></div><div id="range-periods"></div>
+      <div class="editor-bottom"><div id="range-selected"></div><div id="range-periods" class="period-scroll" tabindex="0"></div>
       <input id="start" type="hidden"><input id="end" type="hidden">
       <div id="day-count" class="day-count" aria-live="polite"></div><p id="editor-split-warning" class="rule-warning" role="status"></p><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
       <p id="form-error" role="alert"></p>
@@ -341,9 +341,22 @@ function render() {
       html+='<section class="range-month"><h3>'+months[month]+'</h3><div class="range-month-days">'+cells+'</div></section>';
     }
     document.querySelector('#range-calendar').innerHTML=html;
-    document.querySelector('#range-selected').textContent=start?'Начало: '+displayDate(start)+' · Выберите окончание':'Выберите начало следующего периода';
-    document.querySelector('#range-periods').innerHTML=draftPeriods.map((p,i)=>'<div class="draft-period '+(selectedDraft===i?'draft-selected':'')+'"><span>'+(i+1)+'. '+displayDate(p.start)+' — '+displayDate(p.end)+' · '+leaveDays(p.start,p.end)+' дн.</span></div>').join('');
+    document.querySelector('#range-selected').textContent=editorMode==='view'?'Периоды отпуска':editorMode==='add'?'Добавление периода':editorMode==='edit'?'Выберите период для изменения':'Выберите период для удаления';
+    document.querySelector('#range-periods').innerHTML=draftPeriods.map((p,i)=>'<div class="draft-period '+(selectedDraft===i?'draft-selected':'')+'"><button type="button" class="period-choice" data-period-choice="'+i+'" '+(editorMode==='edit'||editorMode==='delete'?'':'disabled')+'>'+(i+1)+'. '+displayDate(p.start)+' — '+displayDate(p.end)+' · '+leaveDays(p.start,p.end)+' дн.</button></div>').join('');
     document.querySelector('#range-hint').textContent=editorMode==='view'?'Просмотр отпусков. Для изменений нажмите кнопку выше.':rangeStep===1?'Выберите окончание периода.':changingDraft>=0?'Выберите новые начало и окончание.':editorMode==='add'?'Выберите начало нового периода.':editorMode==='edit'?'Нажмите на существующий период для изменения.':'Нажмите на период для удаления.';
+    document.querySelectorAll('[data-period-choice]').forEach(b=>b.onclick=()=>{
+      const i=Number(b.dataset.periodChoice),p=draftPeriods[i];
+      if(!p)return;
+      if(editorMode==='edit'){
+        selectedDraft=i;changingDraft=i;rangeStep=0;
+        document.querySelector('#start').value='';document.querySelector('#end').value='';
+        drawRangeCalendar();updateCount();
+      }else if(editorMode==='delete'){
+        if(!confirm('Удалить период '+displayDate(p.start)+' — '+displayDate(p.end)+'?'))return;
+        draftPeriods.splice(i,1);selectedDraft=-1;changingDraft=-1;rangeStep=0;
+        drawRangeCalendar();updateCount();
+      }
+    });
     document.querySelectorAll('[data-range-date]').forEach(b=>b.onclick=()=>{
       const date=b.dataset.rangeDate;
       if(editorMode==='view')return;
