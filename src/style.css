@@ -272,3 +272,10 @@ dialog input,dialog select { width:100%; }
 .grot-header{justify-content:space-between;width:100%;box-sizing:border-box;}
 .grot-header-text{flex:0 0 auto!important;margin-left:auto;text-align:right;justify-content:flex-end;}
 .grot-header-text h1{text-align:right;}
+
+/* Year-by-month driver leave history */
+#driver-history-dialog{width:min(96vw,1100px);max-width:96vw;box-sizing:border-box;}
+#driver-history-dialog .scroll{overflow-x:auto;max-width:100%;}
+#driver-history-dialog .history-summary{width:100%;min-width:700px;border-collapse:collapse;}
+#driver-history-dialog .history-summary th,#driver-history-dialog .history-summary td{text-align:center;padding:9px 7px;}
+#driver-history-dialog .history-summary .has-vacation{background:#d6f2e1;color:#116b39;font-weight:700;}
