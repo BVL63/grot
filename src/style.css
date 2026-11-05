@@ -279,3 +279,8 @@ dialog input,dialog select { width:100%; }
 #driver-history-dialog .history-summary{width:100%;min-width:700px;border-collapse:collapse;}
 #driver-history-dialog .history-summary th,#driver-history-dialog .history-summary td{text-align:center;padding:9px 7px;}
 #driver-history-dialog .history-summary .has-vacation{background:#d6f2e1;color:#116b39;font-weight:700;}
+
+/* Close control in vacation calendar header */
+#editor .editor-header{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+#editor .dialog-close-x{flex:0 0 auto;width:36px;height:36px;display:grid;place-items:center;padding:0;border:1px solid #bdc9d8;border-radius:7px;background:#fff;color:#263449;font-size:27px;line-height:1;cursor:pointer;}
+#editor .dialog-close-x:hover{background:#f0f4f9;}
