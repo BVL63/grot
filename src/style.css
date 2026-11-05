@@ -218,3 +218,20 @@ dialog input,dialog select { width:100%; }
 #editor .editor-bottom .periods-toolbar{flex:0 1 auto;}
 #editor .editor-bottom .actions{margin-top:8px;}
 #editor .editor-calendar-scroll{flex:1 1 auto;min-height:0;}
+
+/* Fit two full rows of three months in the visible desktop calendar viewport */
+@media (min-width:801px){
+  #editor{height:min(96vh,1100px);max-height:96vh;}
+  #range-calendar.range-calendar{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:4px 0;}
+  #editor .editor-calendar-scroll{padding:0 14px 6px;}
+  #editor .range-month{padding:6px 9px;border-radius:8px;}
+  #editor .range-month h3{font-size:15px;margin-bottom:4px;}
+  #editor .range-month-days{gap:2px;}
+  #editor .range-month-days button{padding:3px 0;font-size:13px;line-height:1.15;min-height:24px;}
+  #editor .range-month-days .range-weekday{padding:2px 0;font-size:11px;}
+  #editor .editor-header{padding-top:8px;}
+  #editor .editor-header h2{font-size:21px;}
+  #editor .editor-top{padding-top:2px;padding-bottom:3px;}
+  #editor .editor-top p{margin:2px 0;}
+  #editor .editor-bottom{padding-top:5px;padding-bottom:7px;}
+}
