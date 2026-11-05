@@ -27,6 +27,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build for repository subpath
         run: npm run build -- --base=/grot/
+      - name: Include install icons and manifest
+        run: cp 1EC9F8D3-2C2F-4BCC-A89E-6C623087B96F.png manifest.webmanifest dist/
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site
