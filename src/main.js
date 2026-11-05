@@ -165,10 +165,10 @@ function render() {
     <dialog id="editor"><form id="vacation-form">
       <div class="editor-header"><h2 id="editor-title">Отпуска 2027</h2></div>
       <label class="editor-person-label">Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
-      <div class="editor-top"><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить период</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button></div><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
+      <div class="editor-top"><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
       <p id="range-hint">Выберите начало отпуска, затем окончание.</p></div>
       <div class="editor-calendar-scroll"><div id="range-calendar" class="range-calendar"></div></div>
-      <div class="editor-bottom"><div id="range-selected"></div><div id="range-periods" class="period-scroll" tabindex="0"></div>
+      <div class="editor-bottom"><div id="range-selected"></div><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить период</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button></div><div id="range-periods" class="period-scroll" tabindex="0"></div>
       <input id="start" type="hidden"><input id="end" type="hidden">
       <div id="day-count" class="day-count" aria-live="polite"></div><p id="editor-split-warning" class="rule-warning" role="status"></p><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
       <p id="form-error" role="alert"></p>
