@@ -116,24 +116,31 @@ function render() {
   app.innerHTML = `
     <header><h1>График отпусков — 2027</h1><p>Планирование отпусков водителей</p></header>
     <main>
-      <div class="toolbar grot-toolbar">
-        <details class="grot-menu" id="grot-menu">
-          <summary>☰ Меню</summary>
+      <nav class="toolbar grot-toolbar" aria-label="Главное меню">
+        <details class="grot-menu">
+          <summary>График (Документы)</summary>
           <div class="grot-menu-panel">
-            <div class="grot-menu-title">График</div>
             <button type="button" id="period">Добавить период отпуска</button>
             <button type="button" id="collapse-month">Свернуть все месяцы</button>
-            <div class="grot-menu-title">Справочники</div>
+          </div>
+        </details>
+        <details class="grot-menu">
+          <summary>Справочники</summary>
+          <div class="grot-menu-panel">
             <button type="button" id="staff-open">Сотрудники</button>
             <button type="button" id="calendar-open">Производственный календарь</button>
-            <div class="grot-menu-title">Сервис</div>
+          </div>
+        </details>
+        <details class="grot-menu">
+          <summary>Сервис</summary>
+          <div class="grot-menu-panel">
             <button type="button" id="backup-export">Резервная копия</button>
             <button type="button" id="backup-restore">Восстановить</button>
             <button type="button" id="help-open">Справка · Правила отпусков</button>
           </div>
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden>
-      </div>
+      </nav>
       <div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name"><span class="header-filter">Водитель <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
       <th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}<th class="annual-total-heading">Всего дней</th></tr></thead>
@@ -330,7 +337,10 @@ function render() {
     if(activeFilter==='driver')selectedDriverIds=next;else selectedGroups=next;
     filterDialog.close();render();
   };
-  document.querySelectorAll('.grot-menu-panel button').forEach(b=>b.addEventListener('click',()=>{document.querySelector('#grot-menu').open=false;}));
+  document.querySelectorAll('.grot-menu').forEach(menu=>{
+    menu.addEventListener('toggle',()=>{if(menu.open)document.querySelectorAll('.grot-menu').forEach(other=>{if(other!==menu)other.open=false;});});
+    menu.querySelectorAll('.grot-menu-panel button').forEach(b=>b.addEventListener('click',()=>{menu.open=false;}));
+  });
   document.querySelector('#collapse-month').onclick=()=>{expandedMonths.clear();render();};
   document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();});
   const dialog = document.querySelector('#editor');
