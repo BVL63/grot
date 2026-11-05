@@ -164,3 +164,8 @@ dialog input,dialog select { width:100%; }
 /* Left-align driver names in the annual table */
 .annual-table tbody th.name{text-align:left;}
 .annual-table tbody th.name .driver{display:block;text-align:left;width:100%;}
+
+/* Narrow driver column; keep group aligned with sticky edge */
+.annual-table .name{left:0;width:170px;min-width:170px;max-width:170px;}
+.annual-table .group{left:170px;}
+.annual-table tbody th.name .driver{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
