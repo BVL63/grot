@@ -141,14 +141,14 @@ function render() {
     <dialog id="editor"><form id="vacation-form">
       <h2 id="editor-title">Добавить период отпуска</h2>
       <label>Водитель <select id="person">${drivers.map(d=>`<option value="${d.id}">${d.name} — группа ${d.group}</option>`).join('')}</select></label>
-      <div class="editor-top"><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
+      <div class="editor-top"><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить период</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button></div><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
       <p id="range-hint">Выберите начало отпуска, затем окончание.</p></div>
       <div class="editor-calendar-scroll"><div id="range-calendar" class="range-calendar"></div></div>
       <div class="editor-bottom"><div id="range-selected"></div><div id="range-periods"></div>
       <input id="start" type="hidden"><input id="end" type="hidden">
       <div id="day-count" class="day-count" aria-live="polite"></div><p id="editor-split-warning" class="rule-warning" role="status"></p><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
       <p id="form-error" role="alert"></p>
-      <div class="actions"><button type="button" id="cancel">Отмена</button><button type="submit">Сохранить</button></div></div>
+      <div class="actions"><button type="button" id="cancel">Закрыть</button><button type="submit">Сохранить</button></div></div>
     </form></dialog>
     <dialog id="calendar-dialog"><h2>Производственный календарь — 2027</h2>
       <p>CSV с колонками date;type. Дата в формате ГГГГ-ММ-ДД; тип holiday (праздник), weekend (выходной), workday (рабочий).</p>
@@ -251,7 +251,7 @@ function render() {
   const dialog = document.querySelector('#editor');
   const driverCard=document.querySelector('#driver-card');
   let currentDriver=drivers[0].id;
-  let rangeMonth=selectedMonth, rangeStep=0, draftPeriods=[], selectedDraft=-1, changingDraft=-1;
+  let rangeMonth=selectedMonth, rangeStep=0, draftPeriods=[], selectedDraft=-1, changingDraft=-1, editorMode="view";
   function openEditor(id, period=null, fromCard=false) {
     editingPeriod=period;
     document.querySelector('#editor-title').textContent=fromCard?'Отпуска: '+drivers.find(d=>d.id===id).name:(period?'Изменить период отпуска':'Выбор периодов отпуска');
@@ -260,12 +260,12 @@ function render() {
     document.querySelector('#person').closest('label').hidden=Boolean(period) || fromCard;
     document.querySelector('#start').value=period?period.start:'';
     document.querySelector('#end').value=period?period.end:'';
-    rangeStep=0;selectedDraft=-1;changingDraft=-1;
+    rangeStep=0;selectedDraft=-1;changingDraft=-1;editorMode="view";
     draftPeriods=period?[{start:period.start,end:period.end}]:periodsFor(id).map(p=>({start:p.start,end:p.end}));
     document.querySelector('#start').value='';document.querySelector('#end').value='';
     drawRangeCalendar();
     document.querySelector('#form-error').textContent='';
-
+    updateEditorMode();
     updateCount();
     dialog.showModal();
   }
@@ -297,6 +297,21 @@ function render() {
   document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>openEditor(Number(el.dataset.driver),null,true));
   document.querySelector('#driver-close').onclick=()=>driverCard.close();
   document.querySelector('#driver-add').onclick=()=>{driverCard.close();openEditor(currentDriver,null,true);};
+  function updateEditorMode(){
+    document.querySelector('#mode-add').disabled=editorMode==='add';
+    document.querySelector('#mode-edit').disabled=editorMode==='edit';
+    document.querySelector('#mode-delete').disabled=editorMode==='delete';
+    document.querySelector('#vacation-form button[type="submit"]').hidden=editorMode==='view';
+    document.querySelector('#range-hint').textContent=editorMode==='view'?'Просмотр отпусков. Для изменений нажмите кнопку выше.':editorMode==='add'?'Выберите начало и окончание нового периода.':editorMode==='edit'?'Нажмите на существующий отпуск для изменения дат.':'Нажмите на период, который нужно удалить.';
+  }
+  function setEditorMode(mode){
+    editorMode=mode;rangeStep=0;changingDraft=-1;selectedDraft=-1;
+    document.querySelector('#start').value='';document.querySelector('#end').value='';
+    drawRangeCalendar();updateEditorMode();updateCount();
+  }
+  document.querySelector('#mode-add').onclick=()=>setEditorMode('add');
+  document.querySelector('#mode-edit').onclick=()=>setEditorMode('edit');
+  document.querySelector('#mode-delete').onclick=()=>setEditorMode('delete');
   function updateCount() {
     const id=Number(document.querySelector('#person').value);
     const driver=drivers.find(d=>d.id===id);
@@ -307,7 +322,7 @@ function render() {
     document.querySelector('#day-count').textContent='Положено: '+(driver?.allowance||36)+' · Запланировано: '+planned+' · Осталось: '+remain+' дн.';
     document.querySelector('#editor-split-warning').textContent=combined.length>0&&!combined.some(p=>leaveDays(p.start,p.end)>=14)?'⚠ Нет ни одной части отпуска продолжительностью не менее 14 дней. Перед утверждением графика необходимо исправить.':'';
     document.querySelector('#form-error').textContent=remain<0?'Превышена продолжительность отпуска. Уменьшите периоды.':'';
-    document.querySelector('#vacation-form button[type="submit"]').disabled=remain<0||!draftPeriods.length;
+    document.querySelector('#vacation-form button[type="submit"]').disabled=editorMode==='view'||remain<0||!draftPeriods.length;
   }
   function drawRangeCalendar() {
     const start=document.querySelector('#start').value,end=document.querySelector('#end').value;
@@ -327,14 +342,14 @@ function render() {
     }
     document.querySelector('#range-calendar').innerHTML=html;
     document.querySelector('#range-selected').textContent=start?'Начало: '+displayDate(start)+' · Выберите окончание':'Выберите начало следующего периода';
-    document.querySelector('#range-periods').innerHTML=draftPeriods.map((p,i)=>'<div class="draft-period '+(selectedDraft===i?'draft-selected':'')+'"><span>'+(i+1)+'. '+displayDate(p.start)+' — '+displayDate(p.end)+' · '+leaveDays(p.start,p.end)+' дн.</span><button type="button" data-draft-edit="'+i+'">Изменить</button><button type="button" data-draft-remove="'+i+'">Удалить</button></div>').join('');
-    document.querySelectorAll('[data-draft-edit]').forEach(b=>b.onclick=()=>{selectedDraft=Number(b.dataset.draftEdit);changingDraft=selectedDraft;rangeStep=0;document.querySelector('#start').value='';document.querySelector('#end').value='';drawRangeCalendar();updateCount();});
-    document.querySelectorAll('[data-draft-remove]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.draftRemove);draftPeriods.splice(i,1);selectedDraft=-1;changingDraft=-1;rangeStep=0;drawRangeCalendar();updateCount();});
-
-    document.querySelector('#range-hint').textContent=rangeStep===1?'Выберите окончание периода.':changingDraft>=0?'Выбран период №'+(changingDraft+1)+'. Нажмите новые начало и окончание.':'Нажмите на зелёный период для изменения или выберите даты нового периода.';
+    document.querySelector('#range-periods').innerHTML=draftPeriods.map((p,i)=>'<div class="draft-period '+(selectedDraft===i?'draft-selected':'')+'"><span>'+(i+1)+'. '+displayDate(p.start)+' — '+displayDate(p.end)+' · '+leaveDays(p.start,p.end)+' дн.</span></div>').join('');
+    document.querySelector('#range-hint').textContent=editorMode==='view'?'Просмотр отпусков. Для изменений нажмите кнопку выше.':rangeStep===1?'Выберите окончание периода.':changingDraft>=0?'Выберите новые начало и окончание.':editorMode==='add'?'Выберите начало нового периода.':editorMode==='edit'?'Нажмите на существующий период для изменения.':'Нажмите на период для удаления.';
     document.querySelectorAll('[data-range-date]').forEach(b=>b.onclick=()=>{
       const date=b.dataset.rangeDate;
-      if(rangeStep!==1 && changingDraft<0){const found=draftPeriods.findIndex(p=>date>=p.start&&date<=p.end);if(found>=0){selectedDraft=found;changingDraft=found;drawRangeCalendar();updateCount();return;}}
+      if(editorMode==='view')return;
+      if(editorMode==='delete'){const i=draftPeriods.findIndex(p=>date>=p.start&&date<=p.end);if(i<0)return;if(!confirm('Удалить период '+displayDate(draftPeriods[i].start)+' — '+displayDate(draftPeriods[i].end)+'?'))return;draftPeriods.splice(i,1);drawRangeCalendar();updateCount();return;}
+      if(editorMode==='edit'&&changingDraft<0&&rangeStep===0&& !draftPeriods.some(p=>date>=p.start&&date<=p.end))return;
+      if(rangeStep!==1 && changingDraft<0 && editorMode==='edit'){const found=draftPeriods.findIndex(p=>date>=p.start&&date<=p.end);if(found>=0){selectedDraft=found;changingDraft=found;drawRangeCalendar();updateCount();return;}}
       if(rangeStep!==1){document.querySelector('#start').value=date;document.querySelector('#end').value='';rangeStep=1;}
       else {
         const a=document.querySelector('#start').value;
@@ -354,7 +369,8 @@ function render() {
   document.querySelector('#vacation-form').onsubmit=e=>{
     e.preventDefault();
     const id=Number(document.querySelector('#person').value);
-    if(rangeStep===1||changingDraft>=0||!draftPeriods.length){document.querySelector('#form-error').textContent='Завершите выбор периода.';return;}
+    if(editorMode==='view')return;
+    if(rangeStep===1||changingDraft>=0){document.querySelector('#form-error').textContent='Завершите выбор периода.';return;}
     const original=periodsFor(id);
     const proposed=editingPeriod?original.filter(p=>p!==editingPeriod).concat(draftPeriods):draftPeriods;
     const sorted=[...proposed].sort((x,y)=>x.start.localeCompare(y.start));
@@ -367,7 +383,7 @@ function render() {
     dialog.close();
     render();
   };
-  document.querySelectorAll('[data-date]').forEach(cell=>cell.onclick=()=>{
+  document.querySelectorAll('[data-date]').forEach(cell=>cell.onclick=()=>{openEditor(Number(cell.dataset.id),null,true);return;
     const id=Number(cell.dataset.id), date=cell.dataset.date;
     const set=daysFor(id);
     if(set.has(date)) set.delete(date); else set.add(date);
