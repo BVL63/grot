@@ -197,3 +197,15 @@ dialog input,dialog select { width:100%; }
 #editor .periods-toolbar .editor-mode-actions{flex:0 0 auto;display:flex;flex-direction:row;flex-wrap:nowrap;gap:6px;}
 #editor .periods-toolbar .editor-mode-actions button{white-space:nowrap;padding:9px 10px;}
 @media(max-width:680px){#editor .periods-toolbar{flex-wrap:wrap;}#editor .periods-toolbar .period-scroll{flex:1 1 100%;width:100%;max-height:100px;}#editor .periods-toolbar .editor-mode-actions{flex-wrap:wrap;}}
+
+/* Desktop: full year in two rows of six months */
+@media (min-width:1300px) and (min-height:700px){
+  #editor{width:min(1540px,calc(100vw - 32px));max-width:none;}
+  #range-calendar.range-calendar{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;}
+  #editor .editor-calendar-scroll{padding:0 14px 8px;}
+  #editor .range-month{padding:7px 5px;border-radius:8px;}
+  #editor .range-month h3{font-size:15px;margin-bottom:5px;}
+  #editor .range-month-days{gap:2px;}
+  #editor .range-month-days button{padding:5px 0;font-size:13px;}
+  #editor .range-month-days .range-weekday{padding:3px 0;font-size:11px;}
+}
