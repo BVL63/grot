@@ -301,3 +301,8 @@ dialog input,dialog select { width:100%; }
 .grot-header-year{justify-self:end}
 .grot-header-year select{font-size:clamp(18px,2.5vw,26px);font-weight:700;color:#fff;background:#122b50;border:1px solid #7185a2;border-radius:7px;padding:5px 8px;max-width:110px}
 @media(max-width:600px){.grot-header{grid-template-columns:58px minmax(0,1fr) auto!important;gap:7px!important;min-height:66px!important;padding:6px 8px!important}.grot-header-logo{width:58px!important;height:48px!important}.grot-header-name{font-size:clamp(12px,3.2vw,17px);letter-spacing:0}.grot-header-org{font-size:9px;margin-top:3px}.grot-header-year select{font-size:17px;padding:4px 2px;max-width:82px}}
+
+/* v0.2.8: make the GROT emblem visually prominent beside the year */
+.grot-header{grid-template-columns:150px minmax(0,1fr) auto!important;min-height:98px!important}
+.grot-header-logo{width:150px!important;height:82px!important;max-width:none!important;max-height:none!important}
+@media(max-width:600px){.grot-header{grid-template-columns:94px minmax(0,1fr) auto!important;min-height:76px!important}.grot-header-logo{width:94px!important;height:66px!important}}
