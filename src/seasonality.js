@@ -28,7 +28,7 @@ export function calculateSeasonality(rows,year=2026){
 }
 export function seasonalityDialog(currentRows=[],defaultYear=2026){
  const dialog=document.createElement('dialog');dialog.id='seasonality-dialog';dialog.style.cssText='max-width:min(960px,96vw);max-height:88vh;overflow:auto;padding:20px;border:1px solid #ccd3e0;border-radius:12px';
- dialog.innerHTML='<h2>КСН и КОН — история отпусков</h2><p>Загрузите данные за 2026 год в формате CSV: водитель;начало;конец. Даты: ГГГГ-ММ-ДД или ДД.ММ.ГГГГ. Один период — одна строка. Повторный импорт заменяет исторические данные выбранного года.</p><label>Год <input id="season-year" type="number" min="2020" max="2100" value="${defaultYear}" style="width:90px"></label> <input id="season-file" type="file" accept=".csv,text/csv"> <button id="season-close">Закрыть</button><p id="season-status"></p><div id="season-results"></div>';
+ dialog.innerHTML='<h2>КОН, КСН и ИПО — анализ отпусков</h2><p>Для 2027 года используются текущие отпуска из графика. Для архивных годов можно загрузить CSV: водитель;начало;конец. Даты: ГГГГ-ММ-ДД или ДД.ММ.ГГГГ. Один период — одна строка. Повторный импорт заменяет исторические данные выбранного года.</p><label>Год <input id="season-year" type="number" min="2020" max="2100" value="${defaultYear}" style="width:90px"></label> <input id="season-file" type="file" accept=".csv,text/csv"> <button id="season-close">Закрыть</button><p id="season-status"></p><div id="season-results"></div>';
  document.body.append(dialog);
  const el=id=>dialog.querySelector('#'+id);
  const fmt=n=>n===null?'—':n.toFixed(2).replace('.',',');
@@ -40,6 +40,7 @@ export function seasonalityDialog(currentRows=[],defaultYear=2026){
  const parseDate=v=>{v=v.trim();const m=v.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);return m?m[3]+'-'+m[2]+'-'+m[1]:v};
  const lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim());const sep=(lines[0]||'').includes(';')?';':',';
  const rows=lines.map(l=>l.split(sep).map(s=>s.trim().replace(/^"|"$/g,''))).filter(p=>p.length>=3).map(p=>({year,driver:p[0],start:parseDate(p[1]),end:parseDate(p[2])})).filter(r=>r.driver&&r.start.startsWith(year+'-')&&/^\d{4}-\d{2}-\d{2}$/.test(r.end)&&r.end>=r.start);
+ if(year===2027){el('season-status').textContent='Для 2027 года данные берутся из рабочего графика. CSV не импортирован.';return}
  if(!rows.length){el('season-status').textContent='Не найдены корректные периоды. Проверьте CSV и год.';return}
  saveHistory(loadHistory().filter(r=>Number(r.year)!==year).concat(rows));el('season-status').textContent='Загружено периодов: '+rows.length+'. Данные сохранены в этом браузере.';draw();};
  draw();dialog.showModal();
