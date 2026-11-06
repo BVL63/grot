@@ -146,6 +146,11 @@ function showDriverHistory(name){
  dialog.innerHTML='<h2>История отпусков: '+escapeHtml(name)+'</h2><p>Количество календарных дней отпуска по месяцам · только просмотр</p><div class="scroll"><table class="annual-table history-summary"><thead><tr><th>Год</th>'+headers+'<th>Всего</th></tr></thead><tbody>'+rows+'</tbody></table></div><div class="actions"><button type="button" id="driver-history-close">Закрыть</button></div>';
  dialog.querySelector('#driver-history-close').onclick=()=>dialog.close();dialog.showModal();
 }
+function showAboutGrot(){
+ let dlg=document.getElementById('grot-about-dialog');if(!dlg){dlg=document.createElement('dialog');dlg.id='grot-about-dialog';document.body.appendChild(dlg)}
+ dlg.innerHTML='<h2>О программе ГРОТ</h2><p><strong>ГРОТ — График отпусков</strong></p><p>Планирование и анализ ежегодных отпусков водителей.</p><p>Автор идеи и разработка: В. Л. Бахметьев<br>При содействии OpenAI</p><p>Год создания: 2026<br>Версия: '+APP_VERSION+'</p><div class="actions"><button type="button" id="grot-about-close">Закрыть</button></div>';
+ dlg.querySelector('#grot-about-close').onclick=()=>dlg.close();dlg.showModal();
+}
 function renderHistory2026(){
  const entries=loadHistory().filter(p=>Number(p.year)===2026);
  const names=[...new Set(entries.map(p=>p.driver))].sort((a,b)=>a.localeCompare(b,'ru'));
@@ -157,12 +162,13 @@ function renderHistory2026(){
  const cells=columns.map(c=>'<th><button type="button" data-history-month="'+c.m+'">'+(c.d||months[c.m].slice(0,3))+'</button></th>').join('');
  const rows=names.map(n=>'<tr><th class="fixed name"><button type="button" class="driver" data-history-driver="'+escapeHtml(n)+'">'+escapeHtml(n)+'</button></th><td class="fixed group">'+(groups[n]||'—')+'</td>'+columns.map(c=>{const set=days.get(n);const count=c.d?Number(set.has(dateAt(c.m,c.d))):[...set].filter(x=>Number(x.slice(5,7))===c.m+1).length;return '<td class="'+(c.d?'day ':'month-cell ')+(count?(c.d?'vacation':'has-vacation'):'')+'">'+(c.d?(count?'●':''):count||'—')+'</td>'}).join('')+'<td class="annual-total">'+days.get(n).size+'</td></tr>').join('');
  const totals=columns.map(c=>'<td>'+names.filter(n=>c.d?days.get(n).has(dateAt(c.m,c.d)):[...days.get(n)].some(x=>Number(x.slice(5,7))===c.m+1)).length+'</td>').join('');
- app.innerHTML='<header class="grot-header" style="display:flex;flex-direction:row;align-items:center;gap:12px;padding:9px 14px;min-height:76px;max-width:100%;overflow:hidden;background:#0b1b3a"><img class="grot-header-logo" style="display:block;width:100px;height:60px;max-width:100px;max-height:60px;min-width:100px;object-fit:contain;flex:0 0 100px" src="'+grotLogo+'" alt="Логотип ГРОТ — График отпусков"><div class="grot-header-text" style="min-width:0;flex:1"><h1><select id="grot-year" aria-label="Год графика" style="font:inherit;background:#0b1b3a;color:white;border:1px solid #74829c;border-radius:6px"><option value="2026">2026</option><option value="2027">2027</option></select></h1><p>КГБУЗ «Владивостокская поликлиника № 9»</p></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>График (Документы)</summary><div class="grot-menu-panel"><button type="button" id="archive-collapse">Свернуть все месяцы</button><button type="button" id="archive-current">Перейти к графику 2027</button></div></details><details class="grot-menu"><summary>Справочники</summary><div class="grot-menu-panel"><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" id="archive-metrics">КОН / КСН / ИПО</button><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button></div></details></nav><p><strong>Архивный график 2026 года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>'+cells+'<th>Всего дней</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>'+totals+'<td>'+names.length+'</td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}</footer></main>';
+ app.innerHTML='<header class="grot-header" style="display:flex;flex-direction:row;align-items:center;gap:12px;padding:9px 14px;min-height:76px;max-width:100%;overflow:hidden;background:#0b1b3a"><img class="grot-header-logo" style="display:block;width:100px;height:60px;max-width:100px;max-height:60px;min-width:100px;object-fit:contain;flex:0 0 100px" src="'+grotLogo+'" alt="Логотип ГРОТ — График отпусков"><div class="grot-header-text" style="min-width:0;flex:1"><h1><select id="grot-year" aria-label="Год графика" style="font:inherit;background:#0b1b3a;color:white;border:1px solid #74829c;border-radius:6px"><option value="2026">2026</option><option value="2027">2027</option></select></h1><p>КГБУЗ «Владивостокская поликлиника № 9»</p></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>График (Документы)</summary><div class="grot-menu-panel"><button type="button" id="archive-collapse">Свернуть все месяцы</button><button type="button" id="archive-current">Перейти к графику 2027</button></div></details><details class="grot-menu"><summary>Справочники</summary><div class="grot-menu-panel"><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" id="archive-metrics">КОН / КСН / ИПО</button><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-about="1">О программе</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button></div></details></nav><p><strong>Архивный график 2026 года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>'+cells+'<th>Всего дней</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>'+totals+'<td>'+names.length+'</td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>';
  document.querySelector('#grot-year').value='2026';
  document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
  document.querySelector('#history-metrics').onclick=seasonalityDialog;
  document.querySelectorAll('[data-history-driver]').forEach(b=>b.onclick=()=>showDriverHistory(b.dataset.historyDriver));
  document.querySelector('#archive-metrics').onclick=seasonalityDialog;
+ document.querySelectorAll('[data-archive-about]').forEach(b=>b.onclick=showAboutGrot);
  document.querySelector('#archive-collapse').onclick=()=>{expandedMonths.clear();render()};
  document.querySelector('#archive-current').onclick=()=>{displayYear=2027;render()};
  document.querySelector('#archive-refresh').onclick=()=>location.reload();
@@ -209,7 +215,7 @@ function render() {
             <button type="button" id="backup-restore">Восстановить</button>
             <button type="button" id="seasonality-open">КОН / КСН / ИПО</button>
             <button type="button" id="app-refresh">Обновить</button>
-            <button type="button" id="help-open">Справка · Правила отпусков</button>
+            <button type="button" id="help-open">Справка · Правила отпусков</button><button type="button" id="about-open">О программе</button><button type="button" data-archive-about="1">О программе</button>
           </div>
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden>
@@ -221,7 +227,7 @@ function render() {
       <p>Нажмите на название месяца, чтобы развернуть его дни; повторное нажатие свернёт только этот месяц. Можно открыть несколько месяцев одновременно. Нажмите на фамилию для просмотра отпусков.</p>
       <p class="notice" role="status">${notice}</p>
       <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
-    <footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}</footer></main>
+    <footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
     <dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
       <div id="staff-list"></div><div class="actions"><button type="button" id="staff-add">Добавить сотрудника</button><button type="button" id="staff-import-2026">Загрузить из 2026 года</button><button type="button" id="staff-close">Закрыть</button></div>
@@ -428,6 +434,7 @@ function render() {
     document.querySelector('#calendar-dialog').close();render();
   };
   document.querySelector('#help-open').onclick=()=>document.querySelector('#help-dialog').showModal();
+  document.querySelector('#about-open').onclick=showAboutGrot;
   document.querySelector('#help-close').onclick=()=>document.querySelector('#help-dialog').close();
   let activeFilter=null;
   const filterDialog=document.querySelector('#filter-dialog');
