@@ -327,3 +327,26 @@ main{padding-top:5px!important}
 .grot-menu{flex:0 0 auto!important}
 .grot-menu>summary{height:100%!important;box-sizing:border-box!important}
 @media(max-width:600px){.grot-toolbar{gap:4px!important;padding:5px!important;margin-bottom:5px!important}.grot-menu>summary{padding:8px 6px!important}}
+
+/* Organization editor: structured, responsive card */
+#grot-organization-dialog{width:min(720px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:min(90dvh,920px);padding:0;border:1px solid #c8d5e3;border-radius:16px;box-shadow:0 20px 70px #091b3b55;color:#243247;overflow:hidden}
+#grot-organization-dialog::backdrop{background:#0a1b36a8}
+#grot-org-form{display:flex;flex-direction:column;max-height:min(90dvh,920px);min-width:0}
+.org-dialog-header{background:#102a4e;color:#fff;padding:20px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex:none}
+.org-dialog-header h2{font-size:23px;margin:3px 0 4px;color:#fff}
+.org-dialog-header p{font-size:13px;margin:0;color:#c5d9ed}
+.org-eyebrow{font-size:10px;font-weight:700;letter-spacing:.16em;color:#8ec8f6}
+.org-x{background:#ffffff20;color:#fff;border:1px solid #ffffff55;border-radius:8px;width:36px;height:36px;padding:0;font-size:26px;line-height:1}
+.org-dialog-content{overflow-y:auto;min-height:0;padding:16px 24px 12px;background:#f8fafc;overscroll-behavior:contain}
+.org-section{margin:0 0 17px;padding:15px 16px;background:white;border:1px solid #e0e8f1;border-radius:11px}
+.org-section h3{margin:0 0 13px;font-size:14px;color:#194c78;font-weight:700}
+.org-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
+.org-field{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:12px;font-weight:600;color:#52667b}
+.org-field:has([name="fullName"]),.org-field:has([name="shortName"]),.org-field:has([name="address"]){grid-column:1/-1}
+.org-field input{width:100%;min-width:0;box-sizing:border-box;padding:10px 11px;font-size:15px;font-weight:400;color:#1c3046;background:#fff;border:1px solid #cad7e5;border-radius:7px;text-overflow:ellipsis}
+.org-field input:focus{outline:2px solid #85b8e5;outline-offset:0;border-color:#3576ad}
+.org-note{font-size:12px;line-height:1.45;color:#6b7d90;margin:5px 0 12px}
+.org-dialog-footer{display:flex;justify-content:flex-end;gap:10px;padding:13px 24px;background:#fff;border-top:1px solid #dce5ef;flex:none}
+.org-dialog-footer button{border-radius:8px;padding:10px 17px;font-size:14px;font-weight:600}
+.org-save{background:#176b9a;color:#fff;border-color:#176b9a}
+@media(max-width:600px){#grot-organization-dialog{width:calc(100vw - 18px);max-width:calc(100vw - 18px);max-height:88dvh;border-radius:12px}#grot-org-form{max-height:88dvh}.org-dialog-header{padding:15px 16px}.org-dialog-header h2{font-size:19px}.org-dialog-content{padding:12px}.org-section{padding:12px;margin-bottom:11px}.org-fields{gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}.org-field input{font-size:16px;padding:9px}.org-dialog-footer{padding:10px 13px}}
