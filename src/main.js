@@ -207,7 +207,6 @@ function render() {
         <details class="grot-menu">
           <summary>Документ</summary>
           <div class="grot-menu-panel">
-            <button type="button" id="period">Добавить период отпуска</button>
             <button type="button" id="collapse-month">Свернуть все месяцы</button>
             <button type="button" id="seasonality-open">Анализ отпускной нагрузки · КОН / КСН / ИПО</button>
           </div>
@@ -526,7 +525,6 @@ function render() {
     });
     driverCard.showModal();
   }
-  document.querySelector('#period').onclick=()=>openEditor(drivers[0].id);
   document.querySelector('#person').onchange=()=>{draftPeriods=periodsFor(Number(document.querySelector('#person').value)).map(p=>({start:p.start,end:p.end}));rangeStep=0;drawRangeCalendar();updateCount();};
   document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>openEditor(Number(el.dataset.driver),null,true));
   document.querySelector('#driver-history').onclick=()=>showDriverHistory(shortStaffName(drivers.find(d=>Number(d.id)===Number(currentDriver))||{}));
