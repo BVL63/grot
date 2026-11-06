@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.2.1';
+const APP_VERSION='0.2.2';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -452,7 +452,7 @@ function render() {
   });
   document.querySelector('#collapse-month').onclick=()=>{expandedMonths.clear();render();};
   document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();});
-  document.querySelector('#seasonality-open').onclick=seasonalityDialog;
+  document.querySelector('#seasonality-open').onclick=()=>seasonalityDialog(vacations.map(v=>({...v,year:2027,driver:shortStaffName(drivers.find(d=>Number(d.id)===Number(v.driverId))||{})})),2027);
   document.querySelector('#app-refresh').onclick=()=>location.reload();
   document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
   const dialog = document.querySelector('#editor');
