@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.2.4';
+const APP_VERSION='0.2.5';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -325,7 +325,7 @@ function render() {
     document.querySelector('#staff-dialog').close();document.querySelector('#staff-card').showModal();
   }
   function drawStaff(){
-    const sorted=[...drivers].sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru'));
+    const sorted=[...drivers].sort((a,b)=>Number(Boolean(a.dismissed||a.dismissalDate))-Number(Boolean(b.dismissed||b.dismissalDate))||shortStaffName(a).localeCompare(shortStaffName(b),'ru'));
     document.querySelector('#staff-list').innerHTML='<div class="staff-table-scroll"><table class="staff-table"><thead><tr><th>№</th><th>Фамилия И.О.</th><th>Подразделение</th><th>Группа отпусков</th><th>Дней отпуска</th><th>Дата приёма</th><th>Дата увольнения / статус</th><th>Действия</th></tr></thead><tbody>'+sorted.map((d,i)=>'<tr><td>'+(i+1)+'</td><td><button type="button" class="staff-name-link" data-staff="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button></td><td>'+escapeHtml(d.department||'—')+'</td><td>'+escapeHtml(d.group)+'</td><td>'+d.allowance+'</td><td>'+escapeHtml(d.hireDate||'—')+'</td><td>'+escapeHtml(d.dismissalDate|| (d.dismissed?'Уволен':'Работает'))+'</td><td><button type="button" data-staff="'+d.id+'">Изменить</button> <button type="button" data-staff-delete="'+d.id+'">Удалить</button></td></tr>').join('')+'</tbody></table></div>';
     document.querySelectorAll('[data-staff]').forEach(btn=>btn.onclick=()=>openStaffCard(drivers.find(d=>d.id===Number(btn.dataset.staff))));
   }
