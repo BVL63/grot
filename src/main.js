@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.2.5';
+const APP_VERSION='0.2.6';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -151,7 +151,16 @@ function showAboutGrot(){
  dlg.innerHTML='<h2>О программе ГРОТ</h2><p><strong>ГРОТ — График отпусков</strong></p><p>Планирование и анализ ежегодных отпусков водителей.</p><p>Автор идеи и разработка: В. Л. Бахметьев<br>При содействии OpenAI</p><p>Год создания: 2026<br>Версия: '+APP_VERSION+'</p><div class="actions"><button type="button" id="grot-about-close">Закрыть</button></div>';
  dlg.querySelector('#grot-about-close').onclick=()=>dlg.close();dlg.showModal();
 }
+function preserveYearHeader(previousHeader){
+ if(!previousHeader)return;
+ const replacement=app.querySelector('.grot-header');
+ if(!replacement)return;
+ replacement.replaceWith(previousHeader);
+ const picker=previousHeader.querySelector('#grot-year');
+ if(picker)picker.value=String(displayYear);
+}
 function renderHistory2026(){
+ const previousHeader=app.querySelector('.grot-header');
  const entries=loadHistory().filter(p=>Number(p.year)===2026);
  const names=[...new Set(entries.map(p=>p.driver))].sort((a,b)=>a.localeCompare(b,'ru'));
  const groups={'Бахметьев':'8','Винник':'8','Данилюк':'9.1','Дунаев':'9.1','Илюхин':'9','Каминик':'11','Карнацкий':'8','Киселев':'1','Кулеш':'11','Ломов':'9','Мальцев':'9.1','Шпаков':'1'};
@@ -163,6 +172,7 @@ function renderHistory2026(){
  const rows=names.map(n=>'<tr><th class="fixed name"><button type="button" class="driver" data-history-driver="'+escapeHtml(n)+'">'+escapeHtml(n)+'</button></th><td class="fixed group">'+(groups[n]||'—')+'</td>'+columns.map(c=>{const set=days.get(n);const count=c.d?Number(set.has(dateAt(c.m,c.d))):[...set].filter(x=>Number(x.slice(5,7))===c.m+1).length;return '<td class="'+(c.d?'day ':'month-cell ')+(count?(c.d?'vacation':'has-vacation'):'')+'">'+(c.d?(count?'●':''):count||'—')+'</td>'}).join('')+'<td class="annual-total">'+days.get(n).size+'</td></tr>').join('');
  const totals=columns.map(c=>'<td>'+names.filter(n=>c.d?days.get(n).has(dateAt(c.m,c.d)):[...days.get(n)].some(x=>Number(x.slice(5,7))===c.m+1)).length+'</td>').join('');
  app.innerHTML='<header class="grot-header" style="display:flex;flex-direction:row;align-items:center;gap:12px;padding:9px 14px;min-height:76px;max-width:100%;overflow:hidden;background:#0b1b3a"><img class="grot-header-logo" style="display:block;width:100px;height:60px;max-width:100px;max-height:60px;min-width:100px;object-fit:contain;flex:0 0 100px" src="'+grotLogo+'" alt="Логотип ГРОТ — График отпусков"><div class="grot-header-text" style="min-width:0;flex:1"><h1><select id="grot-year" aria-label="Год графика" style="font:inherit;background:#0b1b3a;color:white;border:1px solid #74829c;border-radius:6px"><option value="2026">2026</option><option value="2027">2027</option></select></h1><p>КГБУЗ «Владивостокская поликлиника № 9»</p></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>График (Документы)</summary><div class="grot-menu-panel"><button type="button" id="archive-collapse">Свернуть все месяцы</button><button type="button" id="archive-current">Перейти к графику 2027</button></div></details><details class="grot-menu"><summary>Справочники</summary><div class="grot-menu-panel"><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" id="archive-metrics">КОН / КСН / ИПО</button><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-about="1">О программе</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button></div></details></nav><p><strong>Архивный график 2026 года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>'+cells+'<th>Всего дней</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>'+totals+'<td>'+names.length+'</td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>';
+ preserveYearHeader(previousHeader);
  document.querySelector('#grot-year').value='2026';
  document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
  document.querySelector('#history-metrics').onclick=seasonalityDialog;
@@ -176,6 +186,7 @@ function renderHistory2026(){
  document.querySelectorAll('[data-history-month]').forEach(b=>b.onclick=()=>{const m=Number(b.dataset.historyMonth);expandedMonths.has(m)?expandedMonths.delete(m):expandedMonths.add(m);render()});
 }
 function render() {
+ const previousHeader=app.querySelector('.grot-header');
   if(displayYear===2026){renderHistory2026();return;}
   const sets = new Map(drivers.map(d => [d.id, daysFor(d.id)]));
   const dateOf=(m,d)=>'2027-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
@@ -272,6 +283,7 @@ function render() {
       <p><a href="https://www.consultant.ru/document/cons_doc_LAW_34683/1f8b77b8e94f97ce88b74f92e54177e36b1d93b7/" target="_blank" rel="noopener">Трудовой кодекс РФ</a> · <a href="https://онлайнинспекция.рф/" target="_blank" rel="noopener">Онлайнинспекция.рф</a></p>
       <div class="actions"><button type="button" id="help-close">Закрыть</button></div></dialog>
     <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div id="period-total" class="day-count"></div><div id="split-rule"></div><div class="actions"><button type="button" id="driver-history">История по годам</button><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
+  preserveYearHeader(previousHeader);
   document.querySelector('#personnel-csv').onclick=personnelCsv;
   document.querySelector('#personnel-print').onclick=personnelPrint;
   document.querySelector('#backup-export').onclick=()=>{
