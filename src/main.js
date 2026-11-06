@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.2.9';
+const APP_VERSION='0.3.0';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -27,9 +27,12 @@ function openOrganizationCard(){
  if(!dlg){dlg=document.createElement('dialog');dlg.id='grot-organization-dialog';document.body.appendChild(dlg)}
  const fields=[['fullName','Полное наименование'],['shortName','Краткое наименование'],['inn','ИНН'],['kpp','КПП'],['ogrn','ОГРН'],['okpo','ОКПО'],['address','Юридический адрес'],['director','Руководитель'],['phone','Телефон'],['email','Электронная почта'],['website','Сайт']];
  const org=readOrganization();
- dlg.innerHTML='<form id="grot-org-form" style="min-width:min(560px,85vw);max-width:85vw"><h2>Организация</h2><p>Реквизиты заполняются и проверяются организацией. Сведения сохраняются только в этом браузере.</p>'+fields.map(([key,label])=>'<label style="display:block;margin:9px 0">'+label+'<input style="display:block;width:100%;box-sizing:border-box" name="'+key+'" value="'+escapeHtml(org[key])+'"></label>').join('')+'<div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button type="button" id="grot-org-cancel">Закрыть</button><button type="submit">Сохранить</button></div></form>';
+ const field=(key,label)=>'<label class="org-field"><span>'+label+'</span><input name="'+key+'" value="'+escapeHtml(org[key])+'" autocomplete="off"></label>';
+ const section=(title,keys)=>'<section class="org-section"><h3>'+title+'</h3><div class="org-fields">'+keys.map(k=>field(k,fields.find(x=>x[0]===k)[1])).join('')+'</div></section>';
+ dlg.innerHTML='<form id="grot-org-form"><header class="org-dialog-header"><div><div class="org-eyebrow">СПРАВОЧНИК</div><h2>Карточка организации</h2><p>Реквизиты и контактная информация</p></div><button type="button" class="org-x" id="grot-org-x" aria-label="Закрыть">×</button></header><div class="org-dialog-content>'+section('Наименование',['fullName','shortName'])+section('Регистрационные данные',['inn','kpp','ogrn','okpo'])+section('Адрес и руководство',['address','director'])+section('Контакты',['phone','email','website'])+'<p class="org-note">Данные сохраняются только в этом браузере. Перед использованием в документах проверьте реквизиты.</p></div><footer class="org-dialog-footer"><button type="button" id="grot-org-cancel">Отмена</button><button type="submit" class="org-save">Сохранить</button></footer></form>';
  dlg.querySelector('#grot-org-cancel').onclick=()=>dlg.close();
- dlg.querySelector('form').onsubmit=e=>{e.preventDefault();const data={};for(const [key] of fields)data[key]=String(new FormData(e.currentTarget).get(key)||'').trim();localStorage.setItem(orgStorageKey,JSON.stringify(data));dlg.close();};
+ dlg.querySelector('#grot-org-x').onclick=()=>dlg.close();
+ dlg.querySelector('form').onsubmit=e=>{e.preventDefault();const data={};const formData=new FormData(e.currentTarget);for(const [key] of fields)data[key]=String(formData.get(key)||'').trim();localStorage.setItem(orgStorageKey,JSON.stringify(data));dlg.close();};
  dlg.showModal();
 }
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
