@@ -291,3 +291,13 @@ dialog input,dialog select { width:100%; }
 #editor #editor-close-x{position:absolute;top:8px;right:8px;z-index:20;margin:0;}
 
 .grot-version-footer{padding:12px 16px 8px;text-align:right;color:#64748b;font-size:12px;font-weight:400;}
+
+/* Stable, compact header shared by both years */
+.grot-header{display:grid!important;grid-template-columns:100px minmax(0,1fr) auto!important;align-items:center!important;gap:16px!important;min-height:76px!important;padding:8px 18px!important;background:#0b1b3a!important;overflow:hidden!important}
+.grot-header-logo{display:block!important;width:100px!important;height:58px!important;object-fit:contain!important;flex:none!important}
+.grot-header-title{min-width:0;text-align:center}
+.grot-header-name{font-size:clamp(17px,2.6vw,27px);font-weight:700;letter-spacing:.04em;line-height:1.15;color:#fff}
+.grot-header-org{margin-top:5px;font-size:clamp(10px,1.4vw,13px);line-height:1.25;color:#c8e4e8}
+.grot-header-year{justify-self:end}
+.grot-header-year select{font-size:clamp(18px,2.5vw,26px);font-weight:700;color:#fff;background:#122b50;border:1px solid #7185a2;border-radius:7px;padding:5px 8px;max-width:110px}
+@media(max-width:600px){.grot-header{grid-template-columns:58px minmax(0,1fr) auto!important;gap:7px!important;min-height:66px!important;padding:6px 8px!important}.grot-header-logo{width:58px!important;height:48px!important}.grot-header-name{font-size:clamp(12px,3.2vw,17px);letter-spacing:0}.grot-header-org{font-size:9px;margin-top:3px}.grot-header-year select{font-size:17px;padding:4px 2px;max-width:82px}}
