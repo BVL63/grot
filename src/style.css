@@ -375,3 +375,20 @@ main{padding-top:5px!important}
 #grot-organization-dialog .org-fields{align-items:start!important;grid-auto-rows:min-content!important}
 #grot-organization-dialog label.org-field{display:flex!important;flex-direction:column!important;gap:5px!important;margin:0!important;padding:0!important;min-height:0!important;align-self:start!important}
 #grot-organization-dialog label.org-field input{display:block!important;margin:0!important;min-height:40px!important}
+
+/* v0.3.6: compact organization fields on tablets and desktop */
+#grot-organization-dialog .org-section{padding:14px 18px!important}
+#grot-organization-dialog .org-section h3{margin:0 0 12px!important}
+#grot-organization-dialog .org-fields{column-gap:18px!important;row-gap:12px!important}
+#grot-organization-dialog .org-field:has([name="fullName"]) input{max-width:100%!important}
+#grot-organization-dialog .org-field:has([name="shortName"]) input{max-width:540px!important}
+#grot-organization-dialog .org-field:has([name="inn"]) input,
+#grot-organization-dialog .org-field:has([name="kpp"]) input,
+#grot-organization-dialog .org-field:has([name="ogrn"]) input,
+#grot-organization-dialog .org-field:has([name="okpo"]) input{max-width:260px!important}
+#grot-organization-dialog .org-field:has([name="director"]) input{max-width:420px!important}
+#grot-organization-dialog .org-field:has([name="phone"]) input{max-width:280px!important}
+@media(max-width:600px){
+ #grot-organization-dialog .org-section{padding:12px!important}
+ #grot-organization-dialog .org-field input{max-width:100%!important}
+}
