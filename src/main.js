@@ -221,8 +221,8 @@ function render() {
         <details class="grot-menu">
           <summary>Печать</summary>
           <div class="grot-menu-panel">
-            <button type="button" id="personnel-print">Передать в кадры · Печать / PDF</button>
-            <button type="button" id="personnel-csv">Передать в кадры · Excel (CSV)</button>
+            <button type="button" id="personnel-print">График для кадров (PDF)</button>
+            <button type="button" id="personnel-csv">Экспорт в Excel</button>
           </div>
         </details>
         <details class="grot-menu">
