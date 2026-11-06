@@ -226,7 +226,7 @@ function render() {
             <button type="button" id="backup-restore">Восстановить</button>
             <button type="button" id="seasonality-open">КОН / КСН / ИПО</button>
             <button type="button" id="app-refresh">Обновить</button>
-            <button type="button" id="help-open">Справка · Правила отпусков</button><button type="button" id="about-open">О программе</button><button type="button" data-archive-about="1">О программе</button>
+            <button type="button" id="help-open">Справка · Правила отпусков</button><button type="button" id="about-open">О программе</button>
           </div>
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden>
