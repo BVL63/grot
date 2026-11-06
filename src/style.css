@@ -365,3 +365,13 @@ main{padding-top:5px!important}
 .annual-table .group{left:170px!important;width:76px!important;min-width:76px!important;max-width:76px!important;text-align:center!important;padding-left:5px!important;padding-right:5px!important}
 .annual-table .group .header-filter{gap:2px!important}
 .annual-table .group .filter-trigger{flex-basis:25px!important;width:25px!important;min-width:25px!important}
+
+/* v0.3.5 iPad Safari: reliable scrolling, no stretched fields */
+#grot-organization-dialog{height:84vh!important;height:84dvh!important;max-height:84vh!important;max-height:84dvh!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important}
+#grot-org-form{display:block!important;height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important}
+#grot-organization-dialog .org-dialog-content{display:block!important;height:auto!important;min-height:0!important;overflow:visible!important;touch-action:auto!important}
+#grot-organization-dialog .org-dialog-header{position:sticky!important;top:0!important;z-index:3!important}
+#grot-organization-dialog .org-dialog-footer{position:sticky!important;bottom:0!important;z-index:3!important}
+#grot-organization-dialog .org-fields{align-items:start!important;grid-auto-rows:min-content!important}
+#grot-organization-dialog label.org-field{display:flex!important;flex-direction:column!important;gap:5px!important;margin:0!important;padding:0!important;min-height:0!important;align-self:start!important}
+#grot-organization-dialog label.org-field input{display:block!important;margin:0!important;min-height:40px!important}
