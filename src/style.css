@@ -314,3 +314,10 @@ dialog input,dialog select { width:100%; }
 /* Keep Print dropdown fully inside the viewport on narrow screens */
 .grot-menu:has(#personnel-print) .grot-menu-panel,.grot-menu:has(#archive-print) .grot-menu-panel{left:auto!important;right:0!important;width:min(260px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important}
 .grot-menu:has(#personnel-print) .grot-menu-panel button,.grot-menu:has(#archive-print) .grot-menu-panel button{white-space:normal;overflow-wrap:anywhere;line-height:1.3}
+
+/* Navigation: closer to header, visually distinct from page background */
+main{padding-top:5px!important}
+.grot-toolbar{margin:0 0 12px!important;padding:7px 9px!important;background:#dce7f3!important;border:1px solid #b4c8df!important;border-radius:10px!important;box-shadow:0 2px 7px #142d4a18!important;width:fit-content;max-width:100%}
+.grot-menu>summary{background:#f9fcff!important;border:1px solid #90abc8!important;color:#12385f!important;box-shadow:0 1px 2px #142d4a18!important}
+.grot-menu[open]>summary{background:#c9def2!important;border-color:#517ba7!important}
+@media(max-width:600px){main{padding-top:4px!important}.grot-toolbar{padding:5px!important;gap:4px!important;margin-bottom:9px!important;border-radius:8px!important}.grot-menu>summary{padding:8px 6px!important}}
