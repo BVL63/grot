@@ -392,3 +392,14 @@ main{padding-top:5px!important}
  #grot-organization-dialog .org-section{padding:12px!important}
  #grot-organization-dialog .org-field input{max-width:100%!important}
 }
+
+/* Staff directory: compact action icons above the five-column table */
+#staff-dialog .staff-toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0;padding:8px 10px;background:#e8f0f8;border:1px solid #bed0e3;border-radius:9px}
+#staff-dialog .staff-toolbar button{width:38px;height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:1px solid #9db7d2;border-radius:7px;background:#fff;color:#173e66;font-size:23px;line-height:1;cursor:pointer}
+#staff-dialog .staff-toolbar button:disabled{opacity:.35;cursor:default}
+#staff-dialog .staff-toolbar #staff-close{margin-left:auto}
+#staff-dialog .staff-toolbar-hint{font-size:13px;color:#4b6075;margin-left:5px}
+#staff-dialog .staff-table{width:100%;min-width:0}
+#staff-dialog .staff-table tr[data-staff-row]{cursor:pointer}
+#staff-dialog .staff-table tr.staff-selected td{background:#d6e9f9!important}
+@media(max-width:600px){#staff-dialog .staff-toolbar{gap:4px;padding:6px}#staff-dialog .staff-toolbar button{width:33px;height:33px;font-size:20px}#staff-dialog .staff-toolbar-hint{width:100%;order:2;margin:2px 0 0}}
