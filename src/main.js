@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.0';
+const APP_VERSION='0.3.1';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -33,6 +33,15 @@ function openOrganizationCard(){
  dlg.querySelector('#grot-org-cancel').onclick=()=>dlg.close();
  dlg.querySelector('#grot-org-x').onclick=()=>dlg.close();
  dlg.querySelector('form').onsubmit=e=>{e.preventDefault();const data={};const formData=new FormData(e.currentTarget);for(const [key] of fields)data[key]=String(formData.get(key)||'').trim();localStorage.setItem(orgStorageKey,JSON.stringify(data));dlg.close();};
+ const scrollY=window.scrollY;
+ const previousBodyStyle={position:document.body.style.position,top:document.body.style.top,left:document.body.style.left,right:document.body.style.right,width:document.body.style.width};
+ const unlock=()=>{Object.assign(document.body.style,previousBodyStyle);window.scrollTo(0,scrollY);dlg.removeEventListener('close',unlock);};
+ dlg.addEventListener('close',unlock);
+ document.body.style.position='fixed';
+ document.body.style.top='-'+scrollY+'px';
+ document.body.style.left='0';
+ document.body.style.right='0';
+ document.body.style.width='100%';
  dlg.showModal();
 }
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
