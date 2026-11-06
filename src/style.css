@@ -350,3 +350,7 @@ main{padding-top:5px!important}
 .org-dialog-footer button{border-radius:8px;padding:10px 17px;font-size:14px;font-weight:600}
 .org-save{background:#176b9a;color:#fff;border-color:#176b9a}
 @media(max-width:600px){#grot-organization-dialog{width:calc(100vw - 18px);max-width:calc(100vw - 18px);max-height:88dvh;border-radius:12px}#grot-org-form{max-height:88dvh}.org-dialog-header{padding:15px 16px}.org-dialog-header h2{font-size:19px}.org-dialog-content{padding:12px}.org-section{padding:12px;margin-bottom:11px}.org-fields{gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}.org-field input{font-size:16px;padding:9px}.org-dialog-footer{padding:10px 13px}}
+
+/* iOS: scroll only the organization form while its modal is open */
+#grot-organization-dialog .org-dialog-content{-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain}
+#grot-organization-dialog .org-dialog-header,#grot-organization-dialog .org-dialog-footer{touch-action:manipulation}
