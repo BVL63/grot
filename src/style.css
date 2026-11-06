@@ -321,3 +321,9 @@ main{padding-top:5px!important}
 .grot-menu>summary{background:#f9fcff!important;border:1px solid #90abc8!important;color:#12385f!important;box-shadow:0 1px 2px #142d4a18!important}
 .grot-menu[open]>summary{background:#c9def2!important;border-color:#517ba7!important}
 @media(max-width:600px){main{padding-top:4px!important}.grot-toolbar{padding:5px!important;gap:4px!important;margin-bottom:9px!important;border-radius:8px!important}.grot-menu>summary{padding:8px 6px!important}}
+
+/* Menu bar spans all four buttons, with balanced spacing and tighter table gap */
+.grot-toolbar{display:flex!important;width:max-content!important;max-width:none!important;box-sizing:border-box!important;align-items:stretch!important;gap:8px!important;padding:8px!important;margin-bottom:7px!important}
+.grot-menu{flex:0 0 auto!important}
+.grot-menu>summary{height:100%!important;box-sizing:border-box!important}
+@media(max-width:600px){.grot-toolbar{gap:4px!important;padding:5px!important;margin-bottom:5px!important}.grot-menu>summary{padding:8px 6px!important}}
