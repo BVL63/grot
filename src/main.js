@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.2.2';
+const APP_VERSION='0.2.3';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -531,7 +531,7 @@ function render() {
     document.querySelector('#day-count').textContent='Положено: '+(driver?.allowance||36)+' · Запланировано: '+planned+' · Осталось: '+remain+' дн.';
     document.querySelector('#editor-split-warning').textContent=combined.length>0&&!combined.some(p=>leaveDays(p.start,p.end)>=14)?'⚠ Нет ни одной части отпуска продолжительностью не менее 14 дней. Перед утверждением графика необходимо исправить.':'';
     document.querySelector('#form-error').textContent=remain<0?'Превышена продолжительность отпуска. Уменьшите периоды.':'';
-    document.querySelector('#vacation-form button[type="submit"]').disabled=editorMode==='view'||remain<0||!draftPeriods.length;
+    document.querySelector('#vacation-form button[type="submit"]').disabled=editorMode==='view'||remain<0;
   }
   function drawRangeCalendar() {
     const start=document.querySelector('#start').value,end=document.querySelector('#end').value;
