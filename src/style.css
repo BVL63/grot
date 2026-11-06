@@ -310,3 +310,7 @@ dialog input,dialog select { width:100%; }
 /* Wider, more prominent main heading while keeping logo and year fixed */
 .grot-header-name{font-size:clamp(24px,3.4vw,38px)!important;letter-spacing:.015em!important;white-space:nowrap}
 @media(max-width:600px){.grot-header-name{font-size:clamp(15px,3.85vw,24px)!important;letter-spacing:-.02em!important}.grot-header{gap:5px!important}}
+
+/* Keep Print dropdown fully inside the viewport on narrow screens */
+.grot-menu:has(#personnel-print) .grot-menu-panel,.grot-menu:has(#archive-print) .grot-menu-panel{left:auto!important;right:0!important;width:min(260px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important}
+.grot-menu:has(#personnel-print) .grot-menu-panel button,.grot-menu:has(#archive-print) .grot-menu-panel button{white-space:normal;overflow-wrap:anywhere;line-height:1.3}
