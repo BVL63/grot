@@ -354,3 +354,9 @@ main{padding-top:5px!important}
 /* iOS: scroll only the organization form while its modal is open */
 #grot-organization-dialog .org-dialog-content{-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain}
 #grot-organization-dialog .org-dialog-header,#grot-organization-dialog .org-dialog-footer{touch-action:manipulation}
+
+/* v0.3.2: give the organization form a definite height so its center pane can scroll on iOS */
+#grot-organization-dialog{height:min(86dvh,820px)!important;max-height:86dvh!important;box-sizing:border-box!important}
+#grot-org-form{height:100%!important;max-height:none!important;min-height:0!important;overflow:hidden!important}
+#grot-organization-dialog .org-dialog-content{flex:1 1 0!important;height:0!important;min-height:0!important;overflow-x:hidden!important;overflow-y:scroll!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
+@media(max-width:600px){#grot-organization-dialog{height:84dvh!important;max-height:84dvh!important}}
