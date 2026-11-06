@@ -6,27 +6,34 @@ export function loadHistory(){let saved=[];try{saved=JSON.parse(localStorage.get
 export function saveHistory(rows){localStorage.setItem(STORAGE,JSON.stringify(rows))}
 export function calculateSeasonality(rows,year=2026){
  const data=rows.filter(r=>Number(r.year)===year&&r.driver&&/^\d{4}-\d{2}-\d{2}$/.test(r.start)&&/^\d{4}-\d{2}-\d{2}$/.test(r.end)&&r.start<=r.end);
- const counts=Array(12).fill(0),byDriver=new Map(),unique=new Set();
- for(const r of data){let date=new Date(r.start+'T12:00:00Z'),end=new Date(r.end+'T12:00:00Z');let n=0;
-  while(date<=end&&n++<366){if(date.getUTCFullYear()===year){const iso=date.toISOString().slice(0,10),key=r.driver+'|'+iso;if(!unique.has(key)){unique.add(key);const m=date.getUTCMonth();counts[m]++;if(!byDriver.has(r.driver))byDriver.set(r.driver,Array(12).fill(0));byDriver.get(r.driver)[m]++;}}date.setUTCDate(date.getUTCDate()+1)}
+ const byDriver=new Map(),daily=new Map(),counts=Array(12).fill(0);
+ for(const r of data){if(!byDriver.has(r.driver))byDriver.set(r.driver,new Set());
+  for(let date=new Date(r.start+'T12:00:00Z'),end=new Date(r.end+'T12:00:00Z'),n=0;date<=end&&n++<366;date.setUTCDate(date.getUTCDate()+1)){
+   if(date.getUTCFullYear()===year)byDriver.get(r.driver).add(date.toISOString().slice(0,10));
+  }
  }
- const total=counts.reduce((a,b)=>a+b,0),avg=total/12;
+ for(const [name,days] of byDriver)for(const day of days){
+  if(!daily.has(day))daily.set(day,new Set());daily.get(day).add(name);counts[Number(day.slice(5,7))-1]++;
+ }
+ const total=counts.reduce((a,b)=>a+b,0),avg=total/12,maxMonth=Math.max(...counts),population=byDriver.size;
  const months=counts.map((days,i)=>({month:i+1,days,ksn:avg?days/avg:null}));
- const drivers=[...byDriver].map(([name,days])=>{const own=days.reduce((a,b)=>a+b,0),others=total-own;
-  const ksn=avg?days.reduce((s,d,m)=>s+d*counts[m]/avg,0)/own:null;
-  const kon=others?days.reduce((s,d,m)=>s+d*(counts[m]-days[m])/(others/12),0)/own:null;
-  return {name,days:own,ksn,kon};
- }).sort((a,b)=>(a.kon??Infinity)-(b.kon??Infinity));
- return {months,drivers,total};
+ const drivers=[...byDriver].map(([name,days])=>{
+  const own=days.size;
+  const kon=population>1&&own?[...days].reduce((sum,day)=>sum+(daily.get(day).size-1)/(population-1),0)/own*100:0;
+  const ksn=own&&avg?[...days].reduce((sum,day)=>sum+counts[Number(day.slice(5,7))-1]/avg,0)/own:null;
+  const ksnNormalized=own&&maxMonth?[...days].reduce((sum,day)=>sum+counts[Number(day.slice(5,7))-1]/maxMonth,0)/own*100:0;
+  return {name,days:own,ksn,kon,ksnNormalized,ipo:0.6*kon+0.4*ksnNormalized};
+ }).sort((a,b)=>a.ipo-b.ipo||a.name.localeCompare(b.name,'ru'));
+ return {months,drivers,total,population};
 }
-export function seasonalityDialog(){
+export function seasonalityDialog(currentRows=[],defaultYear=2026){
  const dialog=document.createElement('dialog');dialog.id='seasonality-dialog';dialog.style.cssText='max-width:min(960px,96vw);max-height:88vh;overflow:auto;padding:20px;border:1px solid #ccd3e0;border-radius:12px';
- dialog.innerHTML='<h2>КСН и КОН — история отпусков</h2><p>Загрузите данные за 2026 год в формате CSV: водитель;начало;конец. Даты: ГГГГ-ММ-ДД или ДД.ММ.ГГГГ. Один период — одна строка. Повторный импорт заменяет исторические данные выбранного года.</p><label>Год <input id="season-year" type="number" min="2020" max="2100" value="2026" style="width:90px"></label> <input id="season-file" type="file" accept=".csv,text/csv"> <button id="season-close">Закрыть</button><p id="season-status"></p><div id="season-results"></div>';
+ dialog.innerHTML='<h2>КСН и КОН — история отпусков</h2><p>Загрузите данные за 2026 год в формате CSV: водитель;начало;конец. Даты: ГГГГ-ММ-ДД или ДД.ММ.ГГГГ. Один период — одна строка. Повторный импорт заменяет исторические данные выбранного года.</p><label>Год <input id="season-year" type="number" min="2020" max="2100" value="${defaultYear}" style="width:90px"></label> <input id="season-file" type="file" accept=".csv,text/csv"> <button id="season-close">Закрыть</button><p id="season-status"></p><div id="season-results"></div>';
  document.body.append(dialog);
  const el=id=>dialog.querySelector('#'+id);
- const fmt=n=>n===null?'—':n.toFixed(3).replace('.',',');
- function draw(){const year=Number(el('season-year').value),res=calculateSeasonality(loadHistory(),year);
- el('season-results').innerHTML=!res.total?'<p>Нет исторических данных за выбранный год. Загрузите CSV.</p>':'<h3>КСН по месяцам</h3><div style="overflow:auto"><table><thead><tr><th>Месяц</th><th>Дней</th><th>КСН</th></tr></thead><tbody>'+res.months.map((r,i)=>'<tr><td>'+['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'][i]+'</td><td>'+r.days+'</td><td>'+fmt(r.ksn)+'</td></tr>').join('')+'</tbody></table></div><h3>Показатели водителей</h3><p>КСН — средняя сезонная нагрузка дат отпуска. КОН — сезонность остальных водителей в те же месяцы, без собственного отпуска. Меньший КОН даёт приоритет при конфликте внутри группы.</p><div style="overflow:auto"><table><thead><tr><th>Водитель</th><th>Дней</th><th>КСН</th><th>КОН без себя</th></tr></thead><tbody>'+res.drivers.map(r=>'<tr><td>'+r.name.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</td><td>'+r.days+'</td><td>'+fmt(r.ksn)+'</td><td>'+fmt(r.kon)+'</td></tr>').join('')+'</tbody></table></div>';
+ const fmt=n=>n===null?'—':n.toFixed(2).replace('.',',');
+ function draw(){const year=Number(el('season-year').value),res=calculateSeasonality(loadHistory().filter(r=>Number(r.year)!==2027).concat(currentRows),year);
+ el('season-results').innerHTML=!res.total?'<p>Нет исторических данных за выбранный год. Загрузите CSV.</p>':'<h3>КСН по месяцам</h3><div style="overflow:auto"><table><thead><tr><th>Месяц</th><th>Дней</th><th>КСН</th></tr></thead><tbody>'+res.months.map((r,i)=>'<tr><td>'+['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'][i]+'</td><td>'+r.days+'</td><td>'+fmt(r.ksn)+'</td></tr>').join('')+'</tbody></table></div><h3>Очередность выбора на следующий год</h3><p>ИПО = 60% КОН + 40% КСНн. КОН — средняя доля коллег в отпуске по дням, без самого водителя. КСНн — средняя месячная нагрузка относительно самого загруженного месяца, %. Меньший ИПО даёт приоритет при конфликте пожеланий внутри группы. Законные преимущества сохраняются. Пока показатели рассчитаны по всему составу без разделения на группы.</p><div style="overflow:auto"><table><thead><tr><th>Очередь</th><th>Водитель</th><th>Дней</th><th>КОН, %</th><th>КСН</th><th>КСНн, %</th><th>ИПО</th></tr></thead><tbody>'+res.drivers.map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+r.name.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</td><td>'+r.days+'</td><td>'+fmt(r.kon)+'</td><td>'+fmt(r.ksn)+'</td><td>'+fmt(r.ksnNormalized)+'</td><td><strong>'+fmt(r.ipo)+'</strong></td></tr>').join('')+'</tbody></table></div>';
  }
  el('season-year').onchange=draw;el('season-close').onclick=()=>dialog.close();
  el('season-file').onchange=async e=>{const file=e.target.files[0];if(!file)return;const text=await file.text();const year=Number(el('season-year').value);
