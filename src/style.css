@@ -425,3 +425,29 @@ main{padding-top:5px!important}
  #grot-organization-dialog .org-fields{grid-template-columns:1fr!important}
  #grot-organization-dialog .org-field,#grot-organization-dialog .org-section:nth-child(2) .org-field{grid-template-columns:90px minmax(0,1fr)!important}
 }
+
+/* v0.3.14: full-year vacation calendar, four columns by three rows */
+@media(min-width:900px){
+ #editor{width:min(1500px,calc(100vw - 20px));height:min(96dvh,1050px);max-height:96dvh}
+ #range-calendar.range-calendar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:2px 0}
+ #editor .range-month{padding:4px 6px;border-radius:6px}
+ #editor .range-month h3{font-size:13px;line-height:17px;margin:0 0 2px}
+ #editor .range-month-days{gap:1px}
+ #editor .range-month-days button{padding:1px 0;min-height:20px;font-size:11px;line-height:17px;border-radius:3px}
+ #editor .range-month-days .range-weekday{font-size:10px;line-height:14px;padding:0}
+ #editor .editor-calendar-scroll{padding:0 10px 4px}
+ #editor .editor-header{padding-top:5px;padding-left:12px}
+ #editor .editor-header h2{font-size:18px}
+ #editor .editor-top{padding:2px 12px}
+ #editor .editor-bottom{padding:4px 12px 5px;max-height:28%}
+ #editor .periods-toolbar{min-height:32px}
+ #editor .periods-toolbar .period-scroll{min-height:32px;max-height:90px}
+ #editor .periods-toolbar .editor-mode-actions button{padding:6px 8px;font-size:12px}
+ #editor .editor-bottom .actions{margin-top:3px}
+}
+@media(min-width:700px) and (max-width:899px){
+ #range-calendar.range-calendar{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ #editor .range-month{padding:4px}
+ #editor .range-month-days button{min-height:19px;padding:1px 0;font-size:11px}
+ #editor .range-month h3{font-size:13px;margin-bottom:2px}
+}
