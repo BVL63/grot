@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.32';
+const APP_VERSION='0.3.33';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -430,7 +430,7 @@ function render() {
         <input type="hidden" id="staff-id">
         <label>Фамилия <input id="staff-last" required maxlength="100"></label><label>Имя <input id="staff-first" required maxlength="100"></label><label>Отчество <input id="staff-middle" maxlength="100"></label>
         <label>Подразделение <input id="staff-department" maxlength="100"></label>
-        <label>Группа отпусков <input id="staff-group" maxlength="30"></label>
+        <label>Должность <input id="staff-position" maxlength="120"></label><label>Код структурного звена <input id="staff-structure-code" readonly></label><label>Группа отпусков <input id="staff-group" maxlength="30"></label>
         <label>Дата приёма <input id="staff-hired" type="date"></label><label>Дата увольнения <input id="staff-dismissal" type="date"></label><label><input id="staff-dismissed" type="checkbox"> Уволен (если дата неизвестна)</label><label>Дней ежегодного отпуска <input id="staff-allowance" type="number" min="1" max="120" required value="36"></label>
         <p id="staff-error" role="alert"></p>
         <div class="actions"><button type="submit">Сохранить</button><button type="button" id="staff-card-close">Закрыть</button></div>
@@ -523,7 +523,8 @@ function render() {
     form.dataset.fromStructure=structureId?'1':'0';
     document.querySelector('#staff-id').value=d?.id||'';
     document.querySelector('#staff-card-title').textContent=d?'Карточка сотрудника':'Новый сотрудник';
-    if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-allowance').value=d.allowance;document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
+    if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-position').value=d.position||'';document.querySelector('#staff-allowance').value=d.allowance;document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
+    const effectiveStructureId=structureId||d?.structureId;document.querySelector('#staff-structure-code').value=structureNodes.find(n=>n.id===effectiveStructureId)?.code||'';
     if(structureId){const hierarchy=structureAncestors(structureId);const division=hierarchy.find(x=>x.type==='division');document.querySelector('#staff-department').value=division?.name||'';}
     document.querySelector('#staff-dialog').close();document.querySelector('#staff-card').showModal();
   }
@@ -608,11 +609,11 @@ function render() {
   document.querySelector('#staff-form').onsubmit=e=>{
     e.preventDefault();
     const id=Number(document.querySelector('#staff-id').value);
-    const lastName=document.querySelector('#staff-last').value.trim(),firstName=document.querySelector('#staff-first').value.trim(),middleName=document.querySelector('#staff-middle').value.trim(),name=lastName+' '+firstName[0]?.toUpperCase()+'.'+(middleName?middleName[0].toUpperCase()+'.':''),department=document.querySelector('#staff-department').value.trim(),group=document.querySelector('#staff-group').value.trim(),allowance=Number(document.querySelector('#staff-allowance').value),hireDate=document.querySelector('#staff-hired').value,dismissalDate=document.querySelector('#staff-dismissal').value,dismissed=document.querySelector('#staff-dismissed').checked||Boolean(dismissalDate);
+    const lastName=document.querySelector('#staff-last').value.trim(),firstName=document.querySelector('#staff-first').value.trim(),middleName=document.querySelector('#staff-middle').value.trim(),name=lastName+' '+firstName[0]?.toUpperCase()+'.'+(middleName?middleName[0].toUpperCase()+'.':''),department=document.querySelector('#staff-department').value.trim(),group=document.querySelector('#staff-group').value.trim(),position=document.querySelector('#staff-position').value.trim(),allowance=Number(document.querySelector('#staff-allowance').value),hireDate=document.querySelector('#staff-hired').value,dismissalDate=document.querySelector('#staff-dismissal').value,dismissed=document.querySelector('#staff-dismissed').checked||Boolean(dismissalDate);
     if(!lastName||!firstName||!Number.isInteger(allowance)||allowance<1||allowance>120)return;
     if(hireDate&&dismissalDate&&dismissalDate<hireDate){document.querySelector('#staff-error').textContent='Дата увольнения раньше даты приёма.';return;}
-    if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department,group,allowance,hireDate,dismissalDate,dismissed});}
-    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,allowance,hireDate,dismissalDate,dismissed,...(e.currentTarget.dataset.structureId?{structureId:e.currentTarget.dataset.structureId}:{})});
+    if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department,group,position,allowance,hireDate,dismissalDate,dismissed});}
+    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,position,allowance,hireDate,dismissalDate,dismissed,...(e.currentTarget.dataset.structureId?{structureId:e.currentTarget.dataset.structureId}:{})});
     const fromStructure=e.currentTarget.dataset.fromStructure==='1';
     const selectedStructureId=e.currentTarget.dataset.structureId;
     saveStaff();
