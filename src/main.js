@@ -19,6 +19,13 @@ function staffParts(d){if(d.lastName)return {last:d.lastName,first:d.firstName||
 function shortStaffName(d){const p=staffParts(d);return p.last+((p.first&&p.middle)?' '+p.first[0].toUpperCase()+'.'+p.middle[0].toUpperCase()+'.':p.first?' '+p.first[0].toUpperCase()+'.':'');}
 function compareGroupAndName(a,b){const ga=String(a.group??''),gb=String(b.group??'');return ga.localeCompare(gb,'ru',{numeric:true})||shortStaffName(a).localeCompare(shortStaffName(b),'ru');}
 function isEligibleForYear(d,year){return !(d.dismissalDate&&d.dismissalDate<year+'-01-01')&&!(d.dismissed&&!d.dismissalDate);}
+function openSeasonality(year){
+  seasonalityDialog(
+    vacations.map(v=>({...v,year:2027,driver:shortStaffName(drivers.find(d=>Number(d.id)===Number(v.driverId))||{})})),
+    year,
+    selectedYear=>selectedYear===2027?drivers.filter(d=>isEligibleForYear(d,selectedYear)&&(!d.hireDate||d.hireDate<=selectedYear+'-12-31')).map(shortStaffName):null
+  );
+}
 function saveStaff(){localStorage.setItem(staffKey,JSON.stringify(drivers));}
 const orgStorageKey='grotOrganization';
 const orgDefaults={fullName:'Краевое государственное бюджетное учреждение здравоохранения «Владивостокская поликлиника № 9»',shortName:'КГБУЗ «Владивостокская поликлиника № 9»',inn:'2540192413',kpp:'254301001',ogrn:'1132540005971',okpo:'27866762',address:'690911, Приморский край, г. Владивосток, ул. Адмирала Горшкова, д. 3',director:'Беньковская Ольга Павловна',phone:'+7 (423) 278-85-44',email:'vladpolik9@mail.ru',website:'https://vladpol-9.ru'};
@@ -204,7 +211,7 @@ function renderHistory2026(){
  document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
 
  document.querySelectorAll('[data-history-driver]').forEach(b=>b.onclick=()=>showDriverHistory(b.dataset.historyDriver));
- document.querySelector('#archive-metrics').onclick=seasonalityDialog;
+ document.querySelector('#archive-metrics').onclick=()=>openSeasonality(2026);
  document.querySelectorAll('[data-archive-about]').forEach(b=>b.onclick=showAboutGrot);
  document.querySelectorAll('[data-archive-organization]').forEach(b=>b.onclick=openOrganizationCard);
  document.querySelector('#archive-collapse').onclick=()=>{expandedMonths.clear();render()};
@@ -516,7 +523,7 @@ function render() {
   });
   document.querySelector('#collapse-month').onclick=()=>{expandedMonths.clear();render();};
   document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();});
-  document.querySelector('#seasonality-open').onclick=()=>seasonalityDialog(vacations.map(v=>({...v,year:2027,driver:shortStaffName(drivers.find(d=>Number(d.id)===Number(v.driverId))||{})})),2027);
+  document.querySelector('#seasonality-open').onclick=()=>openSeasonality(2027);
   document.querySelector('#app-refresh').onclick=()=>location.reload();
   document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
   const dialog = document.querySelector('#editor');
