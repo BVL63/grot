@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.21';
+const APP_VERSION='0.3.22';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -53,6 +53,14 @@ function structureDraw(){
 }
 function structureOpen(){structureDraw();document.querySelector('#structure-dialog').showModal()}
 function structureSelected(){return structureNodes.find(n=>n.id===document.querySelector('input[name="structure-target"]:checked')?.value)}
+function structureNextCode(parentId){
+ const parent=structureNodes.find(n=>n.id===parentId);
+ const prefix=parent?(parent.code||''):'';
+ const siblings=structureNodes.filter(n=>(n.parentId||null)===(parentId||null));
+ const used=new Set(siblings.map(n=>String(n.code||'')));
+ for(let i=1;i<10000;i++){const code=(prefix?prefix+'.':'')+String(i).padStart(2,'0');if(!used.has(code)&&!structureNodes.some(n=>n.code===code))return code}
+ return '';
+}
 function structureCard(mode){
  const n=mode==='new'?null:structureSelected();
  if(mode!=='new'&&!n){alert('Выберите элемент структуры.');return}
@@ -65,7 +73,7 @@ function structureCard(mode){
  const typeSelect=document.querySelector('#structure-card-type');
  typeSelect.innerHTML=(mode==='new'?types:[n.type]).map(t=>'<option value="'+t+'">'+structureTypes[t]+'</option>').join('');
  document.querySelector('#structure-card-name').value=n?.name||'';
- document.querySelector('#structure-card-code').value=n?.code||'';
+ document.querySelector('#structure-card-code').value=n?.code||structureNextCode(parent?.id||null);
  document.querySelector('#structure-card-parent').value=(mode==='new'?parent?.name:structureNodes.find(x=>x.id===n?.parentId)?.name)||'—';
  document.querySelector('#structure-card-title-position').value=n?.leaderTitle||'';
  const leader=document.querySelector('#structure-card-leader');
@@ -80,7 +88,10 @@ function structureCardSave(e){
  const name=document.querySelector('#structure-card-name').value.trim();if(!name)return;
  const n=mode==='new'?{id:'st-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),parentId:structureSelected()?.id||null,type:document.querySelector('#structure-card-type').value}:structureSelected();
  if(!n)return;
- n.name=name;n.code=document.querySelector('#structure-card-code').value.trim();n.leaderTitle=document.querySelector('#structure-card-title-position').value.trim();n.leaderId=document.querySelector('#structure-card-leader').value;
+ const code=document.querySelector('#structure-card-code').value.trim();
+ if(!code){alert('Укажите код структурного звена.');return}
+ if(structureNodes.some(x=>x.id!==n.id&&x.code===code)){alert('Код «'+code+'» уже используется.');return}
+ n.name=name;n.code=code;n.leaderTitle=document.querySelector('#structure-card-title-position').value.trim();n.leaderId=document.querySelector('#structure-card-leader').value;
  if(mode==='new')structureNodes.push(n);
  localStorage.setItem(structureKey,JSON.stringify(structureNodes));document.querySelector('#structure-card-dialog').close();structureDraw();
 }
