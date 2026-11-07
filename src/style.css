@@ -560,3 +560,12 @@ main{padding-top:5px!important}
 .structure-table td.structure-choice:first-child{display:table-cell!important}
 .structure-choice-mark{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;font-weight:bold;color:#176b9a}
 .structure-selected .structure-choice-mark{background:#176b9a;color:white;border-radius:3px}
+
+/* v0.3.30: compact borderless radio selection indicator */
+.structure-table th.structure-choice,.structure-table td.structure-choice{width:24px!important;min-width:24px!important;max-width:24px!important;padding:0 3px!important;text-align:center!important;border-right:0!important}
+.structure-table th.structure-choice{background:#e9eef5}
+.structure-table th:nth-child(2){width:auto}
+.structure-choice-mark{display:inline-block!important;width:13px!important;height:13px!important;border:1.5px solid #8091a6;border-radius:50%!important;background:transparent!important;position:relative;vertical-align:middle}
+.structure-choice-mark.is-selected{border-color:#176b9a!important;background:transparent!important}
+.structure-choice-mark.is-selected::after{content:"";position:absolute;inset:3px;border-radius:50%;background:#176b9a}
+.structure-table td.structure-choice:first-child{display:table-cell!important}
