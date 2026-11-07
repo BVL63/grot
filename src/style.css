@@ -511,3 +511,14 @@ main{padding-top:5px!important}
 #editor .editor-bottom .actions{margin:1px 0 0!important;gap:6px!important}
 #editor .editor-bottom .actions button{min-height:30px!important;padding:4px 10px!important}
 @media(max-width:720px){#editor .periods-toolbar .period-scroll{height:76px!important;max-height:76px!important}}
+
+/* v0.3.20 — enterprise structure directory */
+.structure-dialog{width:min(760px,94vw);max-height:88vh;overflow:auto;border:1px solid #b7c7d8;border-radius:10px;padding:16px;background:#fff;color:#243247}
+.structure-dialog::backdrop{background:rgba(20,34,55,.35)}
+.structure-dialog h2{margin:0 0 12px}
+#structure-tree{border:1px solid #d4dce6;border-radius:6px;max-height:52vh;overflow:auto;padding:8px;margin:10px 0}
+.structure-node{padding-top:5px;padding-bottom:5px;border-bottom:1px solid #edf1f5}
+.structure-node label{cursor:pointer;display:block}
+.structure-node small,.structure-person small{color:#66758a}
+#structure-employees{max-height:55vh;overflow:auto;display:grid;gap:4px;margin:12px 0}
+.structure-person{display:flex;gap:8px;align-items:center;padding:6px;border-bottom:1px solid #edf1f5}
