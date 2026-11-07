@@ -542,3 +542,13 @@ main{padding-top:5px!important}
 .structure-fields input,.structure-fields select{width:100%;min-width:0}
 .structure-fields input:disabled,.structure-fields select:disabled{background:#f1f4f7;color:#465569}
 @media(max-width:600px){.structure-fields label{grid-template-columns:1fr;gap:3px}.structure-table{min-width:600px}}
+
+/* v0.3.25 — compact aligned enterprise tree */
+.structure-table td:first-child{display:table-cell!important;padding:0!important}
+.structure-name-cell{display:flex;align-items:center;gap:5px;min-height:32px;padding-top:3px;padding-bottom:3px}
+.structure-name-text{display:inline-block;line-height:20px}
+.structure-table td{height:34px;vertical-align:middle!important}
+.structure-table tr{cursor:pointer}
+.structure-table .structure-toggle,.structure-table .structure-toggle-placeholder{width:20px;height:20px;flex:0 0 20px;display:inline-flex;align-items:center;justify-content:center}
+.structure-table .structure-toggle{border:1px solid #bac8d6;border-radius:3px;background:#f4f7fb;padding:0;font-size:15px}
+.structure-table .structure-selected td{background:#fff0bf!important}
