@@ -383,3 +383,16 @@ main{padding-top:5px!important}
  #grot-org-status{flex:1 0 100%;min-height:17px}
  .org-dialog-footer button{flex:1}
 }
+
+/* Organization: labels and values share one horizontal row */
+#grot-organization-dialog .org-field{display:grid!important;grid-template-columns:150px minmax(0,1fr)!important;align-items:center!important;column-gap:12px!important;row-gap:3px!important}
+#grot-organization-dialog .org-field>span{grid-column:1!important;grid-row:1!important}
+#grot-organization-dialog .org-field>input,
+#grot-organization-dialog .org-field>textarea{grid-column:2!important;grid-row:1!important;max-width:none!important;box-sizing:border-box!important}
+#grot-organization-dialog .org-field>small{grid-column:2!important;grid-row:2!important}
+#grot-organization-dialog .org-section:nth-child(2) .org-field{grid-template-columns:60px minmax(0,1fr)!important}
+#grot-organization-dialog .org-field textarea{min-height:54px!important}
+@media(max-width:540px){
+ #grot-organization-dialog .org-field{grid-template-columns:110px minmax(0,1fr)!important}
+ #grot-organization-dialog .org-section:nth-child(2) .org-field{grid-template-columns:54px minmax(0,1fr)!important}
+}
