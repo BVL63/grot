@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.26';
+const APP_VERSION='0.3.27';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -32,7 +32,7 @@ const structureKey='grotEnterpriseStructure';
 let structureNodes=[];
 try{const v=JSON.parse(localStorage.getItem(structureKey)||'[]');structureNodes=Array.isArray(v)?v:[]}catch{}
 const structureTypes={organization:'Организация',division:'Подразделение',department:'Отдел',brigade:'Группа (бригада)'};
-const structureChildren={organization:['division'],division:['department','brigade'],department:['brigade'],brigade:[]};
+const structureChildren={organization:['division'],division:['department','brigade'],department:['department','brigade'],brigade:[]};
 const structureEscape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function structureAncestors(id){const result=[];const seen=new Set();let node=structureNodes.find(n=>n.id===id);while(node&&!seen.has(node.id)){seen.add(node.id);result.unshift(node);node=structureNodes.find(n=>n.id===node.parentId)}return result}
 function structureEnsureOrganization(){
