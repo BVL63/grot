@@ -500,3 +500,14 @@ main{padding-top:5px!important}
  #editor .periods-toolbar .editor-mode-actions{justify-content:flex-end!important}
  #editor .editor-bottom{max-height:45%!important}
 }
+
+/* v0.3.19: compact period list, remove view hint and lift bottom buttons */
+#editor #range-hint:empty{display:none!important}
+#editor .editor-top:has(#range-hint:empty){display:none!important}
+#editor .periods-toolbar .period-scroll{height:76px!important;max-height:76px!important;min-height:0!important}
+#editor .period-scroll .draft-period{min-height:32px!important;padding:5px 9px!important}
+#editor .editor-bottom{gap:1px!important;padding:5px 12px 6px!important}
+#editor .editor-bottom .day-count{margin:1px 0!important}
+#editor .editor-bottom .actions{margin:1px 0 0!important;gap:6px!important}
+#editor .editor-bottom .actions button{min-height:30px!important;padding:4px 10px!important}
+@media(max-width:720px){#editor .periods-toolbar .period-scroll{height:76px!important;max-height:76px!important}}
