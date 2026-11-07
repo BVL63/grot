@@ -451,3 +451,12 @@ main{padding-top:5px!important}
  #editor .range-month-days button{min-height:19px;padding:1px 0;font-size:11px}
  #editor .range-month h3{font-size:13px;margin-bottom:2px}
 }
+
+/* v0.3.15: three months per row, four rows; avoid stretched calendar tiles */
+@media(min-width:900px){
+ #editor{width:min(1080px,calc(100vw - 24px))!important;max-width:1080px!important}
+ #range-calendar.range-calendar{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important;max-width:100%!important}
+ #editor .range-month{padding:4px 6px!important}
+ #editor .range-month-days{gap:1px!important}
+ #editor .range-month-days button{min-height:20px!important;padding:1px 0!important;font-size:11px!important;line-height:17px!important}
+}
