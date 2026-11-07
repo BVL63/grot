@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.35';
+const APP_VERSION='0.3.36';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -59,7 +59,7 @@ function structureDraw(){
  const root=document.querySelector('#structure-tree');if(!root)return;
  const selectedId=root.dataset.selectedId;
  const collapsed=new Set(JSON.parse(sessionStorage.getItem('grotStructureCollapsed')||'[]'));
- const countBranch=id=>{const visited=new Set();const ids=[id];for(let i=0;i<ids.length;i++){const current=ids[i];if(visited.has(current))continue;visited.add(current);for(const child of structureNodes)if(child.parentId===current&&!visited.has(child.id)&&!ids.includes(child.id))ids.push(child.id)}return drivers.filter(d=>visited.has(d.structureId)).length};
+ const countBranch=id=>{const visited=new Set();const ids=[id];for(let i=0;i<ids.length;i++){const current=ids[i];if(visited.has(current))continue;visited.add(current);for(const child of structureNodes)if(child.parentId===current&&!visited.has(child.id)&&!ids.includes(child.id))ids.push(child.id)}const counted=new Set(drivers.filter(d=>visited.has(d.structureId)).map(d=>String(d.id)));for(const node of structureNodes){if(visited.has(node.id)&&node.leaderId&&drivers.some(d=>String(d.id)===String(node.leaderId)))counted.add(String(node.leaderId))}return counted.size};
  const rows=(parent,level)=>structureNodes.filter(n=>n.parentId===parent).map(n=>{
  const children=structureNodes.some(x=>x.parentId===n.id);
  const peopleCount=countBranch(n.id);
