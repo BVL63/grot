@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.15';
+const APP_VERSION='0.3.16';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -546,6 +546,30 @@ function render() {
   const driverCard=document.querySelector('#driver-card');
   let currentDriver=drivers[0].id;
   let rangeMonth=selectedMonth, rangeStep=0, draftPeriods=[], selectedDraft=-1, changingDraft=-1, editorMode="view";
+  // Drag the vacation editor by its title, using mouse or touch.
+  const editorHeader=dialog.querySelector('.editor-header');
+  let drag=null;
+  editorHeader.addEventListener('pointerdown',e=>{
+    if(e.button!==0||e.target.closest('button,input,select,a'))return;
+    const rect=dialog.getBoundingClientRect();
+    dialog.style.margin='0';
+    dialog.style.position='fixed';
+    dialog.style.left=rect.left+'px';
+    dialog.style.top=rect.top+'px';
+    drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:rect.left,top:rect.top};
+    editorHeader.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  editorHeader.addEventListener('pointermove',e=>{
+    if(!drag||e.pointerId!==drag.id)return;
+    const x=Math.max(0,Math.min(window.innerWidth-dialog.offsetWidth,drag.left+e.clientX-drag.x));
+    const y=Math.max(0,Math.min(window.innerHeight-dialog.offsetHeight,drag.top+e.clientY-drag.y));
+    dialog.style.left=x+'px';dialog.style.top=y+'px';
+  });
+  const stopDrag=e=>{if(drag&&e.pointerId===drag.id){drag=null;if(editorHeader.hasPointerCapture(e.pointerId))editorHeader.releasePointerCapture(e.pointerId)}};
+  editorHeader.addEventListener('pointerup',stopDrag);
+  editorHeader.addEventListener('pointercancel',stopDrag);
+  dialog.addEventListener('close',()=>{drag=null;dialog.style.removeProperty('left');dialog.style.removeProperty('top');dialog.style.removeProperty('margin');dialog.style.removeProperty('position')});
   function openEditor(id, period=null, fromCard=false) {
     editingPeriod=period;
     document.querySelector('#editor-title').textContent=drivers.find(d=>d.id===id).name+' — отпуска 2027';
