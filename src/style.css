@@ -414,3 +414,14 @@ main{padding-top:5px!important}
  #grot-organization-dialog .org-dialog-footer{padding:7px 16px}
  #grot-organization-dialog .org-dialog-footer button{min-height:34px;padding:6px 12px}
 }
+
+/* v0.3.13: consistent label baseline and aligned value columns */
+#grot-organization-dialog .org-field{grid-template-columns:140px minmax(0,1fr)!important}
+#grot-organization-dialog .org-section:nth-child(2) .org-field{grid-template-columns:140px minmax(0,1fr)!important}
+#grot-organization-dialog .org-fields{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+#grot-organization-dialog .org-field>span{white-space:normal;line-height:1.25}
+#grot-organization-dialog .org-field textarea{height:44px!important;overflow:auto;resize:none}
+@media(max-width:540px){
+ #grot-organization-dialog .org-fields{grid-template-columns:1fr!important}
+ #grot-organization-dialog .org-field,#grot-organization-dialog .org-section:nth-child(2) .org-field{grid-template-columns:90px minmax(0,1fr)!important}
+}
