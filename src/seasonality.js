@@ -4,8 +4,9 @@ import { historical2026 } from './history2026.js';
 const STORAGE='grot-seasonality-history-v1';
 export function loadHistory(){let saved=[];try{saved=JSON.parse(localStorage.getItem(STORAGE)||'[]');if(!Array.isArray(saved))saved=[]}catch{}return saved.some(r=>Number(r.year)===2026)?saved:historical2026.concat(saved)}
 export function saveHistory(rows){localStorage.setItem(STORAGE,JSON.stringify(rows))}
-export function calculateSeasonality(rows,year=2026){
- const data=rows.filter(r=>Number(r.year)===year&&r.driver&&/^\d{4}-\d{2}-\d{2}$/.test(r.start)&&/^\d{4}-\d{2}-\d{2}$/.test(r.end)&&r.start<=r.end);
+export function calculateSeasonality(rows,year=2026,activeStaff=null){
+ const roster=activeStaff===null?null:new Set(activeStaff);
+ const data=rows.filter(r=>Number(r.year)===year&&r.driver&&(!roster||roster.has(r.driver))&&/^\d{4}-\d{2}-\d{2}$/.test(r.start)&&/^\d{4}-\d{2}-\d{2}$/.test(r.end)&&r.start<=r.end);
  const byDriver=new Map(),daily=new Map(),counts=Array(12).fill(0);
  for(const r of data){if(!byDriver.has(r.driver))byDriver.set(r.driver,new Set());
   for(let date=new Date(r.start+'T12:00:00Z'),end=new Date(r.end+'T12:00:00Z'),n=0;date<=end&&n++<366;date.setUTCDate(date.getUTCDate()+1)){
@@ -15,7 +16,7 @@ export function calculateSeasonality(rows,year=2026){
  for(const [name,days] of byDriver)for(const day of days){
   if(!daily.has(day))daily.set(day,new Set());daily.get(day).add(name);counts[Number(day.slice(5,7))-1]++;
  }
- const total=counts.reduce((a,b)=>a+b,0),avg=total/12,maxMonth=Math.max(...counts),population=byDriver.size;
+ const total=counts.reduce((a,b)=>a+b,0),avg=total/12,maxMonth=Math.max(...counts),population=roster?roster.size:byDriver.size;
  const months=counts.map((days,i)=>({month:i+1,days,ksn:avg?days/avg:null}));
  const drivers=[...byDriver].map(([name,days])=>{
   const own=days.size;
@@ -26,15 +27,15 @@ export function calculateSeasonality(rows,year=2026){
  }).sort((a,b)=>a.ipo-b.ipo||a.name.localeCompare(b.name,'ru'));
  return {months,drivers,total,population};
 }
-export function seasonalityDialog(currentRows=[],defaultYear=2026){
+export function seasonalityDialog(currentRows=[],defaultYear=2026,staffForYear=()=>null){
  const dialog=document.createElement('dialog');dialog.id='seasonality-dialog';dialog.style.cssText='max-width:min(960px,96vw);max-height:88vh;overflow:auto;padding:20px;border:1px solid #ccd3e0;border-radius:12px';
  dialog.innerHTML='<h2>КОН, КСН и ИПО — анализ отпусков</h2><p>Для 2027 года используются текущие отпуска из графика. Для архивных годов можно загрузить CSV: водитель;начало;конец. Даты: ГГГГ-ММ-ДД или ДД.ММ.ГГГГ. Один период — одна строка. Повторный импорт заменяет исторические данные выбранного года.</p><label>Год <input id="season-year" type="number" min="2020" max="2100" value="2026" style="width:90px"></label> <input id="season-file" type="file" accept=".csv,text/csv"> <button id="season-close">Закрыть</button><p id="season-status"></p><div id="season-results"></div>';
  document.body.append(dialog);
  const el=id=>dialog.querySelector('#'+id);
  el('season-year').value=String(defaultYear);
  const fmt=n=>n===null?'—':n.toFixed(2).replace('.',',');
- function draw(){const year=Number(el('season-year').value),res=calculateSeasonality(loadHistory().filter(r=>Number(r.year)!==2027).concat(currentRows),year);
- el('season-results').innerHTML=!res.total?'<p>Нет исторических данных за выбранный год. Загрузите CSV.</p>':'<h3>КСН по месяцам</h3><div style="overflow:auto"><table><thead><tr><th>Месяц</th><th>Дней</th><th>КСН</th></tr></thead><tbody>'+res.months.map((r,i)=>'<tr><td>'+['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'][i]+'</td><td>'+r.days+'</td><td>'+fmt(r.ksn)+'</td></tr>').join('')+'</tbody></table></div><h3>Очередность выбора на следующий год</h3><p>ИПО = 60% КОН + 40% КСНн. КОН — средняя доля коллег в отпуске по дням, без самого водителя. КСНн — средняя месячная нагрузка относительно самого загруженного месяца, %. Меньший ИПО даёт приоритет при конфликте пожеланий внутри группы. Законные преимущества сохраняются. Пока показатели рассчитаны по всему составу без разделения на группы.</p><div style="overflow:auto"><table><thead><tr><th>Приоритет</th><th>Водитель</th><th>Дней</th><th>КОН, %</th><th>КСН</th><th>КСНн, %</th><th>ИПО</th></tr></thead><tbody>'+res.drivers.map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+r.name.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</td><td>'+r.days+'</td><td>'+fmt(r.kon)+'</td><td>'+fmt(r.ksn)+'</td><td>'+fmt(r.ksnNormalized)+'</td><td><strong>'+fmt(r.ipo)+'</strong></td></tr>').join('')+'</tbody></table></div>';
+ function draw(){const year=Number(el('season-year').value),res=calculateSeasonality(loadHistory().filter(r=>Number(r.year)!==2027).concat(currentRows),year,staffForYear(year));
+ el('season-results').innerHTML=!res.total?'<p>Нет исторических данных за выбранный год. Загрузите CSV.</p>':'<h3>КСН по месяцам</h3><div style="overflow:auto"><table><thead><tr><th>Месяц</th><th>Дней</th><th>КСН</th></tr></thead><tbody>'+res.months.map((r,i)=>'<tr><td>'+['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'][i]+'</td><td>'+r.days+'</td><td>'+fmt(r.ksn)+'</td></tr>').join('')+'</tbody></table></div><h3>Очередность выбора на следующий год</h3><p>ИПО = 60% КОН + 40% КСНн. КОН — средняя доля коллег в отпуске по дням, без самого водителя. Для 2027 года база — весь действующий состав, включая сотрудников без внесённых отпусков. Сотрудники без отпусков не участвуют в очередности. КСНн — средняя месячная нагрузка относительно самого загруженного месяца, %. Меньший ИПО даёт приоритет при конфликте пожеланий между сотрудниками. Законные преимущества сохраняются. Показатели рассчитаны по всему составу без разделения на группы, включая 9 и 9.1.</p><div style="overflow:auto"><table><thead><tr><th>Приоритет</th><th>Водитель</th><th>Дней</th><th>КОН, %</th><th>КСН</th><th>КСНн, %</th><th>ИПО</th></tr></thead><tbody>'+res.drivers.map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+r.name.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</td><td>'+r.days+'</td><td>'+fmt(r.kon)+'</td><td>'+fmt(r.ksn)+'</td><td>'+fmt(r.ksnNormalized)+'</td><td><strong>'+fmt(r.ipo)+'</strong></td></tr>').join('')+'</tbody></table></div>';
  }
  el('season-year').onchange=draw;el('season-close').onclick=()=>dialog.close();
  el('season-file').onchange=async e=>{const file=e.target.files[0];if(!file)return;const text=await file.text();const year=Number(el('season-year').value);
