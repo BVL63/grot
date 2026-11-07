@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.14';
+const APP_VERSION='0.3.15';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
