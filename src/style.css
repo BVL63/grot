@@ -460,3 +460,13 @@ main{padding-top:5px!important}
  #editor .range-month-days{gap:1px!important}
  #editor .range-month-days button{min-height:20px!important;padding:1px 0!important;font-size:11px!important;line-height:17px!important}
 }
+
+/* v0.3.16: calendar cells close to square, 3 columns x 4 rows */
+@media(min-width:900px){
+ #editor{width:min(790px,calc(100vw - 24px))!important;max-width:790px!important}
+ #range-calendar.range-calendar{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important}
+ #editor .range-month-days button{min-height:20px!important;line-height:18px!important}
+}
+#editor .editor-header{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+#editor .editor-header:active{cursor:grabbing}
+#editor .editor-header button{cursor:pointer;touch-action:manipulation}
