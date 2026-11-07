@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.8';
+const APP_VERSION='0.3.9';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -33,23 +33,39 @@ function readOrganization(){try{return {...orgDefaults,...JSON.parse(localStorag
 function openOrganizationCard(){
  let dlg=document.getElementById('grot-organization-dialog');
  if(!dlg){dlg=document.createElement('dialog');dlg.id='grot-organization-dialog';document.body.appendChild(dlg)}
+ if(dlg.open)return;
+ dlg.setAttribute('aria-labelledby','grot-org-title');
  const fields=[['fullName','Полное наименование'],['shortName','Краткое наименование'],['inn','ИНН'],['kpp','КПП'],['ogrn','ОГРН'],['okpo','ОКПО'],['address','Юридический адрес'],['director','Руководитель'],['phone','Телефон'],['email','Электронная почта'],['website','Сайт']];
  const org=readOrganization();
- const field=(key,label)=>'<label class="org-field"><span>'+label+'</span><input name="'+key+'" value="'+escapeHtml(org[key])+'" autocomplete="off"></label>';
+ const lengths={inn:10,kpp:9,ogrn:13,okpo:8};
+ const field=(key,label)=>{
+  const value=escapeHtml(org[key]),required=['fullName','shortName'].includes(key)?' required':'';
+  const attrs=' name="'+key+'" id="org-'+key+'"'+required;
+  const control=['fullName','address'].includes(key)?'<textarea'+attrs+' rows="3">'+value+'</textarea>':'<input'+attrs+' value="'+value+'" type="'+({email:'email',website:'url',phone:'tel'}[key]||'text')+'"'+(lengths[key]?' inputmode="numeric" pattern="[0-9]{'+lengths[key]+'}" maxlength="'+lengths[key]+'" title="'+lengths[key]+' цифр"':'')+'>';
+  return '<label class="org-field '+(['fullName','shortName','address','director','website'].includes(key)?'org-wide':'')+'"><span>'+label+(required?' <small>обязательно</small>':'')+'</span>'+control+(lengths[key]?'<small>'+lengths[key]+' цифр</small>':'')+'</label>';
+ };
  const section=(title,keys)=>'<section class="org-section"><h3>'+title+'</h3><div class="org-fields">'+keys.map(k=>field(k,fields.find(x=>x[0]===k)[1])).join('')+'</div></section>';
- dlg.innerHTML='<form id="grot-org-form"><header class="org-dialog-header"><div><div class="org-eyebrow">СПРАВОЧНИК</div><h2>Карточка организации</h2><p>Реквизиты и контактная информация</p></div><button type="button" class="org-x" id="grot-org-x" aria-label="Закрыть">×</button></header><div class="org-dialog-content>'+section('Наименование',['fullName','shortName'])+section('Регистрационные данные',['inn','kpp','ogrn','okpo'])+section('Адрес и руководство',['address','director'])+section('Контакты',['phone','email','website'])+'<p class="org-note">Данные сохраняются только в этом браузере. Перед использованием в документах проверьте реквизиты.</p></div><footer class="org-dialog-footer"><button type="button" id="grot-org-cancel">Отмена</button><button type="submit" class="org-save">Сохранить</button></footer></form>';
- dlg.querySelector('#grot-org-cancel').onclick=()=>dlg.close();
- dlg.querySelector('#grot-org-x').onclick=()=>dlg.close();
- dlg.querySelector('form').onsubmit=e=>{e.preventDefault();const data={};const formData=new FormData(e.currentTarget);for(const [key] of fields)data[key]=String(formData.get(key)||'').trim();localStorage.setItem(orgStorageKey,JSON.stringify(data));dlg.close();};
+ dlg.innerHTML='<form id="grot-org-form"><header class="org-dialog-header"><div><div class="org-eyebrow">СПРАВОЧНИК</div><h2 id="grot-org-title">Карточка организации</h2><p>Наименование, реквизиты и контакты</p></div><button type="button" class="org-x" id="grot-org-x" aria-label="Закрыть карточку">×</button></header><div class="org-dialog-content">'+section('Наименование',['fullName','shortName'])+section('Регистрационные данные',['inn','kpp','ogrn','okpo'])+section('Адрес и руководство',['address','director'])+section('Контакты',['phone','email','website'])+'<p class="org-note">Реквизиты сохраняются в этом браузере. Перед использованием в документах сверьте их с данными организации.</p></div><footer class="org-dialog-footer"><p id="grot-org-status" role="status" aria-live="polite"></p><button type="button" id="grot-org-cancel">Закрыть</button><button type="submit" class="org-save">Сохранить</button></footer></form>';
+ const form=dlg.querySelector('form'),status=dlg.querySelector('#grot-org-status');
+ const values=()=>Object.fromEntries(fields.map(([key])=>[key,String(new FormData(form).get(key)||'').trim()]));
+ let baseline=JSON.stringify(values());
+ const close=()=>{if(JSON.stringify(values())!==baseline&&!window.confirm('Закрыть карточку без сохранения изменений?'))return;dlg.close()};
+ dlg.querySelector('#grot-org-cancel').onclick=close;
+ dlg.querySelector('#grot-org-x').onclick=close;
+ dlg.oncancel=e=>{e.preventDefault();close()};
+ form.oninput=()=>{status.textContent=JSON.stringify(values())===baseline?'':'Есть несохранённые изменения';status.className=''};
+ form.onsubmit=e=>{
+  e.preventDefault();
+  if(!form.reportValidity())return;
+  const data=values();
+  try{localStorage.setItem(orgStorageKey,JSON.stringify(data));baseline=JSON.stringify(data);status.textContent='Изменения сохранены';status.className='org-success'}
+  catch{status.textContent='Не удалось сохранить. Проверьте доступ к хранилищу браузера и повторите попытку.';status.className='org-error'}
+ };
  const scrollY=window.scrollY;
  const previousBodyStyle={position:document.body.style.position,top:document.body.style.top,left:document.body.style.left,right:document.body.style.right,width:document.body.style.width};
- const unlock=()=>{Object.assign(document.body.style,previousBodyStyle);window.scrollTo(0,scrollY);dlg.removeEventListener('close',unlock);};
+ const unlock=()=>{Object.assign(document.body.style,previousBodyStyle);window.scrollTo(0,scrollY);dlg.removeEventListener('close',unlock)};
  dlg.addEventListener('close',unlock);
- document.body.style.position='fixed';
- document.body.style.top='-'+scrollY+'px';
- document.body.style.left='0';
- document.body.style.right='0';
- document.body.style.width='100%';
+ Object.assign(document.body.style,{position:'fixed',top:'-'+scrollY+'px',left:'0',right:'0',width:'100%'});
  dlg.showModal();
 }
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
