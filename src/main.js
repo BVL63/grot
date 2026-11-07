@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.34';
+const APP_VERSION='0.3.35';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -535,7 +535,10 @@ function render() {
     const sorted=[...drivers].sort((a,b)=>Number(Boolean(a.dismissed||a.dismissalDate))-Number(Boolean(b.dismissed||b.dismissalDate))||compareGroupAndName(a,b));
     document.querySelector('#staff-list').innerHTML='<div class="staff-table-scroll"><table class="staff-table"><thead><tr><th>№</th><th>Фамилия И.О.</th><th>Подразделение</th><th>Группа отпусков</th><th>Дней отпуска</th></tr></thead><tbody>'+sorted.map((d,i)=>'<tr data-staff-row="'+d.id+'"><td>'+(i+1)+'</td><td><button type="button" class="staff-name-link" data-staff="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button></td><td>'+escapeHtml(d.department||'—')+'</td><td>'+escapeHtml(d.group)+'</td><td>'+d.allowance+'</td></tr>').join('')+'</tbody></table></div>';
     document.querySelectorAll('[data-staff]').forEach(btn=>btn.onclick=()=>{selectedStaffId=Number(btn.dataset.staff);updateStaffSelection();});
-    document.querySelectorAll('[data-staff-row]').forEach(row=>row.onclick=e=>{if(e.target.closest('[data-staff]'))return;selectedStaffId=Number(row.dataset.staffRow);updateStaffSelection();});
+    document.querySelectorAll('[data-staff-row]').forEach(row=>{
+      row.onclick=()=>{selectedStaffId=Number(row.dataset.staffRow);updateStaffSelection();};
+      row.ondblclick=()=>{selectedStaffId=Number(row.dataset.staffRow);updateStaffSelection();const d=selectedStaff();if(d)openStaffCard(d);};
+    });
     updateStaffSelection();
   }
   document.querySelector('#staff-list').addEventListener('click',e=>{
