@@ -552,3 +552,11 @@ main{padding-top:5px!important}
 .structure-table .structure-toggle,.structure-table .structure-toggle-placeholder{width:20px;height:20px;flex:0 0 20px;display:inline-flex;align-items:center;justify-content:center}
 .structure-table .structure-toggle{border:1px solid #bac8d6;border-radius:3px;background:#f4f7fb;padding:0;font-size:15px}
 .structure-table .structure-selected td{background:#fff0bf!important}
+
+/* v0.3.29: separate selected-row indicator column */
+.structure-table th.structure-choice,.structure-table td.structure-choice{width:34px!important;min-width:34px!important;max-width:34px!important;text-align:center!important;padding:4px!important}
+.structure-table th:first-child{width:34px!important}
+.structure-table th:nth-child(2){width:48%}
+.structure-table td.structure-choice:first-child{display:table-cell!important}
+.structure-choice-mark{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;font-weight:bold;color:#176b9a}
+.structure-selected .structure-choice-mark{background:#176b9a;color:white;border-radius:3px}
