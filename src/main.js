@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.30';
+const APP_VERSION='0.3.31';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -59,13 +59,14 @@ function structureDraw(){
  const root=document.querySelector('#structure-tree');if(!root)return;
  const selectedId=root.dataset.selectedId;
  const collapsed=new Set(JSON.parse(sessionStorage.getItem('grotStructureCollapsed')||'[]'));
+ const countBranch=id=>{const visited=new Set();const ids=[id];for(let i=0;i<ids.length;i++){const current=ids[i];if(visited.has(current))continue;visited.add(current);for(const child of structureNodes)if(child.parentId===current&&!visited.includes(child.id))ids.push(child.id)}return drivers.filter(d=>visited.has(d.structureId)).length};
  const rows=(parent,level)=>structureNodes.filter(n=>n.parentId===parent).map(n=>{
  const children=structureNodes.some(x=>x.parentId===n.id);
- const people=drivers.filter(d=>d.structureId===n.id);
+ const peopleCount=countBranch(n.id);
  const toggle=children?'<button type="button" class="structure-toggle" data-toggle="'+structureEscape(n.id)+'" aria-label="Раскрыть или свернуть">'+(collapsed.has(n.id)?'＋':'−')+'</button>':'<span class="structure-toggle-placeholder"></span>';
- return '<tr class="structure-row '+(selectedId===n.id?'structure-selected':'')+'" data-id="'+structureEscape(n.id)+'"><td class="structure-choice"><span class="structure-choice-mark">'+(selectedId===n.id?'✓':'')+'</span></td><td><div class="structure-name-cell" style="padding-left:'+(level*22+8)+'px">'+toggle+'<span class="structure-name-text">'+structureEscape(n.name)+'</span></div></td><td>'+structureEscape(n.code||'')+'</td><td>'+structureEscape(drivers.find(d=>String(d.id)===String(n.leaderId))?.name||'')+'</td><td>'+people.length+'</td></tr>'+(collapsed.has(n.id)?'':rows(n.id,level+1));
+ return '<tr class="structure-row '+(selectedId===n.id?'structure-selected':'')+'" data-id="'+structureEscape(n.id)+'"><td class="structure-choice"><span class="structure-choice-mark">'+(selectedId===n.id?'✓':'')+'</span></td><td><div class="structure-name-cell" style="padding-left:'+(level*22+8)+'px">'+toggle+'<span class="structure-name-text">'+structureEscape(n.name)+'</span></div></td><td>'+structureEscape(n.code||'')+'</td><td>'+structureEscape(drivers.find(d=>String(d.id)===String(n.leaderId))?.name||'')+'</td><td>'+(peopleCount||'')+'</td></tr>'+(collapsed.has(n.id)?'':rows(n.id,level+1));
  }).join('');
- root.innerHTML='<table class="structure-table"><thead><tr><th class="structure-choice" aria-label="Выбор"></th><th>Наименование</th><th>Код</th><th>Руководитель</th><th>Сотрудников</th></tr></thead><tbody>'+rows(null,0)+'</tbody></table>';
+ root.innerHTML='<table class="structure-table"><thead><tr><th>Наименование</th><th>Код</th><th>Руководитель</th><th>Сотрудников</th></tr></thead><tbody>'+rows(null,0)+'</tbody></table>';
  root.querySelectorAll('[data-toggle]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();const id=btn.dataset.toggle;collapsed.has(id)?collapsed.delete(id):collapsed.add(id);sessionStorage.setItem('grotStructureCollapsed',JSON.stringify([...collapsed]));structureDraw()});
  root.querySelectorAll('.structure-row').forEach(tr=>{tr.onclick=e=>{if(e.target.closest('[data-toggle]'))return;root.dataset.selectedId=tr.dataset.id;structureDraw()};tr.ondblclick=e=>{if(!e.target.closest('[data-toggle]')){root.dataset.selectedId=tr.dataset.id;structureCard('view')}}});
  const n=structureSelected();const assigned=n?drivers.filter(d=>d.structureId===n.id):[];
@@ -138,7 +139,13 @@ function structureAssignSave(){
  const ids=new Set([...document.querySelectorAll('#structure-employees input:checked')].map(x=>String(x.value)));
  const hierarchy=structureAncestors(n.id);const division=hierarchy.find(x=>x.type==='division');
  for(const d of drivers){if(ids.has(String(d.id))){d.structureId=n.id;if(division)d.department=division.name}else if(d.structureId===n.id){d.structureId=null}}
- saveStaff();document.querySelector('#structure-assign-dialog').close();structureDraw();render();
+ saveStaff();
+ const selectedId=n.id;
+ document.querySelector('#structure-assign-dialog').close();
+ document.querySelector('#structure-dialog').close();
+ render();
+ const tree=document.querySelector('#structure-tree');tree.dataset.selectedId=selectedId;
+ structureOpen();
 }
 
 const orgStorageKey='grotOrganization';
@@ -607,8 +614,15 @@ function render() {
     if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department,group,allowance,hireDate,dismissalDate,dismissed});}
     else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,allowance,hireDate,dismissalDate,dismissed,...(e.currentTarget.dataset.structureId?{structureId:e.currentTarget.dataset.structureId}:{})});
     const fromStructure=e.currentTarget.dataset.fromStructure==='1';
-    saveStaff();document.querySelector('#staff-card').close();render();drawStaff();
-    if(fromStructure){structureDraw();}else document.querySelector('#staff-dialog').showModal();
+    const selectedStructureId=e.currentTarget.dataset.structureId;
+    saveStaff();
+    document.querySelector('#staff-card').close();
+    if(fromStructure)document.querySelector('#structure-dialog').close();
+    render();drawStaff();
+    if(fromStructure){
+      document.querySelector('#structure-tree').dataset.selectedId=selectedStructureId;
+      structureOpen();
+    }else document.querySelector('#staff-dialog').showModal();
   };
   let pendingCalendar=null;
   document.querySelector('#calendar-open').onclick=()=>document.querySelector('#calendar-dialog').showModal();
