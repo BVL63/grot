@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.20';
+const APP_VERSION='0.3.21';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -38,33 +38,54 @@ function structureAncestors(id){const result=[];const seen=new Set();let node=st
 function structureDraw(){
  const root=document.querySelector('#structure-tree');if(!root)return;
  const selectedId=root.querySelector('input[name="structure-target"]:checked')?.value;
- const walk=(parent,level)=>structureNodes.filter(n=>n.parentId===parent).map(n=>{
- const count=drivers.filter(d=>d.structureId===n.id).length;
- return '<div class="structure-node" style="padding-left:'+(level*18)+'px"><label><input type="radio" name="structure-target" value="'+structureEscape(n.id)+'" '+(selectedId===n.id?'checked':'')+'> '+structureEscape(n.name)+' <small>('+structureTypes[n.type]+', '+count+' чел.)</small></label></div>'+walk(n.id,level+1)
+ const collapsed=new Set(JSON.parse(sessionStorage.getItem('grotStructureCollapsed')||'[]'));
+ const rows=(parent,level)=>structureNodes.filter(n=>n.parentId===parent).map(n=>{
+ const children=structureNodes.some(x=>x.parentId===n.id);
+ const people=drivers.filter(d=>d.structureId===n.id);
+ const toggle=children?'<button type="button" class="structure-toggle" data-toggle="'+structureEscape(n.id)+'">'+(collapsed.has(n.id)?'＋':'−')+'</button>':'<span class="structure-toggle-placeholder"></span>';
+ return '<tr class="structure-row '+(selectedId===n.id?'structure-selected':'')+'" data-id="'+structureEscape(n.id)+'"><td style="padding-left:'+(level*22+8)+'px">'+toggle+'<label><input type="radio" name="structure-target" value="'+structureEscape(n.id)+'" '+(selectedId===n.id?'checked':'')+'><span>'+structureEscape(n.name)+'</span></label></td><td>'+structureEscape(n.code||'')+'</td><td>'+structureEscape(drivers.find(d=>String(d.id)===String(n.leaderId))?.name||'')+'</td><td>'+people.length+'</td></tr>'+(collapsed.has(n.id)?'':rows(n.id,level+1));
  }).join('');
- root.innerHTML=walk(null,0)||'<p class="muted">Структура пока пуста. Добавьте организацию.</p>';
- const select=document.querySelector('#structure-employees');if(!select)return;
- const target=document.querySelector('input[name="structure-target"]:checked');
- const assigned=target?drivers.filter(d=>d.structureId===target.value):[];
- document.querySelector('#structure-current').textContent=target?'Закреплены: '+(assigned.map(shortStaffName).join(', ')||'нет сотрудников'):'Выберите элемент структуры';
+ root.innerHTML='<table class="structure-table"><thead><tr><th>Наименование</th><th>Код</th><th>Руководитель</th><th>Сотрудников</th></tr></thead><tbody>'+rows(null,0)+'</tbody></table>';
+ root.querySelectorAll('[data-toggle]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();const id=btn.dataset.toggle;collapsed.has(id)?collapsed.delete(id):collapsed.add(id);sessionStorage.setItem('grotStructureCollapsed',JSON.stringify([...collapsed]));structureDraw()});
+ root.querySelectorAll('.structure-row').forEach(tr=>{tr.onclick=e=>{if(e.target.closest('[data-toggle]'))return;tr.querySelector('input').checked=true;structureDraw()};tr.ondblclick=e=>{if(!e.target.closest('[data-toggle]')){tr.querySelector('input').checked=true;structureCard('view')}}});
+ const n=structureSelected();const assigned=n?drivers.filter(d=>d.structureId===n.id):[];
+ document.querySelector('#structure-current').textContent=n?'Закреплены: '+(assigned.map(shortStaffName).join(', ')||'нет сотрудников'):'Выберите элемент структуры';
 }
-function structureOpen(){const d=document.querySelector('#structure-dialog');structureDraw();d.showModal()}
+function structureOpen(){structureDraw();document.querySelector('#structure-dialog').showModal()}
 function structureSelected(){return structureNodes.find(n=>n.id===document.querySelector('input[name="structure-target"]:checked')?.value)}
-function structureAdd(){
- const parent=structureSelected();const types=parent?structureChildren[parent.type]:['organization'];
- if(!types.length){alert('В бригаде нельзя создавать вложенные подразделения.');return}
- const type=types.length===1?types[0]:prompt('Тип: '+types.map((t,i)=>(i+1)+' — '+structureTypes[t]).join('; '))==='1'?types[0]:types[1];
- if(!type)return;
- const name=prompt('Наименование:');if(!name?.trim())return;
- const node={id:'st-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),parentId:parent?.id||null,type,name:name.trim(),leaderTitle:''};
- structureNodes.push(node);localStorage.setItem(structureKey,JSON.stringify(structureNodes));structureDraw();
+function structureCard(mode){
+ const n=mode==='new'?null:structureSelected();
+ if(mode!=='new'&&!n){alert('Выберите элемент структуры.');return}
+ const parent=mode==='new'?structureSelected():null;
+ const types=parent?structureChildren[parent.type]:['organization'];
+ if(mode==='new'&&!types.length){alert('В выбранном звене нельзя создавать вложенные элементы.');return}
+ const dlg=document.querySelector('#structure-card-dialog'),form=document.querySelector('#structure-card-form');
+ form.reset();form.dataset.mode=mode;
+ document.querySelector('#structure-card-title').textContent=mode==='new'?'Новое структурное звено':mode==='view'?'Просмотр структурного звена':'Изменение структурного звена';
+ const typeSelect=document.querySelector('#structure-card-type');
+ typeSelect.innerHTML=(mode==='new'?types:[n.type]).map(t=>'<option value="'+t+'">'+structureTypes[t]+'</option>').join('');
+ document.querySelector('#structure-card-name').value=n?.name||'';
+ document.querySelector('#structure-card-code').value=n?.code||'';
+ document.querySelector('#structure-card-parent').value=(mode==='new'?parent?.name:structureNodes.find(x=>x.id===n?.parentId)?.name)||'—';
+ document.querySelector('#structure-card-title-position').value=n?.leaderTitle||'';
+ const leader=document.querySelector('#structure-card-leader');
+ leader.innerHTML='<option value="">Не назначен</option>'+drivers.map(d=>'<option value="'+structureEscape(d.id)+'">'+structureEscape(shortStaffName(d))+'</option>').join('');
+ leader.value=n?.leaderId||'';
+ [...form.querySelectorAll('input,select')].forEach(el=>el.disabled=mode==='view');
+ document.querySelector('#structure-card-save').hidden=mode==='view';
+ dlg.showModal();
 }
-function structureEdit(){
- const n=structureSelected();if(!n){alert('Выберите элемент структуры.');return}
- const name=prompt('Наименование',n.name);if(name===null||!name.trim())return;
- const title=prompt('Должность руководителя',n.leaderTitle||'');if(title===null)return;
- n.name=name.trim();n.leaderTitle=title.trim();localStorage.setItem(structureKey,JSON.stringify(structureNodes));structureDraw();
+function structureCardSave(e){
+ e.preventDefault();const form=e.currentTarget,mode=form.dataset.mode;
+ const name=document.querySelector('#structure-card-name').value.trim();if(!name)return;
+ const n=mode==='new'?{id:'st-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),parentId:structureSelected()?.id||null,type:document.querySelector('#structure-card-type').value}:structureSelected();
+ if(!n)return;
+ n.name=name;n.code=document.querySelector('#structure-card-code').value.trim();n.leaderTitle=document.querySelector('#structure-card-title-position').value.trim();n.leaderId=document.querySelector('#structure-card-leader').value;
+ if(mode==='new')structureNodes.push(n);
+ localStorage.setItem(structureKey,JSON.stringify(structureNodes));document.querySelector('#structure-card-dialog').close();structureDraw();
 }
+function structureAdd(){structureCard('new')}
+function structureEdit(){structureCard('edit')}
 function structureRemove(){
  const n=structureSelected();if(!n)return;
  if(structureNodes.some(x=>x.parentId===n.id)||drivers.some(d=>d.structureId===n.id)){alert('Сначала переместите сотрудников и удалите вложенные элементы.');return}
@@ -357,7 +378,7 @@ function render() {
       <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
     <footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
-    <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">＋ Сотрудники</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog>
+    <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">＋ Сотрудники</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<select id="structure-card-leader"></select></label></div><div class="actions"><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog>
 <dialog id="structure-assign-dialog" class="structure-dialog"><h2 id="structure-assignment-title">Добавить сотрудников</h2><p class="muted">Отметьте сотрудников для выбранного звена. Снятие отметки открепит сотрудника от него. Отпуска сохраняются.</p><div id="structure-employees"></div><div class="actions"><button type="button" id="structure-assign-cancel">Отмена</button><button type="button" id="structure-assign-save">Сохранить</button></div></dialog>
 <dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◉</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled>✏️</button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>▤</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span><button type="button" id="staff-close" title="Закрыть" aria-label="Закрыть">×</button></div><div id="staff-list"></div>
@@ -498,7 +519,8 @@ function render() {
   document.querySelector('#structure-assign').onclick=structureAssignOpen;
   document.querySelector('#structure-assign-cancel').onclick=()=>document.querySelector('#structure-assign-dialog').close();
   document.querySelector('#structure-assign-save').onclick=structureAssignSave;
-  document.querySelector('#structure-tree').onchange=structureDraw;
+  document.querySelector('#structure-card-form').onsubmit=structureCardSave;
+  document.querySelector('#structure-card-cancel').onclick=()=>document.querySelector('#structure-card-dialog').close();
   document.querySelector('#staff-open').onclick=()=>{drawStaff();document.querySelector('#staff-dialog').showModal();};
   document.querySelector('#staff-close').onclick=()=>document.querySelector('#staff-dialog').close();
   document.querySelector('#staff-add').onclick=()=>openStaffCard(null);
