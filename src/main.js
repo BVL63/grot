@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.18';
+const APP_VERSION='0.3.19';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -621,7 +621,7 @@ function render() {
     document.querySelector('#mode-edit').disabled=editorMode==='edit';
     document.querySelector('#mode-delete').disabled=editorMode==='delete';
     document.querySelector('#vacation-form button[type="submit"]').hidden=editorMode==='view';
-    document.querySelector('#range-hint').textContent=editorMode==='view'?'Просмотр отпусков.':editorMode==='add'?'Выберите начало и окончание нового периода.':editorMode==='edit'?'Нажмите на существующий отпуск для изменения дат.':'Нажмите на период, который нужно удалить.';
+    document.querySelector('#range-hint').textContent=editorMode==='view'?''::editorMode==='add'?'Выберите начало и окончание нового периода.':editorMode==='edit'?'Нажмите на существующий отпуск для изменения дат.':'Нажмите на период, который нужно удалить.';
   }
   function setEditorMode(mode){
     editorMode=mode;rangeStep=0;changingDraft=-1;selectedDraft=-1;
