@@ -575,3 +575,14 @@ main{padding-top:5px!important}
 .structure-table th:nth-child(2){width:12%!important}
 .structure-table td:first-child{display:table-cell!important}
 .structure-table tr.structure-selected td{background:#fff0bf!important}
+
+/* v0.3.34: two-column employee card */
+#staff-card{width:min(850px,calc(100vw - 24px));max-height:90vh;overflow-y:auto;box-sizing:border-box}
+#staff-card #staff-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:18px;row-gap:10px}
+#staff-card #staff-form>label{display:block;margin:0;min-width:0}
+#staff-card #staff-form>label input{margin-top:5px;width:100%;box-sizing:border-box}
+#staff-card #staff-form>label:has(#staff-dismissed){display:flex;align-items:center;gap:8px;align-self:end;padding-bottom:10px}
+#staff-card #staff-form #staff-dismissed{width:auto;margin:0}
+#staff-card #staff-error,#staff-card #staff-form>.actions{grid-column:1/-1}
+#staff-card #staff-form>.actions{margin-top:0}
+@media(max-width:620px){#staff-card{width:min(480px,calc(100vw - 24px))}#staff-card #staff-form{grid-template-columns:1fr;row-gap:8px}}
