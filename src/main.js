@@ -37,9 +37,10 @@ const structureEscape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'
 function structureAncestors(id){const result=[];const seen=new Set();let node=structureNodes.find(n=>n.id===id);while(node&&!seen.has(node.id)){seen.add(node.id);result.unshift(node);node=structureNodes.find(n=>n.id===node.parentId)}return result}
 function structureDraw(){
  const root=document.querySelector('#structure-tree');if(!root)return;
+ const selectedId=root.querySelector('input[name="structure-target"]:checked')?.value;
  const walk=(parent,level)=>structureNodes.filter(n=>n.parentId===parent).map(n=>{
  const count=drivers.filter(d=>d.structureId===n.id).length;
- return '<div class="structure-node" style="padding-left:'+(level*18)+'px"><label><input type="radio" name="structure-target" value="'+structureEscape(n.id)+'"> '+structureEscape(n.name)+' <small>('+structureTypes[n.type]+', '+count+' чел.)</small></label></div>'+walk(n.id,level+1)
+ return '<div class="structure-node" style="padding-left:'+(level*18)+'px"><label><input type="radio" name="structure-target" value="'+structureEscape(n.id)+'" '+(selectedId===n.id?'checked':'')+'> '+structureEscape(n.name)+' <small>('+structureTypes[n.type]+', '+count+' чел.)</small></label></div>'+walk(n.id,level+1)
  }).join('');
  root.innerHTML=walk(null,0)||'<p class="muted">Структура пока пуста. Добавьте организацию.</p>';
  const select=document.querySelector('#structure-employees');if(!select)return;
