@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.22';
+const APP_VERSION='0.3.23';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -35,6 +35,26 @@ const structureTypes={organization:'Организация',division:'Подра
 const structureChildren={organization:['division'],division:['department','brigade'],department:['brigade'],brigade:[]};
 const structureEscape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function structureAncestors(id){const result=[];const seen=new Set();let node=structureNodes.find(n=>n.id===id);while(node&&!seen.has(node.id)){seen.add(node.id);result.unshift(node);node=structureNodes.find(n=>n.id===node.parentId)}return result}
+function structureEnsureOrganization(){
+ const org=readOrganization();
+ let roots=structureNodes.filter(n=>n.type==='organization');
+ if(!roots.length){
+  const root={id:'st-org-root',parentId:null,type:'organization',name:org.shortName||org.fullName,code:'01'};
+  structureNodes.unshift(root);
+  for(const n of structureNodes){if(n!==root&&!n.parentId)n.parentId=root.id}
+ }else{
+  const root=roots[0];root.parentId=null;
+  for(const n of roots.slice(1)){
+   for(const child of structureNodes)if(child.parentId===n.id)child.parentId=root.id;
+   for(const d of drivers)if(d.structureId===n.id)d.structureId=root.id;
+  }
+  structureNodes=structureNodes.filter(n=>n===root||n.type!=='organization');
+  root.name=org.shortName||org.fullName;
+  if(!root.code)root.code='01';
+  for(const n of structureNodes)if(n!==root&&!n.parentId)n.parentId=root.id;
+ }
+ localStorage.setItem(structureKey,JSON.stringify(structureNodes));
+}
 function structureDraw(){
  const root=document.querySelector('#structure-tree');if(!root)return;
  const selectedId=root.querySelector('input[name="structure-target"]:checked')?.value;
@@ -51,7 +71,7 @@ function structureDraw(){
  const n=structureSelected();const assigned=n?drivers.filter(d=>d.structureId===n.id):[];
  document.querySelector('#structure-current').textContent=n?'Закреплены: '+(assigned.map(shortStaffName).join(', ')||'нет сотрудников'):'Выберите элемент структуры';
 }
-function structureOpen(){structureDraw();document.querySelector('#structure-dialog').showModal()}
+function structureOpen(){structureEnsureOrganization();structureDraw();document.querySelector('#structure-dialog').showModal()}
 function structureSelected(){return structureNodes.find(n=>n.id===document.querySelector('input[name="structure-target"]:checked')?.value)}
 function structureNextCode(parentId){
  const parent=structureNodes.find(n=>n.id===parentId);
@@ -64,9 +84,10 @@ function structureNextCode(parentId){
 function structureCard(mode){
  const n=mode==='new'?null:structureSelected();
  if(mode!=='new'&&!n){alert('Выберите элемент структуры.');return}
+ if(mode!=='new'&&n.type==='organization'){openOrganizationCard();return}
  const parent=mode==='new'?structureSelected():null;
- const types=parent?structureChildren[parent.type]:['organization'];
- if(mode==='new'&&!types.length){alert('В выбранном звене нельзя создавать вложенные элементы.');return}
+ const types=parent?structureChildren[parent.type]:[];
+ if(mode==='new'&&!types.length){alert('Сначала выберите организацию или подразделение, в котором создаётся новое звено.');return}
  const dlg=document.querySelector('#structure-card-dialog'),form=document.querySelector('#structure-card-form');
  form.reset();form.dataset.mode=mode;
  document.querySelector('#structure-card-title').textContent=mode==='new'?'Новое структурное звено':mode==='view'?'Просмотр структурного звена':'Изменение структурного звена';
@@ -100,6 +121,7 @@ function structureEdit(){structureCard('edit')}
 function structureRemove(){
  const n=structureSelected();if(!n)return;
  if(structureNodes.some(x=>x.parentId===n.id)||drivers.some(d=>d.structureId===n.id)){alert('Сначала переместите сотрудников и удалите вложенные элементы.');return}
+ if(n.type==='organization'){alert('Организацию нельзя удалить из структуры.');return}
  if(!confirm('Удалить «'+n.name+'»?'))return;
  structureNodes=structureNodes.filter(x=>x.id!==n.id);localStorage.setItem(structureKey,JSON.stringify(structureNodes));structureDraw();
 }
