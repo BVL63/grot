@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.23';
+const APP_VERSION='0.3.24';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -411,7 +411,7 @@ function render() {
       <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
     <footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
-    <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">＋ Сотрудники</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<select id="structure-card-leader"></select></label></div><div class="actions"><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog>
+    <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">Выбрать сотрудников</button><button type="button" id="structure-new-employee">＋ Новый сотрудник</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<select id="structure-card-leader"></select></label></div><div class="actions"><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog>
 <dialog id="structure-assign-dialog" class="structure-dialog"><h2 id="structure-assignment-title">Добавить сотрудников</h2><p class="muted">Отметьте сотрудников для выбранного звена. Снятие отметки открепит сотрудника от него. Отпуска сохраняются.</p><div id="structure-employees"></div><div class="actions"><button type="button" id="structure-assign-cancel">Отмена</button><button type="button" id="structure-assign-save">Сохранить</button></div></dialog>
 <dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◉</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled>✏️</button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>▤</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span><button type="button" id="staff-close" title="Закрыть" aria-label="Закрыть">×</button></div><div id="staff-list"></div>
@@ -508,11 +508,14 @@ function render() {
       render();
     }catch(err){alert('Восстановление отменено: '+err.message);}
   };
-  function openStaffCard(d){
+  function openStaffCard(d,structureId=null){
     const form=document.querySelector('#staff-form');form.reset();
+    form.dataset.structureId=structureId||'';
+    form.dataset.fromStructure=structureId?'1':'0';
     document.querySelector('#staff-id').value=d?.id||'';
     document.querySelector('#staff-card-title').textContent=d?'Карточка сотрудника':'Новый сотрудник';
     if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-allowance').value=d.allowance;document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
+    if(structureId){const hierarchy=structureAncestors(structureId);const division=hierarchy.find(x=>x.type==='division');document.querySelector('#staff-department').value=division?.name||'';}
     document.querySelector('#staff-dialog').close();document.querySelector('#staff-card').showModal();
   }
   let selectedStaffId=null;
@@ -550,6 +553,7 @@ function render() {
   document.querySelector('#structure-edit').onclick=structureEdit;
   document.querySelector('#structure-delete').onclick=structureRemove;
   document.querySelector('#structure-assign').onclick=structureAssignOpen;
+  document.querySelector('#structure-new-employee').onclick=()=>{const n=structureSelected();if(!n||n.type==='organization'){alert('Выберите подразделение, отдел или бригаду.');return}openStaffCard(null,n.id);};
   document.querySelector('#structure-assign-cancel').onclick=()=>document.querySelector('#structure-assign-dialog').close();
   document.querySelector('#structure-assign-save').onclick=structureAssignSave;
   document.querySelector('#structure-card-form').onsubmit=structureCardSave;
@@ -599,8 +603,10 @@ function render() {
     if(!lastName||!firstName||!group||!Number.isInteger(allowance)||allowance<1||allowance>120)return;
     if(hireDate&&dismissalDate&&dismissalDate<hireDate){document.querySelector('#staff-error').textContent='Дата увольнения раньше даты приёма.';return;}
     if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department,group,allowance,hireDate,dismissalDate,dismissed});}
-    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,allowance,hireDate,dismissalDate,dismissed});
-    saveStaff();document.querySelector('#staff-card').close();render();drawStaff();document.querySelector('#staff-dialog').showModal();
+    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,allowance,hireDate,dismissalDate,dismissed,...(e.currentTarget.dataset.structureId?{structureId:e.currentTarget.dataset.structureId}:{})});
+    const fromStructure=e.currentTarget.dataset.fromStructure==='1';
+    saveStaff();document.querySelector('#staff-card').close();render();drawStaff();
+    if(fromStructure){structureDraw();}else document.querySelector('#staff-dialog').showModal();
   };
   let pendingCalendar=null;
   document.querySelector('#calendar-open').onclick=()=>document.querySelector('#calendar-dialog').showModal();
