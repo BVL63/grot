@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.29';
+const APP_VERSION='0.3.30';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -57,7 +57,7 @@ function structureEnsureOrganization(){
 }
 function structureDraw(){
  const root=document.querySelector('#structure-tree');if(!root)return;
- const selectedId=root.querySelector('.structure-row.structure-selected')?.dataset.id||root.dataset.selectedId;
+ const selectedId=root.dataset.selectedId;
  const collapsed=new Set(JSON.parse(sessionStorage.getItem('grotStructureCollapsed')||'[]'));
  const rows=(parent,level)=>structureNodes.filter(n=>n.parentId===parent).map(n=>{
  const children=structureNodes.some(x=>x.parentId===n.id);
@@ -65,7 +65,7 @@ function structureDraw(){
  const toggle=children?'<button type="button" class="structure-toggle" data-toggle="'+structureEscape(n.id)+'" aria-label="Раскрыть или свернуть">'+(collapsed.has(n.id)?'＋':'−')+'</button>':'<span class="structure-toggle-placeholder"></span>';
  return '<tr class="structure-row '+(selectedId===n.id?'structure-selected':'')+'" data-id="'+structureEscape(n.id)+'"><td class="structure-choice"><span class="structure-choice-mark">'+(selectedId===n.id?'✓':'')+'</span></td><td><div class="structure-name-cell" style="padding-left:'+(level*22+8)+'px">'+toggle+'<span class="structure-name-text">'+structureEscape(n.name)+'</span></div></td><td>'+structureEscape(n.code||'')+'</td><td>'+structureEscape(drivers.find(d=>String(d.id)===String(n.leaderId))?.name||'')+'</td><td>'+people.length+'</td></tr>'+(collapsed.has(n.id)?'':rows(n.id,level+1));
  }).join('');
- root.innerHTML='<table class="structure-table"><thead><tr><th class="structure-choice" title="Выбор">✓</th><th>Наименование</th><th>Код</th><th>Руководитель</th><th>Сотрудников</th></tr></thead><tbody>'+rows(null,0)+'</tbody></table>';
+ root.innerHTML='<table class="structure-table"><thead><tr><th class="structure-choice" aria-label="Выбор"></th><th>Наименование</th><th>Код</th><th>Руководитель</th><th>Сотрудников</th></tr></thead><tbody>'+rows(null,0)+'</tbody></table>';
  root.querySelectorAll('[data-toggle]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();const id=btn.dataset.toggle;collapsed.has(id)?collapsed.delete(id):collapsed.add(id);sessionStorage.setItem('grotStructureCollapsed',JSON.stringify([...collapsed]));structureDraw()});
  root.querySelectorAll('.structure-row').forEach(tr=>{tr.onclick=e=>{if(e.target.closest('[data-toggle]'))return;root.dataset.selectedId=tr.dataset.id;structureDraw()};tr.ondblclick=e=>{if(!e.target.closest('[data-toggle]')){root.dataset.selectedId=tr.dataset.id;structureCard('view')}}});
  const n=structureSelected();const assigned=n?drivers.filter(d=>d.structureId===n.id):[];
