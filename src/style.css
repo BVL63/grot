@@ -396,3 +396,21 @@ main{padding-top:5px!important}
  #grot-organization-dialog .org-field{grid-template-columns:110px minmax(0,1fr)!important}
  #grot-organization-dialog .org-section:nth-child(2) .org-field{grid-template-columns:54px minmax(0,1fr)!important}
 }
+
+/* v0.3.12: fit organization card on iPad landscape without scrolling */
+@media(min-width:700px) and (min-height:650px){
+ #grot-organization-dialog{width:min(900px,calc(100vw - 24px));height:min(96dvh,1000px);max-height:96dvh}
+ #grot-organization-dialog .org-dialog-header{padding:9px 18px;align-items:center}
+ #grot-org-title{font-size:19px;margin:0}
+ #grot-organization-dialog .org-dialog-content{padding:8px 14px;overflow-y:auto}
+ #grot-organization-dialog .org-section{margin-bottom:7px;padding:8px 12px}
+ #grot-organization-dialog .org-section h3{margin:0 0 6px;font-size:13px}
+ #grot-organization-dialog .org-fields{gap:6px 12px}
+ #grot-organization-dialog .org-field{gap:2px!important;font-size:12px}
+ #grot-organization-dialog .org-field input,#grot-organization-dialog .org-field textarea{min-height:34px!important;padding:5px 8px;font-size:14px;line-height:1.3}
+ #grot-organization-dialog .org-field textarea{height:44px!important;resize:none}
+ #grot-organization-dialog .org-field>small{display:none}
+ #grot-organization-dialog .org-note{margin:0;font-size:10px}
+ #grot-organization-dialog .org-dialog-footer{padding:7px 16px}
+ #grot-organization-dialog .org-dialog-footer button{min-height:34px;padding:6px 12px}
+}
