@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.19';
+const APP_VERSION='0.3.20';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -27,6 +27,65 @@ function openSeasonality(year){
   );
 }
 function saveStaff(){localStorage.setItem(staffKey,JSON.stringify(drivers));}
+
+const structureKey='grotEnterpriseStructure';
+let structureNodes=[];
+try{const v=JSON.parse(localStorage.getItem(structureKey)||'[]');structureNodes=Array.isArray(v)?v:[]}catch{}
+const structureTypes={organization:'Организация',division:'Подразделение',department:'Отдел',brigade:'Группа (бригада)'};
+const structureChildren={organization:['division'],division:['department','brigade'],department:['brigade'],brigade:[]};
+const structureEscape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function structureAncestors(id){const result=[];const seen=new Set();let node=structureNodes.find(n=>n.id===id);while(node&&!seen.has(node.id)){seen.add(node.id);result.unshift(node);node=structureNodes.find(n=>n.id===node.parentId)}return result}
+function structureDraw(){
+ const root=document.querySelector('#structure-tree');if(!root)return;
+ const walk=(parent,level)=>structureNodes.filter(n=>n.parentId===parent).map(n=>{
+ const count=drivers.filter(d=>d.structureId===n.id).length;
+ return '<div class="structure-node" style="padding-left:'+(level*18)+'px"><label><input type="radio" name="structure-target" value="'+structureEscape(n.id)+'"> '+structureEscape(n.name)+' <small>('+structureTypes[n.type]+', '+count+' чел.)</small></label></div>'+walk(n.id,level+1)
+ }).join('');
+ root.innerHTML=walk(null,0)||'<p class="muted">Структура пока пуста. Добавьте организацию.</p>';
+ const select=document.querySelector('#structure-employees');if(!select)return;
+ const target=document.querySelector('input[name="structure-target"]:checked');
+ const assigned=target?drivers.filter(d=>d.structureId===target.value):[];
+ document.querySelector('#structure-current').textContent=target?'Закреплены: '+(assigned.map(shortStaffName).join(', ')||'нет сотрудников'):'Выберите элемент структуры';
+}
+function structureOpen(){const d=document.querySelector('#structure-dialog');structureDraw();d.showModal()}
+function structureSelected(){return structureNodes.find(n=>n.id===document.querySelector('input[name="structure-target"]:checked')?.value)}
+function structureAdd(){
+ const parent=structureSelected();const types=parent?structureChildren[parent.type]:['organization'];
+ if(!types.length){alert('В бригаде нельзя создавать вложенные подразделения.');return}
+ const type=types.length===1?types[0]:prompt('Тип: '+types.map((t,i)=>(i+1)+' — '+structureTypes[t]).join('; '))==='1'?types[0]:types[1];
+ if(!type)return;
+ const name=prompt('Наименование:');if(!name?.trim())return;
+ const node={id:'st-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),parentId:parent?.id||null,type,name:name.trim(),leaderTitle:''};
+ structureNodes.push(node);localStorage.setItem(structureKey,JSON.stringify(structureNodes));structureDraw();
+}
+function structureEdit(){
+ const n=structureSelected();if(!n){alert('Выберите элемент структуры.');return}
+ const name=prompt('Наименование',n.name);if(name===null||!name.trim())return;
+ const title=prompt('Должность руководителя',n.leaderTitle||'');if(title===null)return;
+ n.name=name.trim();n.leaderTitle=title.trim();localStorage.setItem(structureKey,JSON.stringify(structureNodes));structureDraw();
+}
+function structureRemove(){
+ const n=structureSelected();if(!n)return;
+ if(structureNodes.some(x=>x.parentId===n.id)||drivers.some(d=>d.structureId===n.id)){alert('Сначала переместите сотрудников и удалите вложенные элементы.');return}
+ if(!confirm('Удалить «'+n.name+'»?'))return;
+ structureNodes=structureNodes.filter(x=>x.id!==n.id);localStorage.setItem(structureKey,JSON.stringify(structureNodes));structureDraw();
+}
+function structureAssignOpen(){
+ const n=structureSelected();if(!n){alert('Выберите подразделение, отдел или бригаду.');return}
+ if(n.type==='organization'){alert('Выберите подразделение, отдел или бригаду.');return}
+ const box=document.querySelector('#structure-employees');
+ box.innerHTML=[...drivers].sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).map(d=>'<label class="structure-person"><input type="checkbox" value="'+structureEscape(d.id)+'" '+(d.structureId===n.id?'checked':'')+'> '+structureEscape(shortStaffName(d))+' <small>'+structureEscape(d.department||'')+'</small></label>').join('');
+ document.querySelector('#structure-assignment-title').textContent='Сотрудники: '+n.name;
+ document.querySelector('#structure-assign-dialog').showModal();
+}
+function structureAssignSave(){
+ const n=structureSelected();if(!n)return;
+ const ids=new Set([...document.querySelectorAll('#structure-employees input:checked')].map(x=>String(x.value)));
+ const hierarchy=structureAncestors(n.id);const division=hierarchy.find(x=>x.type==='division');
+ for(const d of drivers){if(ids.has(String(d.id))){d.structureId=n.id;if(division)d.department=division.name}else if(d.structureId===n.id){d.structureId=null}}
+ saveStaff();document.querySelector('#structure-assign-dialog').close();structureDraw();render();
+}
+
 const orgStorageKey='grotOrganization';
 const orgDefaults={fullName:'Краевое государственное бюджетное учреждение здравоохранения «Владивостокская поликлиника № 9»',shortName:'КГБУЗ «Владивостокская поликлиника № 9»',inn:'2540192413',kpp:'254301001',ogrn:'1132540005971',okpo:'27866762',address:'690911, Приморский край, г. Владивосток, ул. Адмирала Горшкова, д. 3',director:'Беньковская Ольга Павловна',phone:'+7 (423) 278-85-44',email:'vladpolik9@mail.ru',website:'https://vladpol-9.ru'};
 function readOrganization(){try{return {...orgDefaults,...JSON.parse(localStorage.getItem(orgStorageKey)||'{}')}}catch{return {...orgDefaults}}}
@@ -221,7 +280,7 @@ function renderHistory2026(){
  const cells=columns.map(c=>'<th><button type="button" data-history-month="'+c.m+'">'+(c.d||months[c.m].slice(0,3))+'</button></th>').join('');
  const rows=names.map(n=>'<tr><th class="fixed name"><button type="button" class="driver" data-history-driver="'+escapeHtml(n)+'">'+escapeHtml(n)+'</button></th><td class="fixed group">'+(groups[n]||'—')+'</td>'+columns.map(c=>{const set=days.get(n);const count=c.d?Number(set.has(dateAt(c.m,c.d))):[...set].filter(x=>Number(x.slice(5,7))===c.m+1).length;return '<td class="'+(c.d?'day ':'month-cell ')+(count?(c.d?'vacation':'has-vacation'):'')+'">'+(c.d?(count?'●':''):count||'—')+'</td>'}).join('')+'<td class="annual-total">'+days.get(n).size+'</td></tr>').join('');
  const totals=columns.map(c=>{const n=names.filter(n=>c.d?days.get(n).has(dateAt(c.m,c.d)):[...days.get(n)].some(x=>Number(x.slice(5,7))===c.m+1)).length;return '<td>'+(n||'')+'</td>';}).join('');
- app.innerHTML='<header class="grot-header"><img class="grot-header-logo" src="'+grotLogo+'" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">КГБУЗ «Владивостокская поликлиника № 9»</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2026" selected>2026</option><option value="2027">2027</option></select></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>Документ</summary><div class="grot-menu-panel"><button type="button" id="archive-collapse">Свернуть все месяцы</button><button type="button" id="archive-current">Перейти к графику 2027</button><button type="button" id="archive-metrics">Анализ отпускной нагрузки · КОН / КСН / ИПО</button></div></details><details class="grot-menu"><summary>Справочник</summary><div class="grot-menu-panel"><button type="button" data-archive-organization="1">Организация</button><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Печать</summary><div class="grot-menu-panel"><button type="button" id="archive-print">Печать графика 2026</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-about="1">О программе</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button></div></details></nav><p><strong>Архивный график 2026 года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>'+cells+'<th>Всего дней</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>'+totals+'<td>'+names.length+'</td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>';
+ app.innerHTML='<header class="grot-header"><img class="grot-header-logo" src="'+grotLogo+'" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">КГБУЗ «Владивостокская поликлиника № 9»</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2026" selected>2026</option><option value="2027">2027</option></select></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>Документ</summary><div class="grot-menu-panel"><button type="button" id="archive-collapse">Свернуть все месяцы</button><button type="button" id="archive-current">Перейти к графику 2027</button><button type="button" id="archive-metrics">Анализ отпускной нагрузки · КОН / КСН / ИПО</button></div></details><details class="grot-menu"><summary>Справочник</summary><div class="grot-menu-panel"><button type="button" data-archive-organization="1">Организация</button><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="structure-open">Структура предприятия</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Печать</summary><div class="grot-menu-panel"><button type="button" id="archive-print">Печать графика 2026</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-about="1">О программе</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button></div></details></nav><p><strong>Архивный график 2026 года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>'+cells+'<th>Всего дней</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>'+totals+'<td>'+names.length+'</td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>';
  preserveYearHeader(previousHeader);
  document.querySelector('#grot-year').value='2026';
  document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
@@ -266,7 +325,7 @@ function render() {
           <summary>Справочник</summary>
           <div class="grot-menu-panel">
             <button type="button" id="organization-open">Организация</button>
-            <button type="button" id="staff-open">Сотрудники</button>
+            <button type="button" id="staff-open">Сотрудники</button><button type="button" id="structure-open">Структура предприятия</button>
             <button type="button" id="calendar-open">Производственный календарь</button>
           </div>
         </details>
@@ -297,7 +356,9 @@ function render() {
       <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
     <footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
-    <dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
+    <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">＋ Сотрудники</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog>
+<dialog id="structure-assign-dialog" class="structure-dialog"><h2 id="structure-assignment-title">Добавить сотрудников</h2><p class="muted">Отметьте сотрудников для выбранного звена. Снятие отметки открепит сотрудника от него. Отпуска сохраняются.</p><div id="structure-employees"></div><div class="actions"><button type="button" id="structure-assign-cancel">Отмена</button><button type="button" id="structure-assign-save">Сохранить</button></div></dialog>
+<dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◉</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled>✏️</button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>▤</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span><button type="button" id="staff-close" title="Закрыть" aria-label="Закрыть">×</button></div><div id="staff-list"></div>
     </dialog>
     <dialog id="staff-import-dialog"><h2>Перенос сотрудников из 2026 года</h2><p>Из архива берутся только фамилии и известные группы. Проверьте полные ФИО, группы и нормы отпуска после переноса. Совпадающие фамилии не добавляются повторно.</p><div class="staff-table-scroll" id="staff-import-list"></div><p id="staff-import-status" role="status"></p><div class="actions"><button type="button" id="staff-import-confirm">Добавить выбранных</button><button type="button" id="staff-import-cancel">Отмена</button></div></dialog>
@@ -428,6 +489,15 @@ function render() {
     drawStaff();render();
   });
   document.querySelector('#organization-open').onclick=openOrganizationCard;
+  document.querySelector('#structure-open').onclick=structureOpen;
+  document.querySelector('#structure-close').onclick=()=>document.querySelector('#structure-dialog').close();
+  document.querySelector('#structure-add').onclick=structureAdd;
+  document.querySelector('#structure-edit').onclick=structureEdit;
+  document.querySelector('#structure-delete').onclick=structureRemove;
+  document.querySelector('#structure-assign').onclick=structureAssignOpen;
+  document.querySelector('#structure-assign-cancel').onclick=()=>document.querySelector('#structure-assign-dialog').close();
+  document.querySelector('#structure-assign-save').onclick=structureAssignSave;
+  document.querySelector('#structure-tree').onchange=structureDraw;
   document.querySelector('#staff-open').onclick=()=>{drawStaff();document.querySelector('#staff-dialog').showModal();};
   document.querySelector('#staff-close').onclick=()=>document.querySelector('#staff-dialog').close();
   document.querySelector('#staff-add').onclick=()=>openStaffCard(null);
