@@ -569,3 +569,9 @@ main{padding-top:5px!important}
 .structure-choice-mark.is-selected{border-color:#176b9a!important;background:transparent!important}
 .structure-choice-mark.is-selected::after{content:"";position:absolute;inset:3px;border-radius:50%;background:#176b9a}
 .structure-table td.structure-choice:first-child{display:table-cell!important}
+
+/* v0.3.31: no separate selection column */
+.structure-table th:first-child{width:52%!important}
+.structure-table th:nth-child(2){width:12%!important}
+.structure-table td:first-child{display:table-cell!important}
+.structure-table tr.structure-selected td{background:#fff0bf!important}
