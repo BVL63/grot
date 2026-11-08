@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.58';
+const APP_VERSION='0.3.59';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -417,7 +417,7 @@ function printMonthlyVacationChart(){
    for(let m=0;m<12;){
     if(p&&m===first){
      const span=last-first+1;
-     cells.push(span===1?'<td class="leave-print-single"><div class="leave-print-vertical"><div>'+esc(displayDate(p.start))+'</div><div>'+esc(displayDate(p.end))+'</div><strong>'+leaveDays(p.start,p.end)+' дн.</strong></div></td>':'<td class="leave-print-span" colspan="'+span+'"><div class="leave-print-dates"><span>'+esc(displayDate(p.start))+'</span><span>'+esc(displayDate(p.end))+'</span></div><div class="leave-print-days">'+leaveDays(p.start,p.end)+' дн.</div></td>');
+     cells.push(span===1?'<td class="leave-print-single"><div class="leave-print-vertical"><div>'+esc(displayDate(p.start))+'–'+esc(displayDate(p.end))+'</div><strong>'+leaveDays(p.start,p.end)+' дн.</strong></div></td>':'<td class="leave-print-span" colspan="'+span+'"><div class="leave-print-dates"><span>'+esc(displayDate(p.start))+'</span><span>'+esc(displayDate(p.end))+'</span></div><div class="leave-print-days">'+leaveDays(p.start,p.end)+' дн.</div></td>');
      m+=span;
     }else{cells.push('<td></td>');m++}
    }
