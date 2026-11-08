@@ -586,3 +586,17 @@ main{padding-top:5px!important}
 #staff-card #staff-error,#staff-card #staff-form>.actions{grid-column:1/-1}
 #staff-card #staff-form>.actions{margin-top:0}
 @media(max-width:620px){#staff-card{width:min(480px,calc(100vw - 24px))}#staff-card #staff-form{grid-template-columns:1fr;row-gap:8px}}
+
+/* v0.3.43: compact calendar rows and fixed page header/footer */
+#app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+#app>.grot-header{flex:0 0 auto;position:relative;z-index:12}
+#app>main{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#app>main>.scroll{flex:1 1 auto;min-height:0;overflow:auto;margin-top:5px}
+#app>main>.grot-version-footer{flex:0 0 auto;position:relative;background:#f5f7fa;border-top:1px solid #cbd5e1;z-index:6}
+#app>main>.scroll .annual-table thead th{position:sticky;top:0;z-index:5}
+#app>main>.scroll .annual-table tfoot th,#app>main>.scroll .annual-table tfoot td{position:sticky;bottom:0;z-index:5}
+#app>main>.scroll .annual-table thead .fixed{z-index:7}
+#app>main>.scroll .annual-table tfoot .fixed{z-index:7}
+#app>main>.scroll .annual-table tbody th,#app>main>.scroll .annual-table tbody td{padding:3px 6px;height:30px;line-height:19px}
+#app>main>.scroll .annual-table .priority-detail{display:inline-block;min-width:28px;height:23px;line-height:19px;padding:0 5px;border-radius:4px;font-size:13px}
+#app>main>.scroll .annual-table .driver{padding:0 2px;line-height:19px}
