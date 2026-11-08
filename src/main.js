@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.76';
+const APP_VERSION='0.3.77';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -21,9 +21,22 @@ function saveVacationCharts(){localStorage.setItem(vacationChartsKey,JSON.string
 function vacationChartOpen(){
  const dlg=document.querySelector('#vacation-charts-dialog');if(!dlg)return;
  const list=document.querySelector('#vacation-charts-list');
- list.innerHTML=vacationCharts.map(c=>'<tr data-chart-id="'+escapeHtml(c.id)+'"><td><button type="button" data-chart-open="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+'</button></td><td>'+c.year+'</td><td>'+(c.allStaff?'Все':c.staffIds.length)+'</td><td><button type="button" data-chart-edit="'+escapeHtml(c.id)+'">✏️</button></td></tr>').join('');
+ list.innerHTML=vacationCharts.map(c=>'<tr data-chart-id="'+escapeHtml(c.id)+'"><td><button type="button" data-chart-open="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+'</button></td><td>'+c.year+'</td><td>'+(c.allStaff?'Все':c.staffIds.length)+'</td><td><button type="button" data-chart-edit="'+escapeHtml(c.id)+'" title="Изменить">✏️</button> <button type="button" data-chart-remove="'+escapeHtml(c.id)+'" title="Удалить график" '+(vacationCharts.length===1?'disabled':'')+'>🗑️</button></td></tr>').join('');
  list.querySelectorAll('[data-chart-open]').forEach(b=>b.onclick=()=>{activeVacationChartId=b.dataset.chartOpen;saveVacationCharts();dlg.close();selectedDriverIds=null;selectedGroups=null;render()});
  list.querySelectorAll('[data-chart-edit]').forEach(b=>b.onclick=()=>vacationChartEdit(b.dataset.chartEdit));
+ list.querySelectorAll('[data-chart-remove]').forEach(b=>b.onclick=()=>{
+  const chart=vacationCharts.find(c=>c.id===b.dataset.chartRemove);
+  if(!chart||vacationCharts.length<=1)return;
+  if(!confirm('Удалить график «'+chart.name+'»?\n\nСотрудники и периоды отпусков сохранятся. Состав графика можно восстановить из резервной копии.'))return;
+  vacationCharts=vacationCharts.filter(c=>c.id!==chart.id);
+  if(activeVacationChartId===chart.id)activeVacationChartId=vacationCharts[0].id;
+  saveVacationCharts();
+  const priorities=readPriorities();
+  delete priorities[chart.id];
+  localStorage.setItem(priorityKey,JSON.stringify(priorities));
+  selectedDriverIds=null;selectedGroups=null;
+  dlg.close();render();vacationChartOpen();
+ });
  dlg.showModal();
 }
 function vacationChartEdit(id){
