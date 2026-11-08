@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.75';
+const APP_VERSION='0.3.76';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -652,7 +652,7 @@ function render() {
   document.querySelector('#backup-directory-choose').onclick=backupDirectoryChoose;
   backupDirectoryLoad().then(backupDirectoryStatus);
   document.querySelector('#backup-export').onclick=async()=>{
-    const payload={format:'grot-backup',version:1,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides};
+    const payload={format:'grot-backup',version:2,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides,organization:readOrganization(),structure:structureNodes,charts:vacationCharts,activeChartId:activeVacationChartId,positions:JSON.parse(localStorage.getItem(positionsKey)||'[]'),priorities:readPriorities(),seasonalityHistory:JSON.parse(localStorage.getItem('grot-seasonality-history-v1')||'[]')};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const now=new Date();const stamp=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+[now.getHours(),now.getMinutes(),now.getSeconds()].map(x=>String(x).padStart(2,'0')).join('-');
     const filename='grot-'+stamp+'.json';
@@ -677,8 +677,15 @@ function render() {
     try{
       if(file.size>5_000_000)throw Error('Файл слишком большой (более 5 МБ).');
       const data=JSON.parse(await file.text());
-      if(!data||data.format!=='grot-backup'||data.version!==1||data.year!==2027)throw Error('Это не резервная копия ГРОТ за 2027 год.');
+      if(!data||data.format!=='grot-backup'||![1,2].includes(data.version)||data.year!==2027)throw Error('Это не резервная копия ГРОТ за 2027 год.');
       if(!Array.isArray(data.staff)||!data.staff.length||!Array.isArray(data.vacations)||!data.calendarOverrides||typeof data.calendarOverrides!=='object'||Array.isArray(data.calendarOverrides))throw Error('В файле отсутствуют обязательные данные.');
+      const isObject=x=>x&&typeof x==='object'&&!Array.isArray(x);
+      if(data.version===2){
+        if(!isObject(data.organization)||typeof data.organization.shortName!=='string'||!data.organization.shortName.trim())throw Error('В копии отсутствует организация.');
+        if(!Array.isArray(data.structure)||!Array.isArray(data.charts)||!data.charts.length||!Array.isArray(data.positions)||!isObject(data.priorities)||!Array.isArray(data.seasonalityHistory))throw Error('В копии отсутствуют настройки графиков или структуры.');
+        if(data.charts.some(c=>!isObject(c)||typeof c.id!=='string'||!c.id||typeof c.name!=='string'||!Array.isArray(c.staffIds)))throw Error('Ошибка в справочнике графиков.');
+        if(data.structure.some(n=>!isObject(n)||typeof n.id!=='string'||typeof n.type!=='string'))throw Error('Ошибка в структуре организации.');
+      }
       const ids=new Set();
       // Пустая группа и 0 дней разрешены карточкой сотрудника.
       // Все дополнительные поля резервной копии сохраняются.
@@ -701,19 +708,41 @@ function render() {
       for(const [date,type] of Object.entries(data.calendarOverrides)){
         if(!validDate(date)||!['holiday','weekend','workday'].includes(type))throw Error('Ошибка в производственном календаре.');
       }
-      if(!confirm('Восстановить копию от '+(data.createdAt?new Date(data.createdAt).toLocaleString('ru-RU'):'неизвестной даты')+'?\\nСотрудников: '+restoredStaff.length+'\\nПериодов отпусков: '+data.vacations.length+'\\n\\nТЕКУЩИЕ данные браузера будут заменены. Продолжить?'))return;
-      const previous=[localStorage.getItem(staffKey),localStorage.getItem(key),localStorage.getItem(calendarKey)];
-      try{
-        localStorage.setItem(staffKey,JSON.stringify(restoredStaff));
-        localStorage.setItem(key,JSON.stringify(data.vacations));
-        localStorage.setItem(calendarKey,JSON.stringify(data.calendarOverrides));
-      }catch(err){
-        [staffKey,key,calendarKey].forEach((k,i)=>{try{if(previous[i]===null)localStorage.removeItem(k);else localStorage.setItem(k,previous[i]);}catch{}});
+      const newOrg=data.version===2?data.organization.shortName:'(не включена в старую копию)';
+      const oldOrg=readOrganization().shortName;
+      const warning=data.version===1?'\n\nВНИМАНИЕ: старая копия не содержит графики и организацию. Они останутся прежними на этом устройстве.':'\n\nОрганизация в копии: '+newOrg+'\nТекущая организация: '+oldOrg+'\nСтруктура, графики и реквизиты будут ЗАМЕНЕНЫ.';
+      if(!confirm('Восстановить копию от '+(data.createdAt?new Date(data.createdAt).toLocaleString('ru-RU'):'неизвестной даты')+'?\nСотрудников: '+restoredStaff.length+'\nПериодов отпусков: '+data.vacations.length+'\nГрафиков: '+(data.version===2?data.charts.length:'нет в копии')+warning+'\n\nПеред восстановлением сохраните резервную копию текущего ПК. Продолжить?'))return;
+      const writes=[
+        [staffKey,JSON.stringify(restoredStaff)],
+        [key,JSON.stringify(data.vacations)],
+        [calendarKey,JSON.stringify(data.calendarOverrides)]
+      ];
+      if(data.version===2){
+        writes.push(
+          [orgStorageKey,JSON.stringify(data.organization)],
+          [structureKey,JSON.stringify(data.structure)],
+          [vacationChartsKey,JSON.stringify(data.charts)],
+          ['grotActiveVacationChart',data.charts.some(c=>c.id===data.activeChartId)?data.activeChartId:data.charts[0].id],
+          [positionsKey,JSON.stringify(data.positions)],
+          [priorityKey,JSON.stringify(data.priorities)],
+          ['grot-seasonality-history-v1',JSON.stringify(data.seasonalityHistory)]
+        );
+      }
+      const previous=writes.map(([k])=>[k,localStorage.getItem(k)]);
+      try{for(const [k,v] of writes)localStorage.setItem(k,v);}
+      catch(err){
+        for(const [k,v] of previous){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch{}}
         throw Error('Не удалось сохранить данные. Предыдущие записи восстановлены, насколько позволило хранилище.');
       }
       drivers=restoredStaff;vacations=data.vacations;calendarOverrides=data.calendarOverrides;
+      if(data.version===2){
+        structureNodes=data.structure;
+        vacationCharts=data.charts;
+        activeVacationChartId=localStorage.getItem('grotActiveVacationChart');
+        refreshHeaderOrganization();
+      }
       selectedDriverIds=null;selectedGroups=null;
-      notice='Резервная копия восстановлена: '+drivers.length+' сотрудников, '+vacations.length+' периодов.';
+      notice='Резервная копия восстановлена: '+drivers.length+' сотрудников, '+vacations.length+' периодов'+(data.version===2?', '+vacationCharts.length+' графиков.':'. Старая копия: графики не переносились.');
       render();
     }catch(err){alert('Восстановление отменено: '+err.message);}
   };
