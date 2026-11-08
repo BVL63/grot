@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.51';
+const APP_VERSION='0.3.52';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -469,7 +469,7 @@ function render() {
   const priorityCurrent=priorityData&&JSON.stringify(priorityData.staffIds)===JSON.stringify(drivers.filter(d=>chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id))).map(d=>String(d.id)).sort());
   const priorityEntries=new Map((priorityCurrent?priorityData.entries:[]).map(x=>[x.id,x]));
   const annualCount=id=>periodsFor(id).reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
-  const rows=visibleDrivers.map(d=>'<tr><th class="fixed name"><button class="driver" data-driver="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button></th><td><button type="button" class="priority-detail" data-priority-id="'+d.id+'" '+(priorityEntries.has(String(d.id))?'':'disabled')+' title="Расшифровка приоритета">'+(priorityEntries.get(String(d.id))?.rank??'—')+'</button></td><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'<td class="annual-total">'+(annualCount(d.id)||'')+'</td><td class="leave-available" title="Всего доступно с учётом корректировок">'+availableLeaveDays(d)+'</td><td class="leave-remaining">'+(availableLeaveDays(d)-annualCount(d.id))+'</td></tr>').join('');
+  const rows=visibleDrivers.map(d=>'<tr><th class="fixed name"><button class="driver '+(annualCount(d.id)>availableLeaveDays(d)?'leave-overlimit':'')+'" title="'+(annualCount(d.id)>availableLeaveDays(d)?'Превышение на '+(annualCount(d.id)-availableLeaveDays(d))+' дн.':'Отпуска сотрудника')+'" data-driver="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button></th><td><button type="button" class="priority-detail" data-priority-id="'+d.id+'" '+(priorityEntries.has(String(d.id))?'':'disabled')+' title="Расшифровка приоритета">'+(priorityEntries.get(String(d.id))?.rank??'—')+'</button></td><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'<td class="annual-total">'+(annualCount(d.id)||'')+'</td><td class="leave-available" title="Всего доступно с учётом корректировок">'+availableLeaveDays(d)+'</td><td class="leave-remaining">'+(availableLeaveDays(d)-annualCount(d.id))+'</td></tr>').join('');
   const totals=columns.map(c=>{const n=c.day?visibleDrivers.filter(d=>sets.get(d.id).has(dateOf(c.m,c.day))).length:visibleDrivers.filter(d=>monthlyCount(sets.get(d.id),c.m)>0).length;return '<td>'+(n||'')+'</td>';}).join('');
   app.innerHTML = `
     <header class="grot-header"><img class="grot-header-logo" src="${grotLogo}" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">${escapeHtml(readOrganization().shortName||readOrganization().fullName)}</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2026">2026</option><option value="2027" selected>2027</option></select></div></header>
@@ -943,8 +943,8 @@ function render() {
     const remain=(driver?availableLeaveDays(driver):36)-planned;
     document.querySelector('#day-count').textContent='Доступно: '+(driver?availableLeaveDays(driver):36)+' · Запланировано: '+planned+' · Осталось: '+remain+' дн.';
     document.querySelector('#editor-split-warning').textContent=combined.length>0&&!combined.some(p=>leaveDays(p.start,p.end)>=14)?'⚠ Нет ни одной части отпуска продолжительностью не менее 14 дней. Перед утверждением графика необходимо исправить.':'';
-    document.querySelector('#form-error').textContent=remain<0?'Превышена продолжительность отпуска. Уменьшите периоды.':'';
-    document.querySelector('#vacation-form button[type="submit"]').disabled=editorMode==='view'||remain<0;
+    document.querySelector('#form-error').textContent=remain<0?'Предупреждение: превышение на '+(-remain)+' дн. Периоды можно сохранить, фамилия будет выделена красным.':'';
+    document.querySelector('#vacation-form button[type="submit"]').disabled=editorMode==='view';
   }
   function drawRangeCalendar() {
     const start=document.querySelector('#start').value,end=document.querySelector('#end').value;
@@ -1012,7 +1012,8 @@ function render() {
     const sorted=[...proposed].sort((x,y)=>x.start.localeCompare(y.start));
     if(sorted.some((p,i)=>i>0&&p.start<=sorted[i-1].end)){document.querySelector('#form-error').textContent='Периоды пересекаются.';return;}
     const driver=drivers.find(d=>d.id===id);
-    if(sorted.reduce((n,p)=>n+leaveDays(p.start,p.end),0)>availableLeaveDays(driver)){document.querySelector('#form-error').textContent='Превышена норма отпуска.';return;}
+    const excess=sorted.reduce((n,p)=>n+leaveDays(p.start,p.end),0)-availableLeaveDays(driver);
+    if(excess>0&&!confirm('Запланировано сверх доступного на '+excess+' дн. Сохранить с предупреждением?'))return;
     vacations=vacations.filter(v=>Number(v.driverId)!==id).concat(sorted.map(p=>({driverId:id,start:p.start,end:p.end})));
     store();
     notice='Период отпуска сохранён.';
