@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.56';
+const APP_VERSION='0.3.57';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -409,27 +409,22 @@ function printMonthlyVacationChart(){
  const header=months.map(m=>'<th>'+esc(m.slice(0,3).toLowerCase())+'</th>').join('');
  const body=members.map((d,i)=>{
   const periods=periodsFor(Number(d.id)).filter(p=>p.start.slice(0,4)==='2027'&&p.end.slice(0,4)==='2027');
-  const ranges=periods.map(p=>({p,first:Number(p.start.slice(5,7))-1,last:Number(p.end.slice(5,7))-1}));
-  const occupied=Array(12).fill(0);
-  ranges.forEach(x=>{for(let k=x.first;k<=x.last;k++)occupied[k]++});
-  const cells=[];
-  for(let idx=0;idx<12;){
-   const rangesStarting=ranges.filter(x=>x.first===idx);
-   const spanRange=rangesStarting.length===1?rangesStarting[0]:null;
-   if(spanRange&&Array.from({length:spanRange.last-idx+1},(_,j)=>occupied[idx+j]===1).every(Boolean)){
-    const p=spanRange.p,span=spanRange.last-idx+1;
-    cells.push('<td class="leave-print-span" colspan="'+span+'"><div class="leave-print-dates"><span>'+esc(displayDate(p.start))+'</span><span>'+esc(displayDate(p.end))+'</span></div><div class="leave-print-days">'+leaveDays(p.start,p.end)+' дн.</div></td>');
-    idx+=span;
-   }else{
-    const current=ranges.filter(x=>x.first<=idx&&x.last>=idx);
-    cells.push('<td class="leave-print-single">'+current.map(x=>'<div>'+esc(displayDate(x.p.start))+' — '+esc(displayDate(x.p.end))+'<small>'+leaveDays(x.p.start,x.p.end)+' дн.</small></div>').join('<hr>')+'</td>');
-    idx++;
+  const layers=periods.length?periods:[null];
+  return layers.map((p,layer)=>{
+   const prefix=layer===0?'<td class="num" rowspan="'+layers.length+'">'+(i+1)+'</td><td class="person" rowspan="'+layers.length+'"><b>'+esc(shortStaffName(d))+'</b><small>'+esc(d.position||'')+'</small><small>'+esc(d.department||'')+'</small></td>':'';
+   const cells=[];
+   const first=p?Number(p.start.slice(5,7))-1:-1,last=p?Number(p.end.slice(5,7))-1:-1;
+   for(let m=0;m<12;){
+    if(p&&m===first){
+     const span=last-first+1;
+     cells.push('<td class="leave-print-span" colspan="'+span+'"><div class="leave-print-dates"><span>'+esc(displayDate(p.start))+'</span><span>'+esc(displayDate(p.end))+'</span></div><div class="leave-print-days">'+leaveDays(p.start,p.end)+' дн.</div></td>');
+     m+=span;
+    }else{cells.push('<td></td>');m++}
    }
-  }
-
-  return '<tr><td class="num">'+(i+1)+'</td><td class="person"><b>'+esc(shortStaffName(d))+'</b><small>'+esc(d.position||'')+'</small><small>'+esc(d.department||'')+'</small></td>'+cells+'</tr>';
+   return '<tr class="leave-print-layer">'+prefix+cells.join('')+'</tr>';
+  }).join('');
  }).join('');
- const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков 2027</title><style>@page{size:A4 landscape;margin:10mm}body{font:10px "Times New Roman",serif;color:#111}h1{text-align:center;font-size:19px;letter-spacing:3px;margin:10px 0 14px}.subtitle{text-align:center;font-size:12px;margin-bottom:12px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #333;padding:4px 3px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:center}th:first-child,.num{width:20px;text-align:center}th:nth-child(2),.person{width:130px}td{height:46px}small{display:block;font-size:9px;margin-top:3px}hr{border:0;border-top:1px dotted #bbb}.toolbar{margin:0 0 12px;display:flex;gap:8px;justify-content:flex-end}.toolbar button{padding:8px 14px}.person b{font-size:11px}.leave-print-span{vertical-align:middle}.leave-print-dates{display:flex;justify-content:space-between;gap:12px;font-size:11px;white-space:nowrap}.leave-print-days{text-align:center;margin-top:7px;font-size:11px;font-weight:bold}.leave-print-single{text-align:center}.sign{margin-top:18px}@media print{.toolbar{display:none}thead{display:table-header-group}tr{break-inside:avoid}}</style></head><body><div class="toolbar"><button onclick="window.print()">Печать / PDF</button><button onclick="window.close()">Закрыть</button></div><h1>Г Р А Ф И К &nbsp; О Т П У С К О В &nbsp; Н А &nbsp; 2 0 2 7 &nbsp; Г О Д</h1><div class="subtitle">'+esc(readOrganization().shortName||readOrganization().fullName)+' · '+esc(chart.name)+'</div><table><thead><tr><th>№</th><th>Ф. И. О. / должность / подразделение</th>'+header+'</tr></thead><tbody>'+body+'</tbody></table><p class="sign">Составил: __________________________ &nbsp;&nbsp; Дата: __________________</p></body></html>';
+ const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков 2027</title><style>@page{size:A4 landscape;margin:10mm}body{font:10px "Times New Roman",serif;color:#111}h1{text-align:center;font-size:19px;letter-spacing:3px;margin:10px 0 14px}.subtitle{text-align:center;font-size:12px;margin-bottom:12px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #333;padding:4px 3px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:center}th:first-child,.num{width:20px;text-align:center}th:nth-child(2),.person{width:130px}td{height:30px}.leave-print-layer td{height:30px}.person{vertical-align:middle}small{display:block;font-size:9px;margin-top:3px}hr{border:0;border-top:1px dotted #bbb}.toolbar{margin:0 0 12px;display:flex;gap:8px;justify-content:flex-end}.toolbar button{padding:8px 14px}.person b{font-size:11px}.leave-print-span{vertical-align:middle}.leave-print-dates{display:flex;justify-content:space-between;gap:4px;font-size:10px;white-space:nowrap}.leave-print-days{text-align:center;margin-top:7px;font-size:11px;font-weight:bold}.leave-print-single{text-align:center}.sign{margin-top:18px}@media print{.toolbar{display:none}thead{display:table-header-group}tr{break-inside:avoid}}</style></head><body><div class="toolbar"><button onclick="window.print()">Печать / PDF</button><button onclick="window.close()">Закрыть</button></div><h1>Г Р А Ф И К &nbsp; О Т П У С К О В &nbsp; Н А &nbsp; 2 0 2 7 &nbsp; Г О Д</h1><div class="subtitle">'+esc(readOrganization().shortName||readOrganization().fullName)+' · '+esc(chart.name)+'</div><table><thead><tr><th>№</th><th>Ф. И. О. / должность / подразделение</th>'+header+'</tr></thead><tbody>'+body+'</tbody></table><p class="sign">Составил: __________________________ &nbsp;&nbsp; Дата: __________________</p></body></html>';
  const w=window.open('','_blank');if(!w){alert('Разрешите всплывающие окна для печати.');return}w.document.write(html);w.document.close();w.focus();
 }
 function personnelPrint(){
