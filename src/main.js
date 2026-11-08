@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.47';
+const APP_VERSION='0.3.48';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -646,7 +646,7 @@ function render() {
   };
   document.querySelector('#staff-allowance').addEventListener('input',redrawDayOperations);
   function openStaffCard(d,structureId=null){
-    const form=document.querySelector('#staff-form');form.reset();updatePositionSuggestions();pendingDayOperations=(d?.dayOperations||[]).map(x=>({...x}));redrawDayOperations();
+    const form=document.querySelector('#staff-form');form.reset();updatePositionSuggestions();pendingDayOperations=(d?.dayOperations||[]).map(x=>({...x}));
     form.dataset.structureId=structureId||'';
     form.dataset.fromStructure=structureId?'1':'0';
     document.querySelector('#staff-id').value=d?.id||'';
@@ -654,6 +654,7 @@ function render() {
     if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-position').value=d.position||'';document.querySelector('#staff-allowance').value=d.allowance;document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
     const effectiveStructureId=structureId||d?.structureId;document.querySelector('#staff-structure-code').value=structureNodes.find(n=>n.id===effectiveStructureId)?.code||'';
     if(structureId){const hierarchy=structureAncestors(structureId);const division=hierarchy.find(x=>x.type==='division');document.querySelector('#staff-department').value=division?.name||'';}
+    redrawDayOperations();
     document.querySelector('#staff-dialog').close();document.querySelector('#staff-card').showModal();
   }
   let selectedStaffId=null;
