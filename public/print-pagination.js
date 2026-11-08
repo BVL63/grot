@@ -30,6 +30,8 @@
     sheet.style.cssText = 'width:277mm;background:white;color:#111;box-sizing:border-box;padding:0;margin:0;';
     const table = templateTable.cloneNode(false);
     table.style.width = '100%';
+    const colgroup = templateTable.querySelector('colgroup');
+    if (colgroup) table.appendChild(colgroup.cloneNode(true));
     table.appendChild(templateTable.tHead.cloneNode(true));
     const tbody = document.createElement('tbody');
     table.appendChild(tbody);
