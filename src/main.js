@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.63';
+const APP_VERSION='0.3.64';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -407,9 +407,16 @@ function printStaffDepartment(d){
  const hierarchy=d.structureId?structureAncestors(d.structureId):[];
  return hierarchy.filter(n=>n.type==='department').map(n=>n.name).filter(Boolean).join(' / ')||'—';
 }
+function printStaffDepartmentCode(d){
+ const hierarchy=d.structureId?structureAncestors(d.structureId):[];
+ return hierarchy.filter(n=>n.type==='department').map(n=>String(n.code||'').trim()).filter(Boolean).join('.')||'';
+}
 function printMonthlyVacationChart(){
  const chart=activeVacationChart(),esc=escapeHtml;
- const members=drivers.filter(d=>(chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027)).sort((a,b)=>String(a.department||'').localeCompare(String(b.department||''),'ru')||shortStaffName(a).localeCompare(shortStaffName(b),'ru'));
+ const members=drivers.filter(d=>(chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027)).sort((a,b)=>{
+  const ac=printStaffDepartmentCode(a),bc=printStaffDepartmentCode(b);
+  return (!ac!==!bc?(ac? -1:1):ac.localeCompare(bc,'ru',{numeric:true}))||shortStaffName(a).localeCompare(shortStaffName(b),'ru');
+ });
  const header=months.map(m=>'<th>'+esc(m.slice(0,3).toLowerCase())+'</th>').join('');
  const body=members.map((d,i)=>{
   const periods=periodsFor(Number(d.id)).filter(p=>p.start.slice(0,4)==='2027'&&p.end.slice(0,4)==='2027');
@@ -428,7 +435,7 @@ function printMonthlyVacationChart(){
    return '<tr class="leave-print-layer '+(layer===0?'leave-print-first ':'')+(layer===layers.length-1?'leave-print-last':'')+'">'+prefix+cells.join('')+'</tr>';
   }).join('');
  }).join('');
- const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков 2027</title><style>@page{size:A4 landscape;margin:10mm}body{font:10px "Times New Roman",serif;color:#111}h1{text-align:center;font-size:19px;letter-spacing:3px;margin:10px 0 14px}.subtitle{text-align:center;font-size:12px;margin-bottom:12px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #333;padding:4px 3px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:center}th:first-child,.num{width:20px;text-align:center}th:nth-child(2),.person{width:130px}td{height:30px}.leave-print-layer td{height:30px}.leave-print-layer:not(.leave-print-last) td:not([rowspan]){border-bottom:0}.leave-print-layer:not(.leave-print-first) td{border-top:0}.person,.num{vertical-align:middle}.num{text-align:center}small{display:block;font-size:10px;margin-top:3px}hr{border:0;border-top:1px dotted #bbb}.toolbar{margin:0 0 12px;display:flex;gap:8px;justify-content:flex-end}.toolbar button{padding:8px 14px}.person b{font-size:11px}.leave-print-span{vertical-align:middle}.leave-print-dates{display:block;font-size:11px;font-weight:bold;white-space:pre;text-align:center}.leave-print-dates span:first-child{text-align:left}.leave-print-dates span:last-child{text-align:right}.leave-print-dash{flex:1;text-align:center;color:#555}.leave-print-days{text-align:center}.leave-print-days{text-align:center;margin-top:7px;font-size:11px;font-weight:bold}.leave-print-single{text-align:center}.leave-print-vertical{display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;font-size:11px;font-weight:bold}.leave-print-vertical strong{font-size:11px;margin-top:3px}.sign{margin-top:18px}@media print{.toolbar{display:none}thead{display:table-header-group}tr{break-inside:avoid}}</style></head><body><div class="toolbar"><button onclick="window.print()">Печать / PDF</button><button onclick="window.close()">Закрыть</button></div><h1>Г Р А Ф И К &nbsp; О Т П У С К О В &nbsp; Н А &nbsp; 2 0 2 7 &nbsp; Г О Д</h1><div class="subtitle">'+esc(readOrganization().shortName||readOrganization().fullName)+' · '+esc(chart.name)+'</div><table><thead><tr><th>№</th><th>Ф. И. О. / должность / подразделение</th>'+header+'</tr></thead><tbody>'+body+'</tbody></table><p class="sign">Составил: __________________________ &nbsp;&nbsp; Дата: __________________</p></body></html>';
+ const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков 2027</title><style>@page{size:A4 landscape;margin:10mm}body{font:10px "Times New Roman",serif;color:#111}h1{text-align:center;font-size:19px;letter-spacing:3px;margin:10px 0 14px}.subtitle{text-align:center;font-size:12px;margin-bottom:12px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #333;padding:4px 3px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:center}th:first-child,.num{width:20px;text-align:center}th:nth-child(2),.person{width:130px}td{height:30px}.leave-print-layer td{height:30px}.leave-print-layer:not(.leave-print-last) td:not([rowspan]){border-bottom:0}.leave-print-layer:not(.leave-print-first) td{border-top:0}.person,.num{vertical-align:middle}.num{text-align:center}small{display:block;font-size:10px;margin-top:3px}hr{border:0;border-top:1px dotted #bbb}.toolbar{margin:0 0 12px;display:flex;gap:8px;justify-content:flex-end}.toolbar button{padding:8px 14px}.person b{font-size:11px}.leave-print-span{vertical-align:middle}.leave-print-dates{display:block;font-size:11px;font-weight:bold;white-space:pre;text-align:center}.leave-print-dates span:first-child{text-align:left}.leave-print-dates span:last-child{text-align:right}.leave-print-dash{flex:1;text-align:center;color:#555}.leave-print-days{text-align:center}.leave-print-days{text-align:center;margin-top:7px;font-size:11px;font-weight:bold}.leave-print-single{text-align:center}.leave-print-vertical{display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;font-size:11px;font-weight:bold}.leave-print-vertical strong{font-size:11px;margin-top:3px}.sign{margin-top:18px}@media print{.toolbar{display:none}thead{display:table-header-group}tr{break-inside:avoid}}</style></head><body><div class="toolbar"><button onclick="window.print()">Печать / PDF</button><button onclick="window.close()">Закрыть</button></div><h1>Г Р А Ф И К &nbsp; О Т П У С К О В &nbsp; Н А &nbsp; 2 0 2 7 &nbsp; Г О Д</h1><div class="subtitle">'+esc(readOrganization().shortName||readOrganization().fullName)+' · '+esc(chart.name)+'</div><table><thead><tr><th>№</th><th>Ф. И. О. / должность / отдел</th>'+header+'</tr></thead><tbody>'+body+'</tbody></table><p class="sign">Составил: __________________________ &nbsp;&nbsp; Дата: __________________</p></body></html>';
  const w=window.open('','_blank');if(!w){alert('Разрешите всплывающие окна для печати.');return}w.document.write(html);w.document.close();w.focus();
 }
 function personnelPrint(){
