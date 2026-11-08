@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.43';
+const APP_VERSION='0.3.44';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -92,6 +92,20 @@ function showPriorityDetails(id){
  const data=priorityForChart(),entry=data?.entries.find(x=>x.id===String(id));if(!entry)return;
  const fmt=n=>Number.isFinite(n)?n.toFixed(2).replace('.',','):'—';
  alert(entry.name+'\nПриоритет № '+entry.rank+'\nРасчёт по отпускам '+data.year+' года\nКОН: '+fmt(entry.kon)+' %\nКСН: '+fmt(entry.ksn)+'\nКСНн: '+fmt(entry.ksnNormalized)+' %\nИПО: '+fmt(entry.ipo)+'\n\nИПО = 0,6 × КОН + 0,4 × КСНн. Меньший ИПО — выше приоритет. Законные преимущества учитываются отдельно.');
+}
+
+
+const positionsKey='grotPositions';
+function getPositions(){try{const saved=JSON.parse(localStorage.getItem(positionsKey)||'[]');return [...new Set([...(Array.isArray(saved)?saved:[]),...drivers.map(d=>d.position).filter(Boolean)].map(x=>String(x).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'))}catch{return [...new Set(drivers.map(d=>d.position).filter(Boolean))].sort()}}
+function savePositions(values){localStorage.setItem(positionsKey,JSON.stringify([...new Set(values.map(x=>x.trim()).filter(Boolean))]))}
+function updatePositionSuggestions(){const list=document.querySelector('#staff-position-options');if(list)list.innerHTML=getPositions().map(x=>'<option value="'+escapeHtml(x)+'"></option>').join('')}
+function openPositionsDirectory(){
+ const dlg=document.querySelector('#positions-dialog'),list=document.querySelector('#positions-list');
+ const draw=()=>{list.innerHTML=getPositions().map(x=>'<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><span style="flex:1">'+escapeHtml(x)+'</span><button type="button" data-position-remove="'+escapeHtml(x)+'" title="Удалить из справочника">×</button></div>').join('')||'<p>Должностей пока нет.</p>';
+ list.querySelectorAll('[data-position-remove]').forEach(b=>b.onclick=()=>{const value=b.dataset.positionRemove;if(drivers.some(d=>d.position===value)){alert('Должность используется в карточках сотрудников. Сначала измените её там.');return}savePositions(getPositions().filter(x=>x!==value));draw();updatePositionSuggestions()})};
+ document.querySelector('#positions-add').onclick=()=>{const input=document.querySelector('#positions-new'),value=input.value.trim();if(!value)return;savePositions([...getPositions(),value]);input.value='';draw();updatePositionSuggestions()};
+ document.querySelector('#positions-close').onclick=()=>dlg.close();
+ draw();dlg.showModal();
 }
 
 function saveStaff(){localStorage.setItem(staffKey,JSON.stringify(drivers));}
@@ -471,7 +485,7 @@ function render() {
           <summary>Справочник</summary>
           <div class="grot-menu-panel">
             <button type="button" id="organization-open">Организация</button>
-            <button type="button" id="staff-open">Сотрудники</button><button type="button" id="structure-open">Структура предприятия</button>
+            <button type="button" id="staff-open">Сотрудники</button><button type="button" id="positions-open">Должности</button><button type="button" id="structure-open">Структура предприятия</button>
             <button type="button" id="calendar-open">Производственный календарь</button>
           </div>
         </details>
@@ -505,7 +519,7 @@ function render() {
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
     <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">Выбрать сотрудников</button><button type="button" id="structure-new-employee">＋ Новый сотрудник</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<select id="structure-card-leader"></select></label></div><div class="actions"><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog>
 <dialog id="structure-assign-dialog" class="structure-dialog"><h2 id="structure-assignment-title">Добавить сотрудников</h2><p class="muted">Отметьте сотрудников для выбранного звена. Снятие отметки открепит сотрудника от него. Отпуска сохраняются.</p><div id="structure-employees"></div><div class="actions"><button type="button" id="structure-assign-cancel">Отмена</button><button type="button" id="structure-assign-save">Сохранить</button></div></dialog>
-<dialog id="vacation-charts-dialog"><h2>Графики отпусков · 2027</h2><table class="staff-table"><thead><tr><th>Название</th><th>Год</th><th>Сотрудников</th><th></th></tr></thead><tbody id="vacation-charts-list"></tbody></table><div class="actions"><button type="button" id="vacation-chart-add">＋ Добавить</button><button type="button" id="vacation-charts-close">Закрыть</button></div></dialog><dialog id="vacation-chart-members-dialog"><h2>Состав графика: <span id="vacation-chart-name"></span></h2><div id="vacation-chart-members" style="max-height:55vh;overflow:auto"></div><div class="actions"><button type="button" id="vacation-chart-save">Сохранить</button><button type="button" id="vacation-chart-cancel">Отмена</button></div></dialog><dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
+<dialog id="vacation-charts-dialog"><h2>Графики отпусков · 2027</h2><table class="staff-table"><thead><tr><th>Название</th><th>Год</th><th>Сотрудников</th><th></th></tr></thead><tbody id="vacation-charts-list"></tbody></table><div class="actions"><button type="button" id="vacation-chart-add">＋ Добавить</button><button type="button" id="vacation-charts-close">Закрыть</button></div></dialog><dialog id="vacation-chart-members-dialog"><h2>Состав графика: <span id="vacation-chart-name"></span></h2><div id="vacation-chart-members" style="max-height:55vh;overflow:auto"></div><div class="actions"><button type="button" id="vacation-chart-save">Сохранить</button><button type="button" id="vacation-chart-cancel">Отмена</button></div></dialog><dialog id="positions-dialog"><h2>Справочник должностей</h2><div id="positions-list" style="max-height:50vh;overflow:auto"></div><div style="display:flex;gap:8px"><input id="positions-new" placeholder="Новая должность" maxlength="120"><button type="button" id="positions-add">Добавить</button></div><div class="actions"><button type="button" id="positions-close">Закрыть</button></div></dialog><dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◉</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled>✏️</button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>▤</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span><button type="button" id="staff-close" title="Закрыть" aria-label="Закрыть">×</button></div><div id="staff-list"></div>
     </dialog>
     <dialog id="staff-import-dialog"><h2>Перенос сотрудников из 2026 года</h2><p>Из архива берутся только фамилии и известные группы. Проверьте полные ФИО, группы и нормы отпуска после переноса. Совпадающие фамилии не добавляются повторно.</p><div class="staff-table-scroll" id="staff-import-list"></div><p id="staff-import-status" role="status"></p><div class="actions"><button type="button" id="staff-import-confirm">Добавить выбранных</button><button type="button" id="staff-import-cancel">Отмена</button></div></dialog>
@@ -513,7 +527,7 @@ function render() {
         <input type="hidden" id="staff-id">
         <label>Фамилия <input id="staff-last" required maxlength="100"></label><label>Имя <input id="staff-first" required maxlength="100"></label><label>Отчество <input id="staff-middle" maxlength="100"></label>
         <label>Подразделение <input id="staff-department" maxlength="100"></label>
-        <label>Должность <input id="staff-position" maxlength="120"></label><label>Код структурного звена <input id="staff-structure-code" readonly></label><label>Группа отпусков <input id="staff-group" maxlength="30"></label>
+        <label>Должность <input id="staff-position" list="staff-position-options" maxlength="120" autocomplete="off"><datalist id="staff-position-options"></datalist></label><label>Код структурного звена <input id="staff-structure-code" readonly></label><label>Группа отпусков <input id="staff-group" maxlength="30"></label>
         <label>Дата приёма <input id="staff-hired" type="date"></label><label>Дата увольнения <input id="staff-dismissal" type="date"></label><label><input id="staff-dismissed" type="checkbox"> Уволен (если дата неизвестна)</label><label>Дней ежегодного отпуска <input id="staff-allowance" type="number" min="1" max="120" required value="36"></label>
         <p id="staff-error" role="alert"></p>
         <div class="actions"><button type="submit">Сохранить</button><button type="button" id="staff-card-close">Закрыть</button></div>
@@ -612,7 +626,7 @@ function render() {
     }catch(err){alert('Восстановление отменено: '+err.message);}
   };
   function openStaffCard(d,structureId=null){
-    const form=document.querySelector('#staff-form');form.reset();
+    const form=document.querySelector('#staff-form');form.reset();updatePositionSuggestions();
     form.dataset.structureId=structureId||'';
     form.dataset.fromStructure=structureId?'1':'0';
     document.querySelector('#staff-id').value=d?.id||'';
@@ -669,6 +683,8 @@ function render() {
   document.querySelector('#vacation-chart-add').onclick=()=>vacationChartEdit(null);
   document.querySelector('#vacation-charts-close').onclick=()=>document.querySelector('#vacation-charts-dialog').close();
   document.querySelector('#vacation-chart-cancel').onclick=()=>document.querySelector('#vacation-chart-members-dialog').close();
+  document.querySelector('#positions-open').onclick=openPositionsDirectory;
+  updatePositionSuggestions();
   document.querySelector('#staff-open').onclick=()=>{drawStaff();document.querySelector('#staff-dialog').showModal();};
   document.querySelector('#staff-close').onclick=()=>document.querySelector('#staff-dialog').close();
   document.querySelector('#staff-add').onclick=()=>openStaffCard(null);
