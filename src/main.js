@@ -1,7 +1,7 @@
 import './style.css';
-import { seasonalityDialog, loadHistory } from './seasonality.js';
+import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.40';
+const APP_VERSION='0.3.41';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -69,6 +69,31 @@ function openSeasonality(year){
     year,rosterForYear,chart.name
   );
 }
+
+const priorityKey='grotChartPriorities';
+function readPriorities(){try{return JSON.parse(localStorage.getItem(priorityKey)||'{}')||{}}catch{return {}}}
+function priorityForChart(){return readPriorities()[activeVacationChart().id]||null}
+function calculateChartPriority(){
+ const chart=activeVacationChart(),members=drivers.filter(d=>chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)));
+ const history=loadHistory().filter(r=>Number(r.year)===2026);
+ const mapped=members.map(d=>({d,records:history.filter(r=>String(r.driver||'').trim().split(/\s+/)[0].toLocaleLowerCase('ru')===staffParts(d).last.trim().toLocaleLowerCase('ru'))}));
+ if(!members.length){alert('В графике нет сотрудников.');return}
+ const missing=mapped.filter(x=>!x.records.length);
+ if(missing.length){alert('Расчёт невозможен: нет отпусков за 2026 год для '+missing.map(x=>shortStaffName(x.d)).join(', ')+'.');return}
+ const names=mapped.map(x=>shortStaffName(x.d));
+ const rows=mapped.flatMap(x=>x.records.map(r=>({...r,driver:shortStaffName(x.d)})));
+ const result=calculateSeasonality(rows,2026,names);
+ const byName=new Map(result.drivers.map(x=>[x.name,x]));
+ const sorted=members.map(d=>({id:String(d.id),name:shortStaffName(d),...byName.get(shortStaffName(d))})).sort((a,b)=>a.ipo-b.ipo||a.name.localeCompare(b.name,'ru'));
+ let prev=null,rank=0;sorted.forEach((x,i)=>{if(prev===null||Math.abs(x.ipo-prev)>0.000001)rank=i+1;x.rank=rank;prev=x.ipo});
+ const saved=readPriorities();saved[chart.id]={year:2026,staffIds:members.map(d=>String(d.id)).sort(),calculatedAt:new Date().toISOString(),entries:sorted};localStorage.setItem(priorityKey,JSON.stringify(saved));render();
+}
+function showPriorityDetails(id){
+ const data=priorityForChart(),entry=data?.entries.find(x=>x.id===String(id));if(!entry)return;
+ const fmt=n=>Number.isFinite(n)?n.toFixed(2).replace('.',','):'—';
+ alert(entry.name+'\nПриоритет № '+entry.rank+'\nРасчёт по отпускам '+data.year+' года\nКОН: '+fmt(entry.kon)+' %\nКСН: '+fmt(entry.ksn)+'\nКСНн: '+fmt(entry.ksnNormalized)+' %\nИПО: '+fmt(entry.ipo)+'\n\nИПО = 0,6 × КОН + 0,4 × КСНн. Меньший ИПО — выше приоритет. Законные преимущества учитываются отдельно.');
+}
+
 function saveStaff(){localStorage.setItem(staffKey,JSON.stringify(drivers));}
 
 
@@ -425,8 +450,11 @@ function render() {
   const chart=activeVacationChart();
   const visibleDrivers=drivers.filter(d=>(chart.allStaff||chart.staffIds.map(String).includes(String(d.id)))&&isEligibleForYear(d,2027)&&(selectedDriverIds===null||selectedDriverIds.has(String(d.id)))&&(selectedGroups===null||selectedGroups.has(String(d.group)))).sort(compareGroupAndName);
   const groups=[...new Set(drivers.filter(d=>isEligibleForYear(d,2027)).map(d=>String(d.group)))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true}));
+  const priorityData=priorityForChart();
+  const priorityCurrent=priorityData&&JSON.stringify(priorityData.staffIds)===JSON.stringify(drivers.filter(d=>chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id))).map(d=>String(d.id)).sort());
+  const priorityEntries=new Map((priorityCurrent?priorityData.entries:[]).map(x=>[x.id,x]));
   const annualCount=id=>periodsFor(id).reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
-  const rows=visibleDrivers.map(d=>'<tr><th class="fixed name"><button class="driver" data-driver="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button></th><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'<td class="annual-total">'+(annualCount(d.id)||'')+'</td></tr>').join('');
+  const rows=visibleDrivers.map(d=>'<tr><th class="fixed name"><button class="driver" data-driver="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button></th><td><button type="button" class="priority-detail" data-priority-id="'+d.id+'" '+(priorityEntries.has(String(d.id))?'':'disabled')+' title="Расшифровка приоритета">'+(priorityEntries.get(String(d.id))?.rank??'—')+'</button></td><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'<td class="annual-total">'+(annualCount(d.id)||'')+'</td></tr>').join('');
   const totals=columns.map(c=>{const n=c.day?visibleDrivers.filter(d=>sets.get(d.id).has(dateOf(c.m,c.day))).length:visibleDrivers.filter(d=>monthlyCount(sets.get(d.id),c.m)>0).length;return '<td>'+(n||'')+'</td>';}).join('');
   app.innerHTML = `
     <header class="grot-header"><img class="grot-header-logo" src="${grotLogo}" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">${escapeHtml(readOrganization().shortName||readOrganization().fullName)}</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2026">2026</option><option value="2027" selected>2027</option></select></div></header>
@@ -465,10 +493,11 @@ function render() {
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden>
       </nav>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="priority-calculate">Рассчитать приоритет</button><span>${priorityCurrent?'Приоритет рассчитан по 2026 году':priorityData?'Состав изменён — пересчитайте приоритет':'Приоритет ещё не рассчитан'}</span></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name"><span class="header-filter">${escapeHtml(activeVacationChart().name)} <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
-      <th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}<th class="annual-total-heading">Всего дней</th></tr></thead>
-      <tbody>${rows}</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>${totals}<td class="annual-total">${visibleDrivers.filter(d=>annualCount(d.id)>0).length||''}</td></tr></tfoot></table></div>
+      <th>Приоритет</th><th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}<th class="annual-total-heading">Всего дней</th></tr></thead>
+      <tbody>${rows}</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td></td><td class="fixed group"></td>${totals}<td class="annual-total">${visibleDrivers.filter(d=>annualCount(d.id)>0).length||''}</td></tr></tfoot></table></div>
       <p>Нажмите на название месяца, чтобы развернуть его дни; повторное нажатие свернёт только этот месяц. Можно открыть несколько месяцев одновременно. Нажмите на фамилию для просмотра отпусков.</p>
       <p class="notice" role="status">${notice}</p>
       <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
@@ -761,6 +790,8 @@ function render() {
   document.querySelector('#collapse-month').onclick=()=>{expandedMonths.clear();render();};
   document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();});
   document.querySelector('#seasonality-open').onclick=()=>openSeasonality(2027);
+  document.querySelector('#priority-calculate').onclick=calculateChartPriority;
+  document.querySelectorAll('[data-priority-id]').forEach(b=>b.onclick=()=>showPriorityDetails(b.dataset.priorityId));
   document.querySelector('#app-refresh').onclick=()=>location.reload();
   document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
   const dialog = document.querySelector('#editor');
