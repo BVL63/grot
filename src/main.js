@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.41';
+const APP_VERSION='0.3.42';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -79,14 +79,14 @@ function calculateChartPriority(){
  const mapped=members.map(d=>({d,records:history.filter(r=>String(r.driver||'').trim().split(/\s+/)[0].toLocaleLowerCase('ru')===staffParts(d).last.trim().toLocaleLowerCase('ru'))}));
  if(!members.length){alert('В графике нет сотрудников.');return}
  const missing=mapped.filter(x=>!x.records.length);
- if(missing.length){alert('Расчёт невозможен: нет отпусков за 2026 год для '+missing.map(x=>shortStaffName(x.d)).join(', ')+'.');return}
- const names=mapped.map(x=>shortStaffName(x.d));
+ const names=members.map(shortStaffName);
  const rows=mapped.flatMap(x=>x.records.map(r=>({...r,driver:shortStaffName(x.d)})));
  const result=calculateSeasonality(rows,2026,names);
  const byName=new Map(result.drivers.map(x=>[x.name,x]));
- const sorted=members.map(d=>({id:String(d.id),name:shortStaffName(d),...byName.get(shortStaffName(d))})).sort((a,b)=>a.ipo-b.ipo||a.name.localeCompare(b.name,'ru'));
+ const sorted=members.filter(d=>byName.has(shortStaffName(d))).map(d=>({id:String(d.id),name:shortStaffName(d),...byName.get(shortStaffName(d))})).sort((a,b)=>a.ipo-b.ipo||a.name.localeCompare(b.name,'ru'));
  let prev=null,rank=0;sorted.forEach((x,i)=>{if(prev===null||Math.abs(x.ipo-prev)>0.000001)rank=i+1;x.rank=rank;prev=x.ipo});
- const saved=readPriorities();saved[chart.id]={year:2026,staffIds:members.map(d=>String(d.id)).sort(),calculatedAt:new Date().toISOString(),entries:sorted};localStorage.setItem(priorityKey,JSON.stringify(saved));render();
+ const saved=readPriorities();saved[chart.id]={year:2026,staffIds:members.map(d=>String(d.id)).sort(),calculatedAt:new Date().toISOString(),incomplete:missing.length>0,entries:sorted};localStorage.setItem(priorityKey,JSON.stringify(saved));render();
+ if(missing.length)alert('Предварительный расчёт выполнен для '+sorted.length+' из '+members.length+' сотрудников. Нет архивных данных за 2026 год: '+missing.map(x=>shortStaffName(x.d)).join(', ')+'. Для них приоритет не назначен.');
 }
 function showPriorityDetails(id){
  const data=priorityForChart(),entry=data?.entries.find(x=>x.id===String(id));if(!entry)return;
@@ -493,7 +493,7 @@ function render() {
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden>
       </nav>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="priority-calculate">Рассчитать приоритет</button><span>${priorityCurrent?'Приоритет рассчитан по 2026 году':priorityData?'Состав изменён — пересчитайте приоритет':'Приоритет ещё не рассчитан'}</span></div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="priority-calculate">Рассчитать приоритет</button><span>${priorityCurrent?(priorityData.incomplete?'Предварительный расчёт: не у всех есть данные за 2026 год':'Приоритет рассчитан по 2026 году'):priorityData?'Состав изменён — пересчитайте приоритет':'Приоритет ещё не рассчитан'}</span></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name"><span class="header-filter">${escapeHtml(activeVacationChart().name)} <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
       <th>Приоритет</th><th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}<th class="annual-total-heading">Всего дней</th></tr></thead>
