@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.36';
+const APP_VERSION='0.3.37';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -27,6 +27,16 @@ function openSeasonality(year){
   );
 }
 function saveStaff(){localStorage.setItem(staffKey,JSON.stringify(drivers));}
+
+
+let backupDirectory=null;
+const backupDirectoryDb=()=>new Promise((resolve,reject)=>{const req=indexedDB.open('grot-backup-settings',1);req.onupgradeneeded=()=>req.result.createObjectStore('settings');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
+async function backupDirectoryStore(handle){try{const db=await backupDirectoryDb();await new Promise((resolve,reject)=>{const tx=db.transaction('settings','readwrite');tx.objectStore('settings').put(handle,'directory');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(err){console.warn('Не удалось сохранить выбранную папку',err)}}
+async function backupDirectoryLoad(){try{const db=await backupDirectoryDb();const handle=await new Promise((resolve,reject)=>{const req=db.transaction('settings','readonly').objectStore('settings').get('directory');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});db.close();backupDirectory=handle||null}catch{}return backupDirectory}
+async function backupDirectoryChoose(){if(!window.showDirectoryPicker){alert('В этом браузере выбор постоянной папки не поддерживается. Используйте скачивание резервной копии.');return}try{backupDirectory=await window.showDirectoryPicker({mode:'readwrite'});await backupDirectoryStore(backupDirectory);backupDirectoryStatus()}catch(err){if(err.name!=='AbortError')alert('Не удалось выбрать папку: '+err.message)}}
+function backupDirectoryStatus(){const el=document.querySelector('#backup-directory-status');if(el)el.textContent=backupDirectory?'Выбрана папка: '+backupDirectory.name:'Папка не выбрана. Используется стандартная загрузка файлов.'}
+async function backupDirectoryPermission(mode){if(!backupDirectory)return false;try{const options={mode};if(await backupDirectory.queryPermission(options)==='granted')return true;return await backupDirectory.requestPermission(options)==='granted'}catch{return false}}
+function backupSettingsOpen(){backupDirectoryStatus();document.querySelector('#backup-settings-dialog').showModal()}
 
 const structureKey='grotEnterpriseStructure';
 let structureNodes=[];
@@ -344,7 +354,7 @@ function renderHistory2026(){
  const cells=columns.map(c=>'<th><button type="button" data-history-month="'+c.m+'">'+(c.d||months[c.m].slice(0,3))+'</button></th>').join('');
  const rows=names.map(n=>'<tr><th class="fixed name"><button type="button" class="driver" data-history-driver="'+escapeHtml(n)+'">'+escapeHtml(n)+'</button></th><td class="fixed group">'+(groups[n]||'—')+'</td>'+columns.map(c=>{const set=days.get(n);const count=c.d?Number(set.has(dateAt(c.m,c.d))):[...set].filter(x=>Number(x.slice(5,7))===c.m+1).length;return '<td class="'+(c.d?'day ':'month-cell ')+(count?(c.d?'vacation':'has-vacation'):'')+'">'+(c.d?(count?'●':''):(count||''))+'</td>'}).join('')+'<td class="annual-total">'+(days.get(n).size||'')+'</td></tr>').join('');
  const totals=columns.map(c=>{const n=names.filter(n=>c.d?days.get(n).has(dateAt(c.m,c.d)):[...days.get(n)].some(x=>Number(x.slice(5,7))===c.m+1)).length;return '<td>'+(n||'')+'</td>';}).join('');
- app.innerHTML='<header class="grot-header"><img class="grot-header-logo" src="'+grotLogo+'" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">'+structureEscape(readOrganization().shortName||readOrganization().fullName)+'</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2026" selected>2026</option><option value="2027">2027</option></select></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>Документ</summary><div class="grot-menu-panel"><button type="button" id="archive-collapse">Свернуть все месяцы</button><button type="button" id="archive-current">Перейти к графику 2027</button><button type="button" id="archive-metrics">Анализ отпускной нагрузки · КОН / КСН / ИПО</button></div></details><details class="grot-menu"><summary>Справочник</summary><div class="grot-menu-panel"><button type="button" data-archive-organization="1">Организация</button><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="structure-open">Структура предприятия</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Печать</summary><div class="grot-menu-panel"><button type="button" id="archive-print">Печать графика 2026</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-about="1">О программе</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button></div></details></nav><p><strong>Архивный график 2026 года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>'+cells+'<th>Всего дней</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>'+totals+'<td>'+(names.length||'')+'</td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>';
+ app.innerHTML='<header class="grot-header"><img class="grot-header-logo" src="'+grotLogo+'" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">'+structureEscape(readOrganization().shortName||readOrganization().fullName)+'</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2026" selected>2026</option><option value="2027">2027</option></select></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>Документ</summary><div class="grot-menu-panel"><button type="button" id="archive-collapse">Свернуть все месяцы</button><button type="button" id="archive-current">Перейти к графику 2027</button><button type="button" id="archive-metrics">Анализ отпускной нагрузки · КОН / КСН / ИПО</button></div></details><details class="grot-menu"><summary>Справочник</summary><div class="grot-menu-panel"><button type="button" data-archive-organization="1">Организация</button><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="structure-open">Структура предприятия</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Печать</summary><div class="grot-menu-panel"><button type="button" id="archive-print">Печать графика 2026</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" data-archive-go="backup-settings-open">Настройки</button><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-about="1">О программе</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button></div></details></nav><p><strong>Архивный график 2026 года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>'+cells+'<th>Всего дней</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>'+totals+'<td>'+(names.length||'')+'</td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>';
  preserveYearHeader(previousHeader);
  document.querySelector('#grot-year').value='2026';
  document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
@@ -403,7 +413,7 @@ function render() {
         <details class="grot-menu">
           <summary>Сервис</summary>
           <div class="grot-menu-panel">
-            <button type="button" id="backup-export">Резервная копия</button>
+            <button type="button" id="backup-settings-open">Настройки</button><button type="button" id="backup-export">Резервная копия</button>
             <button type="button" id="backup-restore">Восстановить</button>
             <button type="button" id="app-refresh">Обновить</button>
             <button type="button" id="help-open">Справка · Правила отпусков</button><button type="button" id="about-open">О программе</button>
@@ -426,7 +436,7 @@ function render() {
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◉</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled>✏️</button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>▤</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span><button type="button" id="staff-close" title="Закрыть" aria-label="Закрыть">×</button></div><div id="staff-list"></div>
     </dialog>
     <dialog id="staff-import-dialog"><h2>Перенос сотрудников из 2026 года</h2><p>Из архива берутся только фамилии и известные группы. Проверьте полные ФИО, группы и нормы отпуска после переноса. Совпадающие фамилии не добавляются повторно.</p><div class="staff-table-scroll" id="staff-import-list"></div><p id="staff-import-status" role="status"></p><div class="actions"><button type="button" id="staff-import-confirm">Добавить выбранных</button><button type="button" id="staff-import-cancel">Отмена</button></div></dialog>
-    <dialog id="staff-card"><h2 id="staff-card-title">Карточка сотрудника</h2><form id="staff-form">
+    <dialog id="backup-settings-dialog" class="structure-dialog"><h2>Настройки · Резервные копии</h2><p id="backup-directory-status"></p><p class="muted">Выберите папку для сохранения и восстановления копий. Браузер может повторно запросить доступ к ней.</p><div class="actions"><button type="button" id="backup-directory-choose">Выбрать папку</button><button type="button" id="backup-settings-close">Закрыть</button></div></dialog><dialog id="staff-card"><h2 id="staff-card-title">Карточка сотрудника</h2><form id="staff-form">
         <input type="hidden" id="staff-id">
         <label>Фамилия <input id="staff-last" required maxlength="100"></label><label>Имя <input id="staff-first" required maxlength="100"></label><label>Отчество <input id="staff-middle" maxlength="100"></label>
         <label>Подразделение <input id="staff-department" maxlength="100"></label>
@@ -468,22 +478,33 @@ function render() {
   preserveYearHeader(previousHeader);
   document.querySelector('#personnel-csv').onclick=personnelCsv;
   document.querySelector('#personnel-print').onclick=personnelPrint;
-  document.querySelector('#backup-export').onclick=()=>{
+  document.querySelector('#backup-settings-open').onclick=backupSettingsOpen;
+  document.querySelector('#backup-settings-close').onclick=()=>document.querySelector('#backup-settings-dialog').close();
+  document.querySelector('#backup-directory-choose').onclick=backupDirectoryChoose;
+  backupDirectoryLoad().then(backupDirectoryStatus);
+  document.querySelector('#backup-export').onclick=async()=>{
     const payload={format:'grot-backup',version:1,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;const now=new Date();const stamp=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+[now.getHours(),now.getMinutes(),now.getSeconds()].map(x=>String(x).padStart(2,'0')).join('-');
-    a.download='grot-'+stamp+'.json';
-    document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),60000);
-    notice='Резервная копия подготовлена. Сохраните файл в надёжном месте.';
+    const now=new Date();const stamp=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+[now.getHours(),now.getMinutes(),now.getSeconds()].map(x=>String(x).padStart(2,'0')).join('-');
+    const filename='grot-'+stamp+'.json';
+    if(backupDirectory&&await backupDirectoryPermission('readwrite')){
+      try{const fileHandle=await backupDirectory.getFileHandle(filename,{create:true});const writer=await fileHandle.createWritable();await writer.write(blob);await writer.close();notice='Резервная копия сохранена: '+filename+' ('+backupDirectory.name+').';}
+      catch(err){alert('Не удалось сохранить в выбранную папку: '+err.message);return}
+    }else{
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+      notice='Резервная копия подготовлена. Сохраните файл в надёжном месте.';
+    }
     document.querySelector('.notice').textContent=notice;
   };
-  document.querySelector('#backup-restore').onclick=()=>document.querySelector('#backup-file').click();
-  document.querySelector('#backup-file').onchange=async e=>{
-    const file=e.target.files?.[0];e.target.value='';
-    if(!file)return;
+  document.querySelector('#backup-restore').onclick=async()=>{
+    if(backupDirectory&&window.showOpenFilePicker&&await backupDirectoryPermission('read')){
+      try{const handles=await window.showOpenFilePicker({startIn:backupDirectory,multiple:false,types:[{description:'Резервные копии ГРОТ',accept:{'application/json':['.json']}}]});if(handles.length){const file=await handles[0].getFile();await restoreBackupFile(file)}return}
+      catch(err){if(err.name==='AbortError')return;console.warn(err)}
+    }
+    document.querySelector('#backup-file').click();
+  };
+  document.querySelector('#backup-file').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await restoreBackupFile(file)};
+  async function restoreBackupFile(file){
     try{
       if(file.size>5_000_000)throw Error('Файл слишком большой (более 5 МБ).');
       const data=JSON.parse(await file.text());
