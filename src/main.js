@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.53';
+const APP_VERSION='0.3.54';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -386,6 +386,23 @@ function personnelCsv(){
  const blob=new Blob(['\\uFEFF'+data.map(r=>r.map(safe).join(';')).join('\\r\\n')],{type:'text/csv;charset=utf-8'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='grot-kadry-2027.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
+function printGroupOverlaps(){
+ const chart=activeVacationChart(),esc=escapeHtml;
+ const members=drivers.filter(d=>(chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027));
+ const matches=[];
+ for(let i=0;i<members.length;i++)for(let j=i+1;j<members.length;j++){
+  const a=members[i],b=members[j];
+  if(String(a.group||'')!==String(b.group||'')||String(a.department||'')!==String(b.department||''))continue;
+  for(const pa of periodsFor(Number(a.id)))for(const pb of periodsFor(Number(b.id))){
+   const start=pa.start>pb.start?pa.start:pb.start,end=pa.end<pb.end?pa.end:pb.end;
+   if(start<=end)matches.push({department:a.department||'—',group:a.group||'—',a:shortStaffName(a),b:shortStaffName(b),start,end,days:leaveDays(start,end)});
+  }
+ }
+ matches.sort((a,b)=>a.department.localeCompare(b.department,'ru')||String(a.group).localeCompare(String(b.group),'ru',{numeric:true})||a.start.localeCompare(b.start)||a.a.localeCompare(b.a,'ru'));
+ const body=matches.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x.department)+'</td><td>'+esc(x.group)+'</td><td>'+esc(x.a)+'</td><td>'+esc(x.b)+'</td><td>'+displayDate(x.start)+'</td><td>'+displayDate(x.end)+'</td><td>'+x.days+'</td></tr>').join('');
+ const html='<html lang="ru"><head><meta charset="UTF-8"><title>Пересечения отпусков в группах — 2027</title><style>@page{size:A4 landscape;margin:12mm}body{font:12px Arial,sans-serif;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #555;padding:6px}th{background:#eee}.toolbar{display:flex;gap:10px;justify-content:flex-end;margin-bottom:15px}.toolbar button{padding:8px 12px}.note{margin-top:15px;color:#444}@media print{.toolbar{display:none}thead{display:table-header-group}tr{break-inside:avoid}}</style></head><body><div class="toolbar"><button onclick="window.print()">Печать / PDF</button><button onclick="window.close()">Закрыть</button></div><h2>Пересечения отпусков в группах — 2027</h2><p>'+esc(readOrganization().shortName||readOrganization().fullName)+' · График: '+esc(chart.name)+'</p><p>Найдено пересечений: <b>'+matches.length+'</b></p>'+(matches.length?'<table><thead><tr><th>№</th><th>Подразделение</th><th>Группа</th><th>Сотрудник 1</th><th>Сотрудник 2</th><th>Начало</th><th>Окончание</th><th>Дней</th></tr></thead><tbody>'+body+'</tbody></table>':'<p>Пересечений отпусков внутри одинаковых групп и подразделений не обнаружено.</p>')+'<p class="note">Проверяются только сотрудники выбранного графика. Пересечения между разными группами или подразделениями не учитываются. Дни рассчитаны по правилам графика с исключением праздничных дней.</p></body></html>';
+ const w=window.open('','_blank');if(!w){alert('Разрешите всплывающие окна для печати.');return}w.document.write(html);w.document.close();w.focus();
+}
 function printMonthlyVacationChart(){
  const chart=activeVacationChart(),esc=escapeHtml;
  const members=drivers.filter(d=>(chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027)).sort((a,b)=>String(a.department||'').localeCompare(String(b.department||''),'ru')||shortStaffName(a).localeCompare(shortStaffName(b),'ru'));
@@ -507,7 +524,7 @@ function render() {
         <details class="grot-menu">
           <summary>Печать</summary>
           <div class="grot-menu-panel">
-            <button type="button" id="monthly-print">График по месяцам (А4)</button><button type="button" id="personnel-print">График для кадров (PDF)</button>
+            <button type="button" id="monthly-print">График по месяцам (А4)</button><button type="button" id="overlap-print">Пересечения в группе</button><button type="button" id="personnel-print">График для кадров (PDF)</button>
             <button type="button" id="personnel-csv">Экспорт в Excel</button>
           </div>
         </details>
@@ -580,6 +597,7 @@ function render() {
   preserveYearHeader(previousHeader);
   document.querySelector('#personnel-csv').onclick=personnelCsv;
   document.querySelector('#monthly-print').onclick=printMonthlyVacationChart;
+  document.querySelector('#overlap-print').onclick=printGroupOverlaps;
   document.querySelector('#personnel-print').onclick=personnelPrint;
   document.querySelector('#backup-settings-open').onclick=backupSettingsOpen;
   document.querySelector('#backup-settings-close').onclick=()=>document.querySelector('#backup-settings-dialog').close();
