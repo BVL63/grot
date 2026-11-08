@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.74';
+const APP_VERSION='0.3.75';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -680,10 +680,20 @@ function render() {
       if(!data||data.format!=='grot-backup'||data.version!==1||data.year!==2027)throw Error('Это не резервная копия ГРОТ за 2027 год.');
       if(!Array.isArray(data.staff)||!data.staff.length||!Array.isArray(data.vacations)||!data.calendarOverrides||typeof data.calendarOverrides!=='object'||Array.isArray(data.calendarOverrides))throw Error('В файле отсутствуют обязательные данные.');
       const ids=new Set();
-      for(const d of data.staff){
-        if(!d||!Number.isSafeInteger(d.id)||d.id<1||typeof d.name!=='string'||!d.name.trim()||typeof d.group!=='string'||!d.group.trim()||!Number.isInteger(Number(d.allowance))||Number(d.allowance)<1||Number(d.allowance)>120||ids.has(d.id))throw Error('Ошибка в справочнике сотрудников.');
-        ids.add(d.id);
-      }
+      // Пустая группа и 0 дней разрешены карточкой сотрудника.
+      // Все дополнительные поля резервной копии сохраняются.
+      const restoredStaff=data.staff.map((d,index)=>{
+        if(!d||typeof d!=='object'||Array.isArray(d))throw Error('Ошибка в справочнике сотрудников: запись № '+(index+1)+'.');
+        const id=Number(d.id);
+        const name=typeof d.name==='string'&&d.name.trim()?d.name.trim():
+          [d.lastName,d.firstName,d.middleName].filter(x=>typeof x==='string'&&x.trim()).join(' ').trim();
+        const allowance=d.allowance===undefined||d.allowance===null||d.allowance===''?36:Number(d.allowance);
+        if(!Number.isSafeInteger(id)||id<1||!name||!Number.isInteger(allowance)||allowance<0||allowance>120||ids.has(id)){
+          throw Error('Ошибка в справочнике сотрудников: запись № '+(index+1)+' (ID, ФИО, дни отпуска или повтор ID).');
+        }
+        ids.add(id);
+        return {...d,id,name,group:String(d.group??''),allowance};
+      });
       const validDate=x=>typeof x==='string'&&/^2027-\d{2}-\d{2}$/.test(x)&&!Number.isNaN(Date.parse(x+'T12:00:00Z'))&&new Date(x+'T12:00:00Z').toISOString().slice(0,10)===x;
       for(const p of data.vacations){
         if(!p||!ids.has(Number(p.driverId))||!validDate(p.start)||!validDate(p.end)||p.end<p.start)throw Error('Ошибка в периодах отпусков.');
@@ -691,17 +701,17 @@ function render() {
       for(const [date,type] of Object.entries(data.calendarOverrides)){
         if(!validDate(date)||!['holiday','weekend','workday'].includes(type))throw Error('Ошибка в производственном календаре.');
       }
-      if(!confirm('Восстановить копию от '+(data.createdAt?new Date(data.createdAt).toLocaleString('ru-RU'):'неизвестной даты')+'?\\nСотрудников: '+data.staff.length+'\\nПериодов отпусков: '+data.vacations.length+'\\n\\nТЕКУЩИЕ данные браузера будут заменены. Продолжить?'))return;
+      if(!confirm('Восстановить копию от '+(data.createdAt?new Date(data.createdAt).toLocaleString('ru-RU'):'неизвестной даты')+'?\\nСотрудников: '+restoredStaff.length+'\\nПериодов отпусков: '+data.vacations.length+'\\n\\nТЕКУЩИЕ данные браузера будут заменены. Продолжить?'))return;
       const previous=[localStorage.getItem(staffKey),localStorage.getItem(key),localStorage.getItem(calendarKey)];
       try{
-        localStorage.setItem(staffKey,JSON.stringify(data.staff));
+        localStorage.setItem(staffKey,JSON.stringify(restoredStaff));
         localStorage.setItem(key,JSON.stringify(data.vacations));
         localStorage.setItem(calendarKey,JSON.stringify(data.calendarOverrides));
       }catch(err){
         [staffKey,key,calendarKey].forEach((k,i)=>{try{if(previous[i]===null)localStorage.removeItem(k);else localStorage.setItem(k,previous[i]);}catch{}});
         throw Error('Не удалось сохранить данные. Предыдущие записи восстановлены, насколько позволило хранилище.');
       }
-      drivers=data.staff;vacations=data.vacations;calendarOverrides=data.calendarOverrides;
+      drivers=restoredStaff;vacations=data.vacations;calendarOverrides=data.calendarOverrides;
       selectedDriverIds=null;selectedGroups=null;
       notice='Резервная копия восстановлена: '+drivers.length+' сотрудников, '+vacations.length+' периодов.';
       render();
