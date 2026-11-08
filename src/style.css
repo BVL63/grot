@@ -608,3 +608,9 @@ main{padding-top:5px!important}
 #staff-dialog .staff-search-row #staff-search-count{font-size:12px;color:#64748b}
 #staff-dialog .staff-toolbar>button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:34px;min-width:36px;padding:0;font-family:Arial,sans-serif;font-size:20px;font-weight:500;line-height:1;border-radius:6px}
 #staff-dialog .staff-toolbar>button:disabled{opacity:.4;cursor:default}
+
+/* v0.3.52: visible vacation over-allocation warning */
+.annual-table .driver.leave-overlimit{color:#b91c1c!important;background:#fee2e2!important;border-radius:4px;font-weight:800!important;padding:2px 5px!important;text-decoration:underline}
+.annual-table .driver.leave-overlimit:hover{background:#fecaca!important}
+.annual-table td.leave-remaining{font-variant-numeric:tabular-nums}
+.annual-table tr:has(.leave-overlimit) td.leave-remaining{color:#b91c1c;font-weight:800;background:#fee2e2}
