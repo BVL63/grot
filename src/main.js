@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.39';
+const APP_VERSION='0.3.40';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -51,10 +51,22 @@ function shortStaffName(d){const p=staffParts(d);return p.last+((p.first&&p.midd
 function compareGroupAndName(a,b){const ga=String(a.group??''),gb=String(b.group??'');return ga.localeCompare(gb,'ru',{numeric:true})||shortStaffName(a).localeCompare(shortStaffName(b),'ru');}
 function isEligibleForYear(d,year){return !(d.dismissalDate&&d.dismissalDate<year+'-01-01')&&!(d.dismissed&&!d.dismissalDate);}
 function openSeasonality(year){
+  const chart=activeVacationChart();
+  const members=drivers.filter(d=>chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)));
+  const memberIds=new Set(members.map(d=>String(d.id)));
+  const history=loadHistory();
+  const rosterForYear=selectedYear=>{
+    if(selectedYear===2027)return members.filter(d=>isEligibleForYear(d,selectedYear)&&(!d.hireDate||d.hireDate<=selectedYear+'-12-31')).map(shortStaffName);
+    // Historical 2026 entries often contain surnames only; match them against selected employees.
+    if(selectedYear===2026){
+      const surnames=new Set(members.map(d=>staffParts(d).last.trim().toLocaleLowerCase('ru')));
+      return [...new Set(history.filter(r=>Number(r.year)===2026&&surnames.has(String(r.driver).trim().split(/\s+/)[0].toLocaleLowerCase('ru'))).map(r=>r.driver))];
+    }
+    return [];
+  };
   seasonalityDialog(
-    vacations.map(v=>({...v,year:2027,driver:shortStaffName(drivers.find(d=>Number(d.id)===Number(v.driverId))||{})})),
-    year,
-    selectedYear=>selectedYear===2027?drivers.filter(d=>isEligibleForYear(d,selectedYear)&&(!d.hireDate||d.hireDate<=selectedYear+'-12-31')).map(shortStaffName):null
+    vacations.filter(v=>memberIds.has(String(v.driverId))).map(v=>({...v,year:2027,driver:shortStaffName(drivers.find(d=>Number(d.id)===Number(v.driverId))||{})})),
+    year,rosterForYear,chart.name
   );
 }
 function saveStaff(){localStorage.setItem(staffKey,JSON.stringify(drivers));}
