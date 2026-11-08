@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.62';
+const APP_VERSION='0.3.63';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -403,6 +403,10 @@ function printGroupOverlaps(){
  const html='<html lang="ru"><head><meta charset="UTF-8"><title>Пересечения отпусков в группах — 2027</title><style>@page{size:A4 landscape;margin:12mm}body{font:12px Arial,sans-serif;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #555;padding:6px}th{background:#eee}.toolbar{display:flex;gap:10px;justify-content:flex-end;margin-bottom:15px}.toolbar button{padding:8px 12px}.note{margin-top:15px;color:#444}@media print{.toolbar{display:none}thead{display:table-header-group}tr{break-inside:avoid}}</style></head><body><div class="toolbar"><button onclick="window.print()">Печать / PDF</button><button onclick="window.close()">Закрыть</button></div><h2>Пересечения отпусков в группах — 2027</h2><p>'+esc(readOrganization().shortName||readOrganization().fullName)+' · График: '+esc(chart.name)+'</p><p>Найдено пересечений: <b>'+matches.length+'</b></p>'+(matches.length?'<table><thead><tr><th>№</th><th>Сотрудник 1</th><th>Сотрудник 2</th><th>Начало</th><th>Окончание</th><th>Дней</th></tr></thead><tbody>'+body+'</tbody></table>':'<p>Пересечений отпусков внутри одинаковых групп и подразделений не обнаружено.</p>')+'<p class="note">Проверяются только сотрудники выбранного графика. Пересечения между разными группами или подразделениями не учитываются. Дни рассчитаны по правилам графика с исключением праздничных дней.</p></body></html>';
  const w=window.open('','_blank');if(!w){alert('Разрешите всплывающие окна для печати.');return}w.document.write(html);w.document.close();w.focus();
 }
+function printStaffDepartment(d){
+ const hierarchy=d.structureId?structureAncestors(d.structureId):[];
+ return hierarchy.filter(n=>n.type==='department').map(n=>n.name).filter(Boolean).join(' / ')||'—';
+}
 function printMonthlyVacationChart(){
  const chart=activeVacationChart(),esc=escapeHtml;
  const members=drivers.filter(d=>(chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027)).sort((a,b)=>String(a.department||'').localeCompare(String(b.department||''),'ru')||shortStaffName(a).localeCompare(shortStaffName(b),'ru'));
@@ -411,7 +415,7 @@ function printMonthlyVacationChart(){
   const periods=periodsFor(Number(d.id)).filter(p=>p.start.slice(0,4)==='2027'&&p.end.slice(0,4)==='2027');
   const layers=periods.length?periods:[null];
   return layers.map((p,layer)=>{
-   const prefix=layer===0?'<td class="num" rowspan="'+layers.length+'">'+(i+1)+'</td><td class="person" rowspan="'+layers.length+'"><b>'+esc(shortStaffName(d))+'</b><small>'+esc(d.position||'')+'</small><small>'+esc(d.department||'')+'</small></td>':'';
+   const prefix=layer===0?'<td class="num" rowspan="'+layers.length+'">'+(i+1)+'</td><td class="person" rowspan="'+layers.length+'"><b>'+esc(shortStaffName(d))+'</b><small>'+esc(d.position||'')+'</small><small>'+esc(printStaffDepartment(d))+'</small></td>':'';
    const cells=[];
    const first=p?Number(p.start.slice(5,7))-1:-1,last=p?Number(p.end.slice(5,7))-1:-1;
    for(let m=0;m<12;){
