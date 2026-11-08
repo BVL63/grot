@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.37';
+const APP_VERSION='0.3.38';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -11,6 +11,37 @@ const defaultDrivers = [
   { id: 2, name: 'Петров П.П.', group: '9' },
   { id: 3, name: 'Сидоров С.С.', group: '9.1' }
 ];
+
+const vacationChartsKey='grotVacationCharts';
+let vacationCharts;
+try{const stored=JSON.parse(localStorage.getItem(vacationChartsKey)||'null');vacationCharts=Array.isArray(stored)&&stored.length?stored:[{id:'legacy-2027',name:'Общий график',year:2027,staffIds:[],allStaff:true}]}catch{vacationCharts=[{id:'legacy-2027',name:'Общий график',year:2027,staffIds:[],allStaff:true}]}
+let activeVacationChartId=localStorage.getItem('grotActiveVacationChart')||vacationCharts[0].id;
+function activeVacationChart(){return vacationCharts.find(x=>x.id===activeVacationChartId)||vacationCharts[0]}
+function saveVacationCharts(){localStorage.setItem(vacationChartsKey,JSON.stringify(vacationCharts));localStorage.setItem('grotActiveVacationChart',activeVacationChartId)}
+function vacationChartOpen(){
+ const dlg=document.querySelector('#vacation-charts-dialog');if(!dlg)return;
+ const list=document.querySelector('#vacation-charts-list');
+ list.innerHTML=vacationCharts.map(c=>'<tr data-chart-id="'+escapeHtml(c.id)+'"><td><button type="button" data-chart-open="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+'</button></td><td>'+c.year+'</td><td>'+(c.allStaff?'Все':c.staffIds.length)+'</td><td><button type="button" data-chart-edit="'+escapeHtml(c.id)+'">✏️</button></td></tr>').join('');
+ list.querySelectorAll('[data-chart-open]').forEach(b=>b.onclick=()=>{activeVacationChartId=b.dataset.chartOpen;saveVacationCharts();dlg.close();selectedDriverIds=null;selectedGroups=null;render()});
+ list.querySelectorAll('[data-chart-edit]').forEach(b=>b.onclick=()=>vacationChartEdit(b.dataset.chartEdit));
+ dlg.showModal();
+}
+function vacationChartEdit(id){
+ const chart=vacationCharts.find(c=>c.id===id);
+ const name=prompt('Название графика',chart?.name||'');if(name===null||!name.trim())return;
+ const chosen=new Set(chart?.allStaff?drivers.map(d=>String(d.id)):(chart?.staffIds||[]).map(String));
+ const dialog=document.querySelector('#vacation-chart-members-dialog');
+ document.querySelector('#vacation-chart-name').textContent=name.trim();
+ document.querySelector('#vacation-chart-members').innerHTML=drivers.slice().sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).map(d=>'<label style="display:block;padding:5px"><input type="checkbox" value="'+d.id+'" '+(chosen.has(String(d.id))?'checked':'')+'> '+escapeHtml(shortStaffName(d))+' — '+escapeHtml(d.department||'')+'</label>').join('');
+ document.querySelector('#vacation-chart-save').onclick=()=>{
+  const ids=[...dialog.querySelectorAll('#vacation-chart-members input:checked')].map(e=>Number(e.value));
+  if(chart){chart.name=name.trim();chart.staffIds=ids;chart.allStaff=false}
+  else{const created={id:'chart-'+Date.now(),name:name.trim(),year:2027,staffIds:ids,allStaff:false};vacationCharts.push(created);activeVacationChartId=created.id}
+  saveVacationCharts();dialog.close();document.querySelector('#vacation-charts-dialog').close();selectedDriverIds=null;selectedGroups=null;render();
+ };
+ dialog.showModal();
+}
+
 const staffKey='vacationStaff2027';
 let drivers;
 try { const stored=JSON.parse(localStorage.getItem(staffKey)||'null'); drivers=Array.isArray(stored)&&stored.length?stored:defaultDrivers.map(d=>({...d,allowance:36,department:''})); } catch { drivers=defaultDrivers.map(d=>({...d,allowance:36,department:''})); }
@@ -354,7 +385,7 @@ function renderHistory2026(){
  const cells=columns.map(c=>'<th><button type="button" data-history-month="'+c.m+'">'+(c.d||months[c.m].slice(0,3))+'</button></th>').join('');
  const rows=names.map(n=>'<tr><th class="fixed name"><button type="button" class="driver" data-history-driver="'+escapeHtml(n)+'">'+escapeHtml(n)+'</button></th><td class="fixed group">'+(groups[n]||'—')+'</td>'+columns.map(c=>{const set=days.get(n);const count=c.d?Number(set.has(dateAt(c.m,c.d))):[...set].filter(x=>Number(x.slice(5,7))===c.m+1).length;return '<td class="'+(c.d?'day ':'month-cell ')+(count?(c.d?'vacation':'has-vacation'):'')+'">'+(c.d?(count?'●':''):(count||''))+'</td>'}).join('')+'<td class="annual-total">'+(days.get(n).size||'')+'</td></tr>').join('');
  const totals=columns.map(c=>{const n=names.filter(n=>c.d?days.get(n).has(dateAt(c.m,c.d)):[...days.get(n)].some(x=>Number(x.slice(5,7))===c.m+1)).length;return '<td>'+(n||'')+'</td>';}).join('');
- app.innerHTML='<header class="grot-header"><img class="grot-header-logo" src="'+grotLogo+'" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">'+structureEscape(readOrganization().shortName||readOrganization().fullName)+'</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2026" selected>2026</option><option value="2027">2027</option></select></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>Документ</summary><div class="grot-menu-panel"><button type="button" id="archive-collapse">Свернуть все месяцы</button><button type="button" id="archive-current">Перейти к графику 2027</button><button type="button" id="archive-metrics">Анализ отпускной нагрузки · КОН / КСН / ИПО</button></div></details><details class="grot-menu"><summary>Справочник</summary><div class="grot-menu-panel"><button type="button" data-archive-organization="1">Организация</button><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="structure-open">Структура предприятия</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Печать</summary><div class="grot-menu-panel"><button type="button" id="archive-print">Печать графика 2026</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" data-archive-go="backup-settings-open">Настройки</button><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-about="1">О программе</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button></div></details></nav><p><strong>Архивный график 2026 года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>'+cells+'<th>Всего дней</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>'+totals+'<td>'+(names.length||'')+'</td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>';
+ app.innerHTML='<header class="grot-header"><img class="grot-header-logo" src="'+grotLogo+'" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">'+structureEscape(readOrganization().shortName||readOrganization().fullName)+'</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2026" selected>2026</option><option value="2027">2027</option></select></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>Документ</summary><div class="grot-menu-panel"><button type="button" data-archive-go="vacation-charts-open">Графики отпусков</button><button type="button" id="archive-collapse">Свернуть все месяцы</button><button type="button" id="archive-current">Перейти к графику 2027</button><button type="button" id="archive-metrics">Анализ отпускной нагрузки · КОН / КСН / ИПО</button></div></details><details class="grot-menu"><summary>Справочник</summary><div class="grot-menu-panel"><button type="button" data-archive-organization="1">Организация</button><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="structure-open">Структура предприятия</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Печать</summary><div class="grot-menu-panel"><button type="button" id="archive-print">Печать графика 2026</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" data-archive-go="backup-settings-open">Настройки</button><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-about="1">О программе</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button></div></details></nav><p><strong>Архивный график 2026 года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr><th class="fixed name">Водитель</th><th class="fixed group">Группа</th>'+cells+'<th>Всего дней</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td class="fixed group"></td>'+totals+'<td>'+(names.length||'')+'</td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>';
  preserveYearHeader(previousHeader);
  document.querySelector('#grot-year').value='2026';
  document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
@@ -379,7 +410,8 @@ function render() {
   const monthlyCount=(set,m)=>{let n=0;for(let d=1;d<=monthDays(m);d++){const date=dateOf(m,d);if(set.has(date)&&dayType(date)!=='holiday')n++;}return n;};
   const columns=months.flatMap((_,m)=>expandedMonths.has(m)?Array.from({length:monthDays(m)},(_,i)=>({m,day:i+1})): [{m,day:0}]);
   const headings=columns.map(c=>'<th class="'+(c.day?'day-heading':'month-heading')+'"><button type="button" data-month="'+c.m+'" title="'+(expandedMonths.has(c.m)?'Свернуть ':'Развернуть ')+months[c.m]+'">'+(c.day||months[c.m].slice(0,3))+'</button></th>').join('');
-  const visibleDrivers=drivers.filter(d=>isEligibleForYear(d,2027)&&(selectedDriverIds===null||selectedDriverIds.has(String(d.id)))&&(selectedGroups===null||selectedGroups.has(String(d.group)))).sort(compareGroupAndName);
+  const chart=activeVacationChart();
+  const visibleDrivers=drivers.filter(d=>(chart.allStaff||chart.staffIds.map(String).includes(String(d.id)))&&isEligibleForYear(d,2027)&&(selectedDriverIds===null||selectedDriverIds.has(String(d.id)))&&(selectedGroups===null||selectedGroups.has(String(d.group)))).sort(compareGroupAndName);
   const groups=[...new Set(drivers.filter(d=>isEligibleForYear(d,2027)).map(d=>String(d.group)))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true}));
   const annualCount=id=>periodsFor(id).reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
   const rows=visibleDrivers.map(d=>'<tr><th class="fixed name"><button class="driver" data-driver="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button></th><td class="fixed group">'+escapeHtml(d.group)+'</td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m);return '<td class="month-cell '+(n?'has-vacation':'')+'" data-month="'+c.m+'">'+(n||'')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday':'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+'</td>';}).join('')+'<td class="annual-total">'+(annualCount(d.id)||'')+'</td></tr>').join('');
@@ -391,7 +423,7 @@ function render() {
         <details class="grot-menu">
           <summary>Документ</summary>
           <div class="grot-menu-panel">
-            <button type="button" id="collapse-month">Свернуть все месяцы</button>
+            <button type="button" id="vacation-charts-open">Графики отпусков</button><button type="button" id="collapse-month">Свернуть все месяцы</button>
             <button type="button" id="seasonality-open">Анализ отпускной нагрузки · КОН / КСН / ИПО</button>
           </div>
         </details>
@@ -432,7 +464,7 @@ function render() {
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
     <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">Выбрать сотрудников</button><button type="button" id="structure-new-employee">＋ Новый сотрудник</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<select id="structure-card-leader"></select></label></div><div class="actions"><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog>
 <dialog id="structure-assign-dialog" class="structure-dialog"><h2 id="structure-assignment-title">Добавить сотрудников</h2><p class="muted">Отметьте сотрудников для выбранного звена. Снятие отметки открепит сотрудника от него. Отпуска сохраняются.</p><div id="structure-employees"></div><div class="actions"><button type="button" id="structure-assign-cancel">Отмена</button><button type="button" id="structure-assign-save">Сохранить</button></div></dialog>
-<dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
+<dialog id="vacation-charts-dialog"><h2>Графики отпусков · 2027</h2><table class="staff-table"><thead><tr><th>Название</th><th>Год</th><th>Сотрудников</th><th></th></tr></thead><tbody id="vacation-charts-list"></tbody></table><div class="actions"><button type="button" id="vacation-chart-add">＋ Добавить</button><button type="button" id="vacation-charts-close">Закрыть</button></div></dialog><dialog id="vacation-chart-members-dialog"><h2>Состав графика: <span id="vacation-chart-name"></span></h2><div id="vacation-chart-members" style="max-height:55vh;overflow:auto"></div><div class="actions"><button type="button" id="vacation-chart-save">Сохранить</button><button type="button" id="vacation-chart-cancel">Отмена</button></div></dialog><dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◉</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled>✏️</button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>▤</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span><button type="button" id="staff-close" title="Закрыть" aria-label="Закрыть">×</button></div><div id="staff-list"></div>
     </dialog>
     <dialog id="staff-import-dialog"><h2>Перенос сотрудников из 2026 года</h2><p>Из архива берутся только фамилии и известные группы. Проверьте полные ФИО, группы и нормы отпуска после переноса. Совпадающие фамилии не добавляются повторно.</p><div class="staff-table-scroll" id="staff-import-list"></div><p id="staff-import-status" role="status"></p><div class="actions"><button type="button" id="staff-import-confirm">Добавить выбранных</button><button type="button" id="staff-import-cancel">Отмена</button></div></dialog>
@@ -592,6 +624,10 @@ function render() {
   document.querySelector('#structure-assign-save').onclick=structureAssignSave;
   document.querySelector('#structure-card-form').onsubmit=structureCardSave;
   document.querySelector('#structure-card-cancel').onclick=()=>document.querySelector('#structure-card-dialog').close();
+  document.querySelector('#vacation-charts-open').onclick=vacationChartOpen;
+  document.querySelector('#vacation-chart-add').onclick=()=>vacationChartEdit(null);
+  document.querySelector('#vacation-charts-close').onclick=()=>document.querySelector('#vacation-charts-dialog').close();
+  document.querySelector('#vacation-chart-cancel').onclick=()=>document.querySelector('#vacation-chart-members-dialog').close();
   document.querySelector('#staff-open').onclick=()=>{drawStaff();document.querySelector('#staff-dialog').showModal();};
   document.querySelector('#staff-close').onclick=()=>document.querySelector('#staff-dialog').close();
   document.querySelector('#staff-add').onclick=()=>openStaffCard(null);
