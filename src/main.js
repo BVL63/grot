@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.44';
+const APP_VERSION='0.3.45';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -529,7 +529,7 @@ function render() {
         <label>Подразделение <input id="staff-department" maxlength="100"></label>
         <label>Должность <input id="staff-position" list="staff-position-options" maxlength="120" autocomplete="off"><datalist id="staff-position-options"></datalist></label><label>Код структурного звена <input id="staff-structure-code" readonly></label><label>Группа отпусков <input id="staff-group" maxlength="30"></label>
         <label>Дата приёма <input id="staff-hired" type="date"></label><label>Дата увольнения <input id="staff-dismissal" type="date"></label><label><input id="staff-dismissed" type="checkbox"> Уволен (если дата неизвестна)</label><label>Дней ежегодного отпуска <input id="staff-allowance" type="number" min="1" max="120" required value="36"></label>
-        <p id="staff-error" role="alert"></p>
+        <section id="staff-days-section" style="grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:8px"><strong>Учёт отпускных дней</strong><p id="staff-days-summary" style="margin:6px 0"></p><div id="staff-days-history" style="max-height:145px;overflow:auto"></div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px"><select id="staff-days-type"><option value="balance">Остаток прошлых лет</option><option value="addition">Добавить дни</option><option value="reduction">Уменьшить дни</option><option value="compensation">Компенсация</option></select><input id="staff-days-year" type="text" placeholder="Рабочий год" style="width:135px" maxlength="30"><input id="staff-days-count" type="number" min="1" max="365" placeholder="Дней" style="width:85px"><input id="staff-days-reason" placeholder="Причина / основание" maxlength="250" style="flex:1;min-width:150px"><button type="button" id="staff-days-add">Записать</button></div><small>Изменения сохраняются вместе с карточкой сотрудника. Удаление записи требует подтверждения.</small></section><p id="staff-error" role="alert"></p>
         <div class="actions"><button type="submit">Сохранить</button><button type="button" id="staff-card-close">Закрыть</button></div>
       </form>
     </dialog>
@@ -625,8 +625,27 @@ function render() {
       render();
     }catch(err){alert('Восстановление отменено: '+err.message);}
   };
+  let pendingDayOperations=[];
+  function redrawDayOperations(){
+    const base=Number(document.querySelector('#staff-allowance').value)||0;
+    const delta=pendingDayOperations.reduce((sum,x)=>sum+x.days,0);
+    document.querySelector('#staff-days-summary').textContent='Ежегодный отпуск: '+base+' дн. · Корректировки: '+(delta>=0?'+':'')+delta+' дн. · Доступно: '+(base+delta)+' дн.';
+    const container=document.querySelector('#staff-days-history');
+    container.innerHTML=pendingDayOperations.map((x,i)=>'<div style="display:flex;gap:8px;align-items:center;border-bottom:1px solid #ddd;padding:3px 0"><span style="flex:1">'+escapeHtml(x.date)+' · '+escapeHtml(x.year)+' · '+escapeHtml(x.type)+' · '+(x.days>0?'+':'')+x.days+' дн. · '+escapeHtml(x.reason)+'</span><button type="button" data-day-remove="'+i+'">×</button></div>').join('')||'<span class="muted">Записей нет</span>';
+    container.querySelectorAll('[data-day-remove]').forEach(b=>b.onclick=()=>{if(confirm('Удалить эту запись?')){pendingDayOperations.splice(Number(b.dataset.dayRemove),1);redrawDayOperations()}});
+  }
+  document.querySelector('#staff-days-add').onclick=()=>{
+    const type=document.querySelector('#staff-days-type').value,year=document.querySelector('#staff-days-year').value.trim(),count=Number(document.querySelector('#staff-days-count').value),reason=document.querySelector('#staff-days-reason').value.trim();
+    if(!year||!Number.isInteger(count)||count<1||count>365||!reason){alert('Укажите рабочий год, количество дней и основание.');return}
+    const days=['reduction','compensation'].includes(type)?-count:count;
+    const allowance=Number(document.querySelector('#staff-allowance').value)||0;
+    if(allowance+pendingDayOperations.reduce((a,x)=>a+x.days,0)+days<0){alert('Нельзя получить отрицательный остаток дней.');return}
+    pendingDayOperations.push({date:new Date().toISOString().slice(0,10),year,type,days,reason});
+    document.querySelector('#staff-days-count').value='';document.querySelector('#staff-days-reason').value='';redrawDayOperations();
+  };
+  document.querySelector('#staff-allowance').addEventListener('input',redrawDayOperations);
   function openStaffCard(d,structureId=null){
-    const form=document.querySelector('#staff-form');form.reset();updatePositionSuggestions();
+    const form=document.querySelector('#staff-form');form.reset();updatePositionSuggestions();pendingDayOperations=(d?.dayOperations||[]).map(x=>({...x}));redrawDayOperations();
     form.dataset.structureId=structureId||'';
     form.dataset.fromStructure=structureId?'1':'0';
     document.querySelector('#staff-id').value=d?.id||'';
@@ -729,8 +748,8 @@ function render() {
     const lastName=document.querySelector('#staff-last').value.trim(),firstName=document.querySelector('#staff-first').value.trim(),middleName=document.querySelector('#staff-middle').value.trim(),name=lastName+' '+firstName[0]?.toUpperCase()+'.'+(middleName?middleName[0].toUpperCase()+'.':''),department=document.querySelector('#staff-department').value.trim(),group=document.querySelector('#staff-group').value.trim(),position=document.querySelector('#staff-position').value.trim(),allowance=Number(document.querySelector('#staff-allowance').value),hireDate=document.querySelector('#staff-hired').value,dismissalDate=document.querySelector('#staff-dismissal').value,dismissed=document.querySelector('#staff-dismissed').checked||Boolean(dismissalDate);
     if(!lastName||!firstName||!Number.isInteger(allowance)||allowance<1||allowance>120)return;
     if(hireDate&&dismissalDate&&dismissalDate<hireDate){document.querySelector('#staff-error').textContent='Дата увольнения раньше даты приёма.';return;}
-    if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department,group,position,allowance,hireDate,dismissalDate,dismissed});}
-    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,position,allowance,hireDate,dismissalDate,dismissed,...(e.currentTarget.dataset.structureId?{structureId:e.currentTarget.dataset.structureId}:{})});
+    if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department,group,position,allowance,hireDate,dismissalDate,dismissed,dayOperations:pendingDayOperations.map(x=>({...x}))});}
+    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,position,allowance,hireDate,dismissalDate,dismissed,dayOperations:pendingDayOperations.map(x=>({...x})),...(e.currentTarget.dataset.structureId?{structureId:e.currentTarget.dataset.structureId}:{})});
     const fromStructure=e.currentTarget.dataset.fromStructure==='1';
     const selectedStructureId=e.currentTarget.dataset.structureId;
     saveStaff();
