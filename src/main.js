@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.71';
+const APP_VERSION='0.3.72';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -448,8 +448,28 @@ function printMonthlyVacationChart(){
  const w=window.open('','_blank');if(!w){alert('Разрешите всплывающие окна для печати.');return}w.document.write(html);w.document.close();w.focus();
 }
 function personnelPrint(){
- const rows=personnelExportRows(),esc=escapeHtml;
- const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков 2027 — отдел кадров</title><style>@page{size:A4 landscape;margin:12mm}body{font:12px Arial,sans-serif}h2{text-align:center}table{border-collapse:collapse;width:100%}th,td{border:1px solid #555;padding:5px;text-align:left}th{background:#eee}.sign{margin-top:24px}.print-toolbar{display:flex;justify-content:flex-end;gap:10px;margin:0 0 16px}.print-toolbar button{padding:10px 16px;border:1px solid #94a3b8;border-radius:6px;background:#f1f5f9;font:inherit;cursor:pointer}@media print{.print-toolbar{display:none!important}}</style></head><body><div class="print-toolbar"><button type="button" onclick="window.print()">Печать / PDF</button><button type="button" onclick="window.close()">Закрыть</button></div><h2>Проект графика отпусков на 2027 год</h2><p>КГБУЗ «Владивостокская поликлиника № 9» · Подготовлено: '+new Date().toLocaleDateString('ru-RU')+'</p><table><thead><tr><th>Подразделение</th><th>ФИО</th><th>Должность</th><th>Таб. №</th><th>Группа</th><th>Часть</th><th>Дней</th><th>Начало</th><th>Окончание</th></tr></thead><tbody>'+rows.map(r=>'<tr>'+[r.department,r.name,r.position,r.personnel,r.group,'Часть '+r.part,r.days,r.start,r.end].map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table><p class="sign">Составил: _____________________ &nbsp;&nbsp; Дата: ______________</p><p>Документ для согласования. Не является утверждённым графиком отпусков без оформления работодателем.</p></body></html>';
+ const esc=escapeHtml;
+ const staff=drivers.filter(d=>periodsFor(d.id).length>0).sort((a,b)=>{
+  const ac=printStaffDepartmentCode(a),bc=printStaffDepartmentCode(b);
+  return (!ac!==!bc?(ac?-1:1):ac.localeCompare(bc,'ru',{numeric:true}))||shortStaffName(a).localeCompare(shortStaffName(b),'ru');
+ });
+ const body=staff.map(d=>{
+  const periods=[...periodsFor(d.id)].sort((a,b)=>a.start.localeCompare(b.start));
+  const span=periods.length,total=periods.reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
+  const fullName=[d.lastName,d.firstName,d.middleName].filter(Boolean).join(' ')||d.name||'';
+  const fixed=['<td rowspan="'+span+'">'+esc(printStaffDepartment(d))+'</td>',
+   '<td rowspan="'+span+'">'+esc(fullName)+'</td>',
+   '<td rowspan="'+span+'">'+esc(d.position||'Водитель автомобиля')+'</td>',
+   '<td rowspan="'+span+'">'+esc(d.personnelNumber||d.tabNumber||'')+'</td>',
+   '<td rowspan="'+span+'">'+esc(d.group||'')+'</td>'].join('');
+  return '<tbody class="staff-periods">'+periods.map((p,i)=>
+   '<tr>'+(i===0?fixed:'')+
+   '<td class="center">'+(i+1)+'</td><td class="center">'+leaveDays(p.start,p.end)+'</td>'+
+   '<td class="center">'+esc(displayDate(p.start))+'</td><td class="center">'+esc(displayDate(p.end))+'</td>'+
+   (i===0?'<td rowspan="'+span+'" class="center total-days">'+total+'</td>':'')+'</tr>'
+  ).join('')+'</tbody>';
+ }).join('');
+ const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков 2027 — отдел кадров</title><style>@page{size:A4 landscape;margin:12mm}body{font:11px Arial,sans-serif;color:#111}h2{text-align:center}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #555;padding:5px 4px;vertical-align:middle;overflow-wrap:anywhere}th{background:#eee;text-align:center}.center{text-align:center}.total-days{font-weight:bold}.staff-periods tr:first-child td{border-top:1.5px solid #222}.staff-periods{break-inside:avoid;page-break-inside:avoid}thead{display:table-header-group}.sign{margin-top:24px}.print-toolbar{display:flex;justify-content:flex-end;gap:10px;margin:0 0 16px}.print-toolbar button{padding:10px 16px;border:1px solid #94a3b8;border-radius:6px;background:#f1f5f9;font:inherit;cursor:pointer}@media print{.print-toolbar{display:none!important}thead{display:table-header-group}.staff-periods{break-inside:avoid;page-break-inside:avoid}tr{break-inside:avoid}}</style></head><body><div class="print-toolbar"><button type="button" onclick="window.print()">Печать / PDF</button><button type="button" onclick="window.close()">Закрыть</button></div><h2>Проект графика отпусков на 2027 год</h2><p>КГБУЗ «Владивостокская поликлиника № 9» · Подготовлено: '+new Date().toLocaleDateString('ru-RU')+'</p><table><thead><tr><th>Отдел</th><th>ФИО</th><th>Должность</th><th>Таб. №</th><th>Группа</th><th>Часть</th><th>Дней</th><th>Начало</th><th>Окончание</th><th>Всего<br>дней</th></tr></thead>'+body+'</table><p class="sign">Составил: _____________________ &nbsp;&nbsp; Дата: ______________</p><p>Документ для согласования. Не является утверждённым графиком отпусков без оформления работодателем.</p></body></html>';
  const w=window.open('','_blank');if(!w){alert('Разрешите всплывающие окна для печати.');return}w.document.write(html);w.document.close();w.focus();
 }
 function showDriverHistory(name){
