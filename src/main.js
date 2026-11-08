@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.45';
+const APP_VERSION='0.3.46';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -46,6 +46,7 @@ const staffKey='vacationStaff2027';
 let drivers;
 try { const stored=JSON.parse(localStorage.getItem(staffKey)||'null'); drivers=Array.isArray(stored)&&stored.length?stored:defaultDrivers.map(d=>({...d,allowance:36,department:''})); } catch { drivers=defaultDrivers.map(d=>({...d,allowance:36,department:''})); }
 drivers=drivers.map(d=>({...d,allowance:Number.isFinite(Number(d.allowance))?Number(d.allowance):36}));
+function availableLeaveDays(d){return Math.max(0,(Number(d.allowance)||0)+(Array.isArray(d.dayOperations)?d.dayOperations.reduce((sum,x)=>sum+(Number(x.days)||0),0):0));}
 function staffParts(d){if(d.lastName)return {last:d.lastName,first:d.firstName||'',middle:d.middleName||''};const v=String(d.name||'').trim();const m=v.match(/^(.+?)\s+([А-ЯЁA-Z])\.\s*([А-ЯЁA-Z])\.$/i);return m?{last:m[1],first:m[2]+'.',middle:m[3]+'.'}:{last:v,first:'',middle:''};}
 function shortStaffName(d){const p=staffParts(d);return p.last+((p.first&&p.middle)?' '+p.first[0].toUpperCase()+'.'+p.middle[0].toUpperCase()+'.':p.first?' '+p.first[0].toUpperCase()+'.':'');}
 function compareGroupAndName(a,b){const ga=String(a.group??''),gb=String(b.group??'');return ga.localeCompare(gb,'ru',{numeric:true})||shortStaffName(a).localeCompare(shortStaffName(b),'ru');}
@@ -880,9 +881,9 @@ function render() {
     document.querySelector('#driver-title').textContent='Отпуска: '+driver.name;
     document.querySelector('#period-list').innerHTML=periodList(id);
     const planned=periodsFor(id).reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
-    document.querySelector('#period-total').textContent='Положено: '+driver.allowance+' · Запланировано: '+planned+' · Осталось: '+(driver.allowance-planned)+' дн. (праздники исключены)';
-    document.querySelector('#driver-add').disabled=planned>=driver.allowance;
-    document.querySelector('#driver-add').title=planned>=driver.allowance?'Все дни отпуска уже запланированы':'';
+    document.querySelector('#period-total').textContent='Доступно: '+availableLeaveDays(driver)+' · Запланировано: '+planned+' · Осталось: '+(availableLeaveDays(driver)-planned)+' дн. (праздники исключены)';
+    document.querySelector('#driver-add').disabled=planned>=availableLeaveDays(driver);
+    document.querySelector('#driver-add').title=planned>=availableLeaveDays(driver)?'Все дни отпуска уже запланированы':'';
     document.querySelector('#split-rule').innerHTML=splitRule(id);
     document.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>{
       const p=periodsFor(id)[Number(el.dataset.edit)];
@@ -996,7 +997,7 @@ function render() {
     const sorted=[...proposed].sort((x,y)=>x.start.localeCompare(y.start));
     if(sorted.some((p,i)=>i>0&&p.start<=sorted[i-1].end)){document.querySelector('#form-error').textContent='Периоды пересекаются.';return;}
     const driver=drivers.find(d=>d.id===id);
-    if(sorted.reduce((n,p)=>n+leaveDays(p.start,p.end),0)>driver.allowance){document.querySelector('#form-error').textContent='Превышена норма отпуска.';return;}
+    if(sorted.reduce((n,p)=>n+leaveDays(p.start,p.end),0)>availableLeaveDays(driver)){document.querySelector('#form-error').textContent='Превышена норма отпуска.';return;}
     vacations=vacations.filter(v=>Number(v.driverId)!==id).concat(sorted.map(p=>({driverId:id,start:p.start,end:p.end})));
     store();
     notice='Период отпуска сохранён.';
