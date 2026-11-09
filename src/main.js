@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.79';
+const APP_VERSION='0.3.80';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -600,7 +600,7 @@ function render() {
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden>
       </nav>
-      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="priority-calculate">Рассчитать приоритет</button><span>${priorityCurrent?(priorityData.incomplete?'Предварительный расчёт: не у всех есть данные за 2026 год':'Приоритет рассчитан по 2026 году'):priorityData?'Состав изменён — пересчитайте приоритет':'Приоритет ещё не рассчитан'}</span></div>
+      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="priority-calculate">Рассчитать приоритет</button><span>${priorityCurrent?(priorityData.incomplete?'Предварительный расчёт: не у всех есть данные за 2026 год':'Приоритет рассчитан по 2026 году'):priorityData?'Состав изменён — пересчитайте приоритет':'Приоритет ещё не рассчитан'}</span></div>
       <p class="notice mobile-status" role="status">${notice}</p><div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name"><span class="header-filter">${escapeHtml(activeVacationChart().name)} <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
       <th>Приоритет</th><th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}<th class="annual-total-heading">Запланировано</th><th>Доступно</th><th>Остаток</th></tr></thead>
@@ -609,6 +609,7 @@ function render() {
       <p class="notice" role="status">${notice}</p>
       <p class="muted storage-warning">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
     <footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>
+    <dialog id="chart-info-dialog" class="chart-info-dialog"><h2>Подсказки по графику</h2><p><strong>Месяцы:</strong> нажмите на название месяца, чтобы открыть дни. Повторное нажатие сворачивает этот месяц; можно открыть несколько месяцев.</p><p><strong>Сотрудник:</strong> нажмите на фамилию для просмотра и изменения отпусков.</p><p><strong>Группа:</strong> нажмите на номер группы для его изменения. Сотрудники одной группы в одном подразделении проверяются на пересечения отпусков.</p><p><strong>Приоритет:</strong> рассчитывается на основе доступных данных за 2026 год.</p><p><strong>Хранение:</strong> данные сохраняются в этом браузере, а не в облаке. Делайте резервные копии через «Сервис».</p><div class="actions"><button type="button" id="chart-info-close">Закрыть</button></div></dialog>
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
     <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">Выбрать сотрудников</button><button type="button" id="structure-new-employee">＋ Новый сотрудник</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<select id="structure-card-leader"></select></label></div><div class="actions"><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog>
 <dialog id="structure-assign-dialog" class="structure-dialog"><h2 id="structure-assignment-title">Добавить сотрудников</h2><p class="muted">Отметьте сотрудников для выбранного звена. Снятие отметки открепит сотрудника от него. Отпуска сохраняются.</p><div id="structure-employees"></div><div class="actions"><button type="button" id="structure-assign-cancel">Отмена</button><button type="button" id="structure-assign-save">Сохранить</button></div></dialog>
@@ -945,7 +946,9 @@ function render() {
     notice='Производственный календарь загружен; расчёт отпусков обновлён.';
     document.querySelector('#calendar-dialog').close();render();
   };
-  document.querySelector('#help-open').onclick=()=>document.querySelector('#help-dialog').showModal();
+  document.querySelector('#chart-info-open').onclick=()=>document.querySelector('#chart-info-dialog').showModal();
+   document.querySelector('#chart-info-close').onclick=()=>document.querySelector('#chart-info-dialog').close();
+   document.querySelector('#help-open').onclick=()=>document.querySelector('#help-dialog').showModal();
   document.querySelector('#about-open').onclick=showAboutGrot;
   document.querySelector('#help-close').onclick=()=>document.querySelector('#help-dialog').close();
   let activeFilter=null;
