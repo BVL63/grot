@@ -710,3 +710,14 @@ main{padding-bottom:64px!important;}
   #driver-card .period-row button{font-size:14px;padding:7px 8px;}
   #driver-card>.actions button{max-width:100%;white-space:normal;}
 }
+
+/* v0.3.91: короткие названия колонок только на телефонах */
+.annual-table .heading-phone{display:none}
+@media(max-width:600px){
+  #app>main>.scroll .annual-table thead .heading-full{display:none!important}
+  #app>main>.scroll .annual-table thead .heading-phone{display:inline!important;white-space:nowrap}
+  #app>main>.scroll .annual-table thead th:nth-child(2){font-size:11px!important;overflow-wrap:normal}
+  #app>main>.scroll .annual-table .group{width:49px!important;min-width:49px!important;max-width:49px!important}
+  #app>main>.scroll .annual-table .group .header-filter{gap:1px!important}
+  #app>main>.scroll .annual-table .group .filter-trigger{min-width:18px!important;width:18px!important;flex-basis:18px!important}
+}
