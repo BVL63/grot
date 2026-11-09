@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.86';
+const APP_VERSION='0.3.87';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -681,7 +681,7 @@ function render() {
     <dialog id="driver-card"><h2 id="driver-title">Отпуска водителя</h2><div id="period-list"></div><div id="period-total" class="day-count"></div><div id="split-rule"></div><div class="actions"><button type="button" id="driver-history">История по годам</button><button type="button" id="driver-close">Закрыть</button><button type="button" id="driver-add">Добавить период</button></div></dialog>`;
   preserveYearHeader(previousHeader);
   document.querySelector('#personnel-csv').onclick=personnelCsv;
-  document.querySelector('#monthly-print').onclick=printMonthlyVacationChart;
+  document.querySelector('#monthly-print').onclick=()=>printMonthlyVacationChart(2027);
   document.querySelector('#overlap-print').onclick=printGroupOverlaps;
   document.querySelector('#personnel-print').onclick=personnelPrint;
   document.querySelector('#backup-settings-open').onclick=backupSettingsOpen;
