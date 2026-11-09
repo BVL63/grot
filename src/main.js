@@ -948,21 +948,60 @@ function render() {
     for(const [key,id] of Object.entries(yearlyFields))document.querySelector('#'+id).value=data?.[key]??0;
     document.querySelector('#staff-leave-year-hint').textContent=data?'Норма за '+selectedLeaveYear+' год. Изменения сохраняются с карточкой.':'За '+selectedLeaveYear+' год норма ещё не указана. Введите состав отпуска для этого года.';
     document.querySelector('#staff-allowance').value=data?.allowance??0;
+    document.querySelector('#staff-legacy-value').textContent=String(data?.legacy??0);
+    editingDayOperationIndex=null;
+    document.querySelector('#staff-operation-editor').open=false;
+    document.querySelector('#staff-days-add').textContent='Записать';
     redrawDayOperations();
   }
   document.querySelector('#staff-leave-year').onchange=e=>{saveDisplayedLeaveYear();selectedLeaveYear=e.target.value;showDisplayedLeaveYear()};
+  let editingDayOperationIndex=null;
+  const operationRow=(x,index)=>{
+    const delta=Number(x.days)||0;
+    return '<tr><td>'+escapeHtml(String(x.year||x.scopeYear||'—'))+'</td><td class="staff-op-days">'+(delta>0?'+':'')+delta+'</td><td>'+escapeHtml(x.reason||'—')+'</td><td class="staff-op-actions"><button type="button" data-op-edit="'+index+'" title="Изменить">✎</button><button type="button" data-op-remove="'+index+'" title="Удалить">×</button></td></tr>';
+  };
   function redrawDayOperations(){
     const base=Number(document.querySelector('#staff-allowance').value)||0;
-    const delta=pendingDayOperations.filter(x=>x.scopeYear?String(x.scopeYear)===selectedLeaveYear:selectedLeaveYear==='2027').reduce((sum,x)=>sum+x.days,0);
-    document.querySelector('#staff-days-summary').textContent='Год '+selectedLeaveYear+' · Ежегодный отпуск: '+base+' дн. · Корректировки: '+(delta>=0?'+':'')+delta+' дн. · Доступно: '+(base+delta)+' дн.';
-    const container=document.querySelector('#staff-days-history');
-    container.innerHTML=pendingDayOperations.map((x,i)=>'<div style="display:flex;gap:8px;align-items:center;border-bottom:1px solid #ddd;padding:3px 0"><span style="flex:1">'+escapeHtml(x.date)+' · '+escapeHtml(x.year)+' · '+escapeHtml(x.type)+' · '+(x.days>0?'+':'')+x.days+' дн. · '+escapeHtml(x.reason)+'</span><button type="button" data-day-remove="'+i+'">×</button></div>').join('')||'<span class="muted">Записей нет</span>';
-    container.querySelectorAll('[data-day-remove]').forEach(b=>b.onclick=()=>{if(confirm('Удалить эту запись?')){pendingDayOperations.splice(Number(b.dataset.dayRemove),1);redrawDayOperations()}});
+    const relevant=pendingDayOperations.map((x,index)=>({x,index})).filter(({x})=>x.scopeYear?String(x.scopeYear)===selectedLeaveYear:selectedLeaveYear==='2027');
+    const corrections=relevant.filter(({x})=>x.type!=='balance');
+    const balances=relevant.filter(({x})=>x.type==='balance');
+    const correctionDays=corrections.reduce((n,{x})=>n+(Number(x.days)||0),0);
+    const balanceDays=balances.reduce((n,{x})=>n+(Number(x.days)||0),0);
+    document.querySelector('#staff-days-summary').textContent='Год '+selectedLeaveYear+' · Ежегодный отпуск: '+base+' дн. · Остаток прошлых лет: '+balanceDays+' дн. · Корректировки: '+(correctionDays>=0?'+':'')+correctionDays+' дн. · Доступно: '+(base+balanceDays+correctionDays)+' дн.';
+    document.querySelector('#staff-balance-total').textContent=balanceDays+' дн.';
+    document.querySelector('#staff-corrections-rows').innerHTML=corrections.map(({x,index})=>operationRow(x,index)).join('')||'<tr><td colspan="4" class="staff-ops-empty">Нет записей</td></tr>';
+    document.querySelector('#staff-balance-rows').innerHTML=balances.map(({x,index})=>operationRow(x,index)).join('')||'<tr><td colspan="4" class="staff-ops-empty">Нет записей</td></tr>';
+    document.querySelectorAll('#staff-days-section [data-op-remove]').forEach(b=>b.onclick=()=>{
+      if(confirm('Удалить запись учёта отпускных дней?')){pendingDayOperations.splice(Number(b.dataset.opRemove),1);editingDayOperationIndex=null;redrawDayOperations()}
+    });
+    document.querySelectorAll('#staff-days-section [data-op-edit]').forEach(b=>b.onclick=()=>{
+      const i=Number(b.dataset.opEdit),x=pendingDayOperations[i];if(!x)return;
+      editingDayOperationIndex=i;
+      document.querySelector('#staff-days-type').value=x.type||'addition';
+      document.querySelector('#staff-days-year').value=x.year||'';
+      document.querySelector('#staff-days-count').value=Math.abs(Number(x.days)||0);
+      document.querySelector('#staff-days-reason').value=x.reason||'';
+      document.querySelector('#staff-days-add').textContent='Сохранить правку';
+      document.querySelector('#staff-operation-editor').open=true;
+    });
   }
+  document.querySelector('#staff-balance-add').onclick=()=>{
+    editingDayOperationIndex=null;
+    document.querySelector('#staff-days-type').value='balance';
+    document.querySelector('#staff-days-year').value=selectedLeaveYear;
+    document.querySelector('#staff-days-count').value='';
+    document.querySelector('#staff-days-reason').value='';
+    document.querySelector('#staff-days-add').textContent='Записать';
+    document.querySelector('#staff-operation-editor').open=true;
+  };
+  document.querySelector('#staff-operation-editor').addEventListener('toggle',e=>{
+    if(!e.target.open&&editingDayOperationIndex!==null){editingDayOperationIndex=null;document.querySelector('#staff-days-add').textContent='Записать'}
+  });
   const leaveFieldIds=Object.values(yearlyFields);
   function recalculateAnnualLeave(){
     const total=leaveFieldIds.reduce((sum,id)=>sum+(Number(document.querySelector('#'+id).value)||0),0);
     document.querySelector('#staff-allowance').value=total;
+    document.querySelector('#staff-legacy-value').textContent=String(Number(document.querySelector('#staff-leave-legacy').value)||0);
     document.querySelector('#staff-leave-year-hint').textContent='Норма за '+selectedLeaveYear+' год · '+total+' дн.';
     redrawDayOperations();
   }
@@ -972,13 +1011,19 @@ function render() {
     if(!year||!Number.isInteger(count)||count<1||count>365||!reason){alert('Укажите рабочий год, количество дней и основание.');return}
     const days=['reduction','compensation'].includes(type)?-count:count;
     const allowance=Number(document.querySelector('#staff-allowance').value)||0;
-    if(allowance+pendingDayOperations.filter(x=>x.scopeYear?String(x.scopeYear)===selectedLeaveYear:selectedLeaveYear==='2027').reduce((a,x)=>a+x.days,0)+days<0){alert('Нельзя получить отрицательный остаток дней.');return}
-    pendingDayOperations.push({date:new Date().toISOString().slice(0,10),year,type,days,reason,scopeYear:selectedLeaveYear});
-    document.querySelector('#staff-days-count').value='';document.querySelector('#staff-days-reason').value='';redrawDayOperations();
+    if(allowance+pendingDayOperations.filter((x,i)=>i!==editingDayOperationIndex&&(x.scopeYear?String(x.scopeYear)===selectedLeaveYear:selectedLeaveYear==='2027')).reduce((a,x)=>a+x.days,0)+days<0){alert('Нельзя получить отрицательный остаток дней.');return}
+    const record={date:new Date().toISOString().slice(0,10),year,type,days,reason,scopeYear:selectedLeaveYear};
+    if(editingDayOperationIndex===null)pendingDayOperations.push(record);
+    else pendingDayOperations[editingDayOperationIndex]={...pendingDayOperations[editingDayOperationIndex],...record};
+    editingDayOperationIndex=null;
+    document.querySelector('#staff-days-add').textContent='Записать';
+    document.querySelector('#staff-days-count').value='';document.querySelector('#staff-days-reason').value='';
+    document.querySelector('#staff-operation-editor').open=false;redrawDayOperations();
   };
   document.querySelector('#staff-allowance').addEventListener('input',redrawDayOperations);
   function openStaffCard(d,structureId=null){
     const form=document.querySelector('#staff-form');form.reset();updatePositionSuggestions();pendingDayOperations=(d?.dayOperations||[]).map(x=>({...x}));
+    editingDayOperationIndex=null;document.querySelector('#staff-operation-editor').open=false;document.querySelector('#staff-days-add').textContent='Записать';
     editingStaff=d||null;
     yearlyLeaveDraft={};
     if(d?.leaveByYear&&typeof d.leaveByYear==='object'&&!Array.isArray(d.leaveByYear)){
@@ -1092,6 +1137,8 @@ function render() {
   };
 
   document.querySelector('#staff-card-close').onclick=()=>{document.querySelector('#staff-card').close();drawStaff();document.querySelector('#staff-dialog').showModal();};
+  document.querySelector('#staff-card-x').onclick=()=>document.querySelector('#staff-card-close').click();
+  document.querySelector('#staff-history-open').onclick=()=>{const d=drivers.find(x=>x.id===Number(document.querySelector('#staff-id').value));if(d)showDriverHistory(shortStaffName(d));else alert('Сначала сохраните нового сотрудника.');};
   document.querySelector('#staff-form').onsubmit=e=>{
     e.preventDefault();
     const id=Number(document.querySelector('#staff-id').value);
