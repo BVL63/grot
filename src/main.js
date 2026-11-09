@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.85';
+const APP_VERSION='0.3.86';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -424,15 +424,20 @@ function printStaffDepartmentCode(d){
  const hierarchy=d.structureId?structureAncestors(d.structureId):[];
  return hierarchy.filter(n=>n.type==='department').map(n=>String(n.code||'').trim()).filter(Boolean).join('.')||'';
 }
-function printMonthlyVacationChart(){
+function printMonthlyVacationChart(year=displayYear){
  const chart=activeVacationChart(),esc=escapeHtml;
- const members=drivers.filter(d=>(chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027)).sort((a,b)=>{
+ const historic=year===2026?loadHistory().filter(p=>Number(p.year)===2026):[];
+ const archiveMembers=year===2026?[...new Set(historic.map(p=>p.driver).filter(Boolean))].map((name,i)=>({id:'history-'+i,name,position:'',department:'',historicalPeriods:historic.filter(p=>p.driver===name)})):[];
+ const members=(year===2026?archiveMembers:drivers.filter(d=>(chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027))).sort((a,b)=>{
+  if(year===2026)return shortStaffName(a).localeCompare(shortStaffName(b),'ru');
   const ac=printStaffDepartmentCode(a),bc=printStaffDepartmentCode(b);
   return (!ac!==!bc?(ac? -1:1):ac.localeCompare(bc,'ru',{numeric:true}))||shortStaffName(a).localeCompare(shortStaffName(b),'ru');
  });
  const header=months.map(m=>'<th>'+esc(m.slice(0,3).toLowerCase())+'</th>').join('');
+ const holidays2026=new Set(['2026-01-01','2026-01-02','2026-01-03','2026-01-04','2026-01-05','2026-01-06','2026-01-07','2026-01-08','2026-02-23','2026-03-08','2026-05-01','2026-05-09','2026-06-12','2026-11-04']);
+ const printDays=(start,end)=>{if(year!==2026)return leaveDays(start,end);let n=0;for(let date=start,i=0;date<=end&&i<366;date=shift(date,1),i++)if(!holidays2026.has(date))n++;return n};
  const body=members.map((d,i)=>{
-  const periods=periodsFor(Number(d.id)).filter(p=>p.start.slice(0,4)==='2027'&&p.end.slice(0,4)==='2027');
+  const periods=(year===2026?d.historicalPeriods:periodsFor(Number(d.id))).filter(p=>p.start.slice(0,4)===String(year)&&p.end.slice(0,4)===String(year));
   // Укладываем непересекающиеся по месяцам периоды на один уровень.
   // Новая строка нужна только при занятом месяце (в том числе переходящим отпуском).
   const layers=[];
@@ -444,20 +449,20 @@ function printMonthlyVacationChart(){
   }
   if(!layers.length)layers.push([]);
   return layers.map((items,layer)=>{
-    const prefix=layer===0?'<td class="num" rowspan="'+layers.length+'">'+(i+1)+'</td><td class="person" rowspan="'+layers.length+'"><b>'+esc(shortStaffName(d))+'</b><small>'+esc(d.position||'')+'</small><small>'+esc(printStaffDepartment(d))+'</small></td>':'';
+    const prefix=layer===0?'<td class="num" rowspan="'+layers.length+'">'+(i+1)+'</td><td class="person" rowspan="'+layers.length+'"><b>'+esc(shortStaffName(d))+'</b><small>'+esc(d.position||'')+'</small><small>'+esc(year===2026?'Архив 2026':printStaffDepartment(d))+'</small></td>':'';
     const cells=[];
     for(let m=0;m<12;){
       const p=items.find(p=>Number(p.start.slice(5,7))-1===m);
       if(p){
         const span=Number(p.end.slice(5,7))-m;
-        cells.push(span===1?'<td class="leave-print-single"><div class="leave-print-vertical"><div>'+esc(displayDate(p.start))+'</div><div>'+esc(displayDate(p.end))+'</div><strong>'+leaveDays(p.start,p.end)+' дн.</strong></div></td>':'<td class="leave-print-span" colspan="'+span+'"><div class="leave-print-dates">'+esc(displayDate(p.start))+'  –  '+esc(displayDate(p.end))+'</div><div class="leave-print-days">'+leaveDays(p.start,p.end)+' дн.</div></td>');
+        cells.push(span===1?'<td class="leave-print-single"><div class="leave-print-vertical"><div>'+esc(displayDate(p.start))+'</div><div>'+esc(displayDate(p.end))+'</div><strong>'+printDays(p.start,p.end)+' дн.</strong></div></td>':'<td class="leave-print-span" colspan="'+span+'"><div class="leave-print-dates">'+esc(displayDate(p.start))+'  –  '+esc(displayDate(p.end))+'</div><div class="leave-print-days">'+printDays(p.start,p.end)+' дн.</div></td>');
         m+=span;
       }else{cells.push('<td></td>');m++}
     }
-    return '<tr class="leave-print-layer '+(layer===0?'leave-print-first ':'')+(layer===layers.length-1?'leave-print-last':'')+'">'+prefix+cells.join('')+(layer===0?'<td class="leave-print-total" rowspan="'+layers.length+'">'+periods.reduce((sum,item)=>sum+leaveDays(item.start,item.end),0)+'</td>':'')+'</tr>';
+    return '<tr class="leave-print-layer '+(layer===0?'leave-print-first ':'')+(layer===layers.length-1?'leave-print-last':'')+'">'+prefix+cells.join('')+(layer===0?'<td class="leave-print-total" rowspan="'+layers.length+'">'+periods.reduce((sum,item)=>sum+printDays(item.start,item.end),0)+'</td>':'')+'</tr>';
   }).join('');
  }).join('');
- const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков 2027</title><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script><script src="/grot/print-pagination.js"></script><style>@page{size:A4 landscape;margin:10mm}body{font:10px "Times New Roman",serif;color:#111}h1{text-align:center;font-size:19px;letter-spacing:3px;margin:10px 0 14px}.subtitle{text-align:center;font-size:12px;margin-bottom:12px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #333;padding:3px 2px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:center;vertical-align:middle}th:first-child,.num{text-align:center}td{height:24px}.leave-print-layer td{height:24px}.leave-print-layer:not(.leave-print-last) td:not([rowspan]){border-bottom:0}.leave-print-layer:not(.leave-print-first) td{border-top:0}.person,.num,.leave-print-total{vertical-align:middle}.num,.leave-print-total{text-align:center}.leave-print-total{font-weight:bold;font-size:11px}small{display:block;font-size:10px;margin-top:3px}hr{border:0;border-top:1px dotted #bbb}.toolbar{margin:0 0 12px;display:flex;gap:8px;justify-content:flex-end}.toolbar button{padding:8px 14px}.person b{font-size:11px}.document-title{background:white;font-size:19px;letter-spacing:3px;padding:10px 0 7px;border:0}.document-subtitle{background:white;font-size:12px;font-weight:normal;padding:0 0 10px;border:0}.leave-print-span{vertical-align:middle}.leave-print-dates{display:block;font-size:11px;font-weight:bold;white-space:pre;text-align:center}.leave-print-dates span:first-child{text-align:left}.leave-print-dates span:last-child{text-align:right}.leave-print-dash{flex:1;text-align:center;color:#555}.leave-print-days{text-align:center}.leave-print-days{text-align:center;margin-top:7px;font-size:11px;font-weight:bold}.leave-print-single{text-align:center}.leave-print-vertical{display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;font-size:11px;font-weight:bold}.leave-print-vertical strong{font-size:11px;margin-top:3px}.sign{margin-top:18px}@media print{.toolbar{display:none}thead{display:table-header-group}tr{break-inside:avoid}thead{display:table-header-group}thead tr{break-inside:avoid}}.grot-pdf-sheet{font:10px "Times New Roman",serif}</style></head><body><div class="toolbar"><button type="button" onclick="window.print()">Печать</button><button type="button" id="save-pdf" onclick="saveVacationPdf()">Сохранить PDF</button><button type="button" onclick="window.close()">Закрыть</button></div><div id="pdf-content"><table><colgroup><col style="width:3%"><col style="width:25%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:6%"></colgroup><thead><tr><th colspan="15" class="document-title">Г Р А Ф И К &nbsp; О Т П У С К О В &nbsp; Н А &nbsp; 2 0 2 7 &nbsp; Г О Д</th></tr><tr><th colspan="15" class="document-subtitle">'+esc(readOrganization().shortName||readOrganization().fullName)+' · '+esc(chart.name)+'</th></tr><tr><th>№</th><th>Ф. И. О. / должность / отдел</th>'+header+'<th>Всего<br>дней</th></tr></thead><tbody>'+body+'</tbody></table><p class="sign">Составил: __________________________ &nbsp;&nbsp; Дата: __________________</p></div></body></html>';
+ const html='<html lang="ru"><head><meta charset="UTF-8"><title>График отпусков '+year+'</title><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script><script src="/grot/print-pagination.js"></script><style>@page{size:A4 landscape;margin:10mm}body{font:10px "Times New Roman",serif;color:#111}h1{text-align:center;font-size:19px;letter-spacing:3px;margin:10px 0 14px}.subtitle{text-align:center;font-size:12px;margin-bottom:12px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #333;padding:3px 2px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:center;vertical-align:middle}th:first-child,.num{text-align:center}td{height:24px}.leave-print-layer td{height:24px}.leave-print-layer:not(.leave-print-last) td:not([rowspan]){border-bottom:0}.leave-print-layer:not(.leave-print-first) td{border-top:0}.person,.num,.leave-print-total{vertical-align:middle}.num,.leave-print-total{text-align:center}.leave-print-total{font-weight:bold;font-size:11px}small{display:block;font-size:10px;margin-top:3px}hr{border:0;border-top:1px dotted #bbb}.toolbar{margin:0 0 12px;display:flex;gap:8px;justify-content:flex-end}.toolbar button{padding:8px 14px}.person b{font-size:11px}.document-title{background:white;font-size:19px;letter-spacing:3px;padding:10px 0 7px;border:0}.document-subtitle{background:white;font-size:12px;font-weight:normal;padding:0 0 10px;border:0}.leave-print-span{vertical-align:middle}.leave-print-dates{display:block;font-size:11px;font-weight:bold;white-space:pre;text-align:center}.leave-print-dates span:first-child{text-align:left}.leave-print-dates span:last-child{text-align:right}.leave-print-dash{flex:1;text-align:center;color:#555}.leave-print-days{text-align:center}.leave-print-days{text-align:center;margin-top:7px;font-size:11px;font-weight:bold}.leave-print-single{text-align:center}.leave-print-vertical{display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;font-size:11px;font-weight:bold}.leave-print-vertical strong{font-size:11px;margin-top:3px}.sign{margin-top:18px}@media print{.toolbar{display:none}thead{display:table-header-group}tr{break-inside:avoid}thead{display:table-header-group}thead tr{break-inside:avoid}}.grot-pdf-sheet{font:10px "Times New Roman",serif}</style></head><body><div class="toolbar"><button type="button" onclick="window.print()">Печать</button><button type="button" id="save-pdf" onclick="saveVacationPdf()">Сохранить PDF</button><button type="button" onclick="window.close()">Закрыть</button></div><div id="pdf-content"><table><colgroup><col style="width:3%"><col style="width:25%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:6%"></colgroup><thead><tr><th colspan="15" class="document-title">Г Р А Ф И К &nbsp; О Т П У С К О В &nbsp; Н А &nbsp; '+String(year).split('').join(' ')+' &nbsp; Г О Д</th></tr><tr><th colspan="15" class="document-subtitle">'+esc(readOrganization().shortName||readOrganization().fullName)+' · '+esc(year===2026?'Архивный график':chart.name)+'</th></tr><tr><th>№</th><th>Ф. И. О. / должность / отдел</th>'+header+'<th>Всего<br>дней</th></tr></thead><tbody>'+body+'</tbody></table><p class="sign">Составил: __________________________ &nbsp;&nbsp; Дата: __________________</p></div></body></html>';
  const w=window.open('','_blank');if(!w){alert('Разрешите всплывающие окна для печати.');return}w.document.write(html);w.document.close();w.focus();
 }
 function personnelPrint(){
@@ -541,7 +546,7 @@ function renderHistory2026(){
  document.querySelector('#archive-collapse').onclick=()=>{expandedMonths.clear();render()};
  document.querySelector('#archive-current').onclick=()=>{displayYear=2027;render()};
  document.querySelector('#archive-refresh').onclick=()=>location.reload();
- document.querySelector('#archive-print').onclick=()=>window.print();
+ document.querySelector('#archive-print').onclick=()=>printMonthlyVacationChart(2026);
  document.querySelectorAll('[data-archive-go]').forEach(b=>b.onclick=()=>{const target=b.dataset.archiveGo;displayYear=2027;render();document.getElementById(target)?.click()});
  document.querySelectorAll('[data-history-month]').forEach(b=>b.onclick=()=>{const m=Number(b.dataset.historyMonth);expandedMonths.has(m)?expandedMonths.delete(m):expandedMonths.add(m);render()});
 }
