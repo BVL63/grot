@@ -435,7 +435,8 @@ function printMonthlyVacationChart(year=displayYear){
  });
  const header=months.map(m=>'<th>'+esc(m.slice(0,3).toLowerCase())+'</th>').join('');
  const holidays2026=new Set(['2026-01-01','2026-01-02','2026-01-03','2026-01-04','2026-01-05','2026-01-06','2026-01-07','2026-01-08','2026-02-23','2026-03-08','2026-05-01','2026-05-09','2026-06-12','2026-11-04']);
- const printDays=(start,end)=>{if(year>2026)return leaveDays(start,end);let n=0;for(let date=start,i=0;date<=end&&i<366;date=shift(date,1),i++)if(!holidays2026.has(date))n++;return n};
+ const holidays2025=new Set(['2025-01-01','2025-01-02','2025-01-03','2025-01-04','2025-01-05','2025-01-06','2025-01-07','2025-01-08','2025-02-23','2025-03-08','2025-05-01','2025-05-09','2025-06-12','2025-11-04']);
+ const printDays=(start,end)=>{if(year>2026)return leaveDays(start,end);let n=0;for(let date=start,i=0;date<=end&&i<366;date=shift(date,1),i++)if(!(year===2025?holidays2025:holidays2026).has(date))n++;return n};
  const body=members.map((d,i)=>{
   const periods=(year<=2026?d.historicalPeriods:periodsFor(Number(d.id))).filter(p=>p.start.slice(0,4)===String(year)&&p.end.slice(0,4)===String(year));
   // Укладываем непересекающиеся по месяцам периоды на один уровень.
@@ -771,7 +772,7 @@ function render() {
       else if(data?.format==='grot-history-import'&&Array.isArray(data.periods))rows=data.periods;
       else throw Error('Ожидается подготовленный пакет сверки (grot-merge-review) или файл архива (grot-history-import). Это не резервная копия.');
       if(!rows.length)throw Error('Файл не содержит отпусков.');
-      const validDate=(v,y)=>typeof v==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(v)&&Number(v.slice(0,4))===y&&!Number.isNaN(Date.parse(v+'T12:00:00Z'))&&new Date(v+'T12:00:00Z').toISOString().slice(0,10)===v;
+      const validDate=(v,y)=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number(v.slice(0,4))===y&&!Number.isNaN(Date.parse(v+'T12:00:00Z'))&&new Date(v+'T12:00:00Z').toISOString().slice(0,10)===v;
       const parsed=rows.map((r,i)=>{
         const year=Number(r.year),driver=String(r.full_name_source||r.driver||r.name||'').trim(),start=r.start,end=r.end;
         if(![2025,2026].includes(year)||!driver||!validDate(start,year)||!validDate(end,year)||start>end)throw Error('Ошибка в строке '+(i+1)+': год, сотрудник или даты.');
@@ -786,7 +787,7 @@ function render() {
       const additions=imported.filter(p=>!existingKeys.has([p.year,p.driver.toLocaleLowerCase('ru'),p.start,p.end].join('|')));
       const c2025=imported.filter(p=>p.year===2025).length,c2026=imported.filter(p=>p.year===2026).length;
       pendingArchiveImport={additions};
-      status.textContent='Файл: '+file.name+'\\nАрхивных периодов: '+imported.length+' (2025: '+c2025+', 2026: '+c2026+').\\nНовых периодов: '+additions.length+'.\\nПовторов: '+(parsed.length-additions.length)+'.\\nИмеющиеся архивные записи: '+stored.length+'.\\n\\nБудет сохранена резервная копия до записи. Справочник сотрудников, нормы отпусков, организация и все отпуска 2027 не меняются.\\nИстория 2026 в программе может содержать демонстрационные данные: после первой загрузки архив вашего ПК будет браться из импортированных записей.';
+      status.textContent='Файл: '+file.name+'\nАрхивных периодов: '+imported.length+' (2025: '+c2025+', 2026: '+c2026+').\nНовых периодов: '+additions.length+'.\nПовторов: '+(parsed.length-additions.length)+'.\nИмеющиеся архивные записи: '+stored.length+'.\n\nБудет сохранена резервная копия до записи. Справочник сотрудников, нормы отпусков, организация и все отпуска 2027 не меняются.\nИстория 2026 в программе может содержать демонстрационные данные: после первой загрузки архив вашего ПК будет браться из импортированных записей.';
       confirmButton.disabled=additions.length===0;
     }catch(err){status.textContent='Загрузка отменена: '+err.message}
   };
