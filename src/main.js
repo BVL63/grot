@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.84';
+const APP_VERSION='0.3.85';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -633,6 +633,8 @@ function render() {
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◎</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled>✎</button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>⌫</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span><button type="button" id="staff-close" title="Закрыть" aria-label="Закрыть">×</button></div><div class="staff-search-row"><label for="staff-search">Поиск</label><input id="staff-search" type="search" placeholder="Фамилия, имя, должность, подразделение или группа" autocomplete="off"><button type="button" id="staff-search-clear" title="Очистить поиск" aria-label="Очистить поиск">×</button><span id="staff-search-count"></span></div><div id="staff-list"></div>
     </dialog>
     <dialog id="staff-import-dialog"><h2>Перенос сотрудников из 2026 года</h2><p>Из архива берутся только фамилии и известные группы. Проверьте полные ФИО, группы и нормы отпуска после переноса. Совпадающие фамилии не добавляются повторно.</p><div class="staff-table-scroll" id="staff-import-list"></div><p id="staff-import-status" role="status"></p><div class="actions"><button type="button" id="staff-import-confirm">Добавить выбранных</button><button type="button" id="staff-import-cancel">Отмена</button></div></dialog>
+    <dialog id="backup-preview-dialog" class="structure-dialog"><h2>Резервное копирование</h2><div id="backup-preview-details" style="white-space:pre-line;line-height:1.8"></div><p class="muted">В копию также входят справочники, настройки и доступная история.</p><div class="actions"><button type="button" id="backup-preview-cancel">Отмена</button><button type="button" id="backup-preview-save">Сохранить копию</button></div></dialog>
+    <dialog id="backup-result-dialog" class="structure-dialog"><h2 id="backup-result-title">Резервная копия</h2><div id="backup-result-details" style="white-space:pre-line;line-height:1.8"></div><div class="actions"><button type="button" id="backup-result-close">Закрыть</button></div></dialog>
     <dialog id="backup-settings-dialog" class="structure-dialog"><h2>Настройки · Резервные копии</h2><p id="backup-directory-status"></p><p class="muted">Выберите папку для сохранения и восстановления копий. Браузер может повторно запросить доступ к ней.</p><div class="actions"><button type="button" id="backup-directory-choose">Выбрать папку</button><button type="button" id="backup-settings-close">Закрыть</button></div></dialog><dialog id="staff-card"><h2 id="staff-card-title">Карточка сотрудника</h2><form id="staff-form">
         <input type="hidden" id="staff-id">
         <label>Фамилия <input id="staff-last" required maxlength="100"></label><label>Имя <input id="staff-first" required maxlength="100"></label><label>Отчество <input id="staff-middle" maxlength="100"></label>
@@ -681,17 +683,47 @@ function render() {
   document.querySelector('#backup-settings-close').onclick=()=>document.querySelector('#backup-settings-dialog').close();
   document.querySelector('#backup-directory-choose').onclick=backupDirectoryChoose;
   backupDirectoryLoad().then(backupDirectoryStatus);
-  document.querySelector('#backup-export').onclick=async()=>{
+  const backupPreviewDialog=document.querySelector('#backup-preview-dialog');
+  const backupResultDialog=document.querySelector('#backup-result-dialog');
+  document.querySelector('#backup-preview-cancel').onclick=()=>backupPreviewDialog.close();
+  document.querySelector('#backup-result-close').onclick=()=>backupResultDialog.close();
+  function showBackupResult(title,details){
+    document.querySelector('#backup-result-title').textContent=title;
+    document.querySelector('#backup-result-details').textContent=details;
+    backupResultDialog.showModal();
+  }
+  document.querySelector('#backup-export').onclick=()=>{
+    const org=readOrganization();
+    const unitCount=structureNodes.filter(node=>node.type==='department').length;
+    document.querySelector('#backup-preview-details').textContent=
+      'Организация: '+(org.shortName||org.fullName||'Не указана')+'\n'+
+      'Год: 2027\n'+
+      'Сотрудников: '+drivers.length+'\n'+
+      'Графиков: '+vacationCharts.length+'\n'+
+      'Периодов отпусков: '+vacations.length+'\n'+
+      'Отделов: '+unitCount;
+    backupPreviewDialog.showModal();
+  };
+  document.querySelector('#backup-preview-save').onclick=async()=>{
+    backupPreviewDialog.close();
     const payload={format:'grot-backup',version:2,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides,organization:readOrganization(),structure:structureNodes,charts:vacationCharts,activeChartId:activeVacationChartId,positions:JSON.parse(localStorage.getItem(positionsKey)||'[]'),priorities:readPriorities(),seasonalityHistory:JSON.parse(localStorage.getItem('grot-seasonality-history-v1')||'[]')};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const now=new Date();const stamp=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+[now.getHours(),now.getMinutes(),now.getSeconds()].map(x=>String(x).padStart(2,'0')).join('-');
     const filename='grot-'+stamp+'.json';
+    let notice='';
     if(backupDirectory&&await backupDirectoryPermission('readwrite')){
-      try{const fileHandle=await backupDirectory.getFileHandle(filename,{create:true});const writer=await fileHandle.createWritable();await writer.write(blob);await writer.close();notice='Резервная копия сохранена: '+filename+' ('+backupDirectory.name+').';}
-      catch(err){alert('Не удалось сохранить в выбранную папку: '+err.message);return}
+      try{
+        const fileHandle=await backupDirectory.getFileHandle(filename,{create:true});
+        const writer=await fileHandle.createWritable();await writer.write(blob);await writer.close();
+        notice='Резервная копия сохранена: '+filename+' ('+backupDirectory.name+').';
+        showBackupResult('Резервная копия сохранена','Имя файла: '+filename+'\nПапка: '+backupDirectory.name+'\nФайл записан успешно.');
+      }catch(err){showBackupResult('Ошибка сохранения','Имя файла: '+filename+'\nНе удалось записать файл: '+err.message);return}
     }else{
-      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
-      notice='Резервная копия подготовлена. Сохраните файл в надёжном месте.';
+      try{
+        const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+        notice='Резервная копия передана браузеру для загрузки: '+filename+'.';
+        showBackupResult('Загрузка резервной копии','Имя файла: '+filename+'\nМесто: загрузки браузера (точный путь недоступен).\nПроверьте, что файл появился в загрузках.');
+      }catch(err){showBackupResult('Ошибка загрузки','Не удалось начать загрузку: '+err.message);return}
     }
     const msg=document.querySelector('#service-message-current');if(msg)msg.textContent=notice;
     const button=document.querySelector('#service-messages-open');if(button&&!button.querySelector('.service-alert-dot'))button.insertAdjacentHTML('beforeend','<span class="service-alert-dot" aria-hidden="true"></span>');
