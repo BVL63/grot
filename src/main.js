@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.80';
+const APP_VERSION='0.3.81';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -600,15 +600,16 @@ function render() {
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden>
       </nav>
-      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="priority-calculate">Рассчитать приоритет</button><span>${priorityCurrent?(priorityData.incomplete?'Предварительный расчёт: не у всех есть данные за 2026 год':'Приоритет рассчитан по 2026 году'):priorityData?'Состав изменён — пересчитайте приоритет':'Приоритет ещё не рассчитан'}</span></div>
-      <p class="notice mobile-status" role="status">${notice}</p><div class="scroll"><table class="annual-table"><thead><tr>
+      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
+      <div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name"><span class="header-filter">${escapeHtml(activeVacationChart().name)} <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
       <th>Приоритет</th><th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}<th class="annual-total-heading">Запланировано</th><th>Доступно</th><th>Остаток</th></tr></thead>
       <tbody>${rows}</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td></td><td class="fixed group"></td>${totals}<td class="annual-total">${visibleDrivers.filter(d=>annualCount(d.id)>0).length||''}</td><td></td><td></td></tr></tfoot></table></div>
       <p class="table-help">Нажмите на название месяца, чтобы развернуть его дни; повторное нажатие свернёт только этот месяц. Можно открыть несколько месяцев одновременно. Нажмите на фамилию для просмотра отпусков.</p>
-      <p class="notice" role="status">${notice}</p>
+      
       <p class="muted storage-warning">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
     <footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>
+    <dialog id="service-messages-dialog" class="chart-info-dialog service-messages-dialog"><h2>Служебные сообщения</h2><p class="service-message-current" id="service-message-current">${notice?escapeHtml(notice):'Новых сообщений нет.'}</p><p><strong>Приоритет:</strong> ${escapeHtml(priorityCurrent?(priorityData.incomplete?'Предварительный расчёт: не у всех есть данные за 2026 год':'Рассчитан по данным 2026 года'):priorityData?'Состав изменён — пересчитайте приоритет':'Ещё не рассчитан')}</p><p><strong>Хранение:</strong> данные хранятся только в этом браузере, не в облаке. Создавайте резервные копии через «Сервис».</p><div class="actions"><button type="button" id="service-messages-close">Закрыть</button></div></dialog>
     <dialog id="chart-info-dialog" class="chart-info-dialog"><h2>Подсказки по графику</h2><p><strong>Месяцы:</strong> нажмите на название месяца, чтобы открыть дни. Повторное нажатие сворачивает этот месяц; можно открыть несколько месяцев.</p><p><strong>Сотрудник:</strong> нажмите на фамилию для просмотра и изменения отпусков.</p><p><strong>Группа:</strong> нажмите на номер группы для его изменения. Сотрудники одной группы в одном подразделении проверяются на пересечения отпусков.</p><p><strong>Приоритет:</strong> рассчитывается на основе доступных данных за 2026 год.</p><p><strong>Хранение:</strong> данные сохраняются в этом браузере, а не в облаке. Делайте резервные копии через «Сервис».</p><div class="actions"><button type="button" id="chart-info-close">Закрыть</button></div></dialog>
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
     <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">Выбрать сотрудников</button><button type="button" id="structure-new-employee">＋ Новый сотрудник</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<select id="structure-card-leader"></select></label></div><div class="actions"><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog>
@@ -677,7 +678,8 @@ function render() {
       const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
       notice='Резервная копия подготовлена. Сохраните файл в надёжном месте.';
     }
-    document.querySelector('.notice').textContent=notice;
+    const msg=document.querySelector('#service-message-current');if(msg)msg.textContent=notice;
+    const button=document.querySelector('#service-messages-open');if(button&&!button.querySelector('.service-alert-dot'))button.insertAdjacentHTML('beforeend','<span class="service-alert-dot" aria-hidden="true"></span>');
   };
   document.querySelector('#backup-restore').onclick=async()=>{
     if(backupDirectory&&window.showOpenFilePicker&&await backupDirectoryPermission('read')){
@@ -946,6 +948,8 @@ function render() {
     notice='Производственный календарь загружен; расчёт отпусков обновлён.';
     document.querySelector('#calendar-dialog').close();render();
   };
+  document.querySelector('#service-messages-open').onclick=()=>document.querySelector('#service-messages-dialog').showModal();
+  document.querySelector('#service-messages-close').onclick=()=>document.querySelector('#service-messages-dialog').close();
   document.querySelector('#chart-info-open').onclick=()=>document.querySelector('#chart-info-dialog').showModal();
    document.querySelector('#chart-info-close').onclick=()=>document.querySelector('#chart-info-dialog').close();
    document.querySelector('#help-open').onclick=()=>document.querySelector('#help-dialog').showModal();
