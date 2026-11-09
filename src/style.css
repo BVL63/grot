@@ -664,3 +664,9 @@ main{padding-top:5px!important}
 .service-alert-dot{position:absolute;top:1px;right:1px;width:7px;height:7px;border-radius:50%;background:#d97706;border:1px solid #fff}
 .service-messages-dialog .service-message-current{border-left:3px solid #1b6d9c;padding:8px 10px;background:#eef6fc;white-space:pre-wrap}
 @media(max-width:600px){#app>main>.chart-actionbar .service-messages-button{width:28px;min-width:28px;height:28px;padding:0;font-size:17px}}
+
+/* v0.3.82: vacation conflicts in the same group and department */
+.annual-table tbody th.group-conflict-name{background:#fee2e2!important;color:#991b1b!important}
+.annual-table tbody th.group-conflict-name .driver{color:#991b1b!important;font-weight:800!important;width:calc(100% - 26px);display:inline-block!important;vertical-align:middle}
+.annual-table .group-conflict-indicator{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:#b91c1c;color:#fff;font-size:15px;font-weight:800;cursor:pointer}
+.annual-table .group-conflict-indicator:focus-visible{outline:2px solid #1d4ed8;outline-offset:2px}
