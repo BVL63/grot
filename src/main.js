@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.93';
+const APP_VERSION='0.3.94';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -691,7 +691,8 @@ function render() {
               <tr><td><label for="staff-leave-other">Другие дополнительные</label></td><td><input id="staff-leave-other" type="number" min="0" max="120" value="0"></td></tr>
               <tr class="staff-leave-total"><th>Итого ежегодный отпуск</th><td><input id="staff-allowance" type="number" readonly value="36"></td></tr>
             </tbody></table>
-            <details class="staff-leave-legacy-details"><summary>Нераспределённая норма предыдущих записей: <strong id="staff-legacy-value">0</strong> дн.</summary><label>Распределите дни по видам отпуска либо оставьте прежнюю норму: <input id="staff-leave-legacy" type="number" min="0" max="120" value="0"></label></details>
+            <div class="staff-legacy-notice" id="staff-legacy-notice" hidden><span id="staff-legacy-message"></span><button type="button" id="staff-legacy-fix" hidden>Устранить повтор</button></div>
+            <input id="staff-leave-legacy" type="hidden" value="0"><strong id="staff-legacy-value" hidden>0</strong>
             <p id="staff-leave-year-hint" class="muted"></p>
           </section>
           <section id="staff-days-section" class="staff-card-operations">
@@ -948,7 +949,7 @@ function render() {
     for(const [key,id] of Object.entries(yearlyFields))document.querySelector('#'+id).value=data?.[key]??0;
     document.querySelector('#staff-leave-year-hint').textContent=data?'Норма за '+selectedLeaveYear+' год. Изменения сохраняются с карточкой.':'За '+selectedLeaveYear+' год норма ещё не указана. Введите состав отпуска для этого года.';
     document.querySelector('#staff-allowance').value=data?.allowance??0;
-    document.querySelector('#staff-legacy-value').textContent=String(data?.legacy??0);
+    updateLegacyNotice();
     editingDayOperationIndex=null;
     document.querySelector('#staff-operation-editor').open=false;
     document.querySelector('#staff-days-add').textContent='Записать';
@@ -998,14 +999,45 @@ function render() {
     if(!e.target.open&&editingDayOperationIndex!==null){editingDayOperationIndex=null;document.querySelector('#staff-days-add').textContent='Записать'}
   });
   const leaveFieldIds=Object.values(yearlyFields);
-  function recalculateAnnualLeave(){
-    const total=leaveFieldIds.reduce((sum,id)=>sum+(Number(document.querySelector('#'+id).value)||0),0);
+  const explicitLeaveIds=leaveFieldIds.filter(id=>id!=='staff-leave-legacy');
+  const leaveNumber=id=>Math.max(0,Number(document.querySelector('#'+id).value)||0);
+  function updateLegacyNotice(){
+    const legacy=leaveNumber('staff-leave-legacy');
+    const explicit=explicitLeaveIds.reduce((sum,id)=>sum+leaveNumber(id),0);
+    const notice=document.querySelector('#staff-legacy-notice');
+    const fix=document.querySelector('#staff-legacy-fix');
+    notice.hidden=legacy===0;
+    fix.hidden=!(legacy>0&&explicit>0);
+    document.querySelector('#staff-legacy-message').textContent=legacy>0
+      ?'Из прежней нормы: '+legacy+' дн. (УЖЕ входят в итог '+(legacy+explicit)+' дн.). '+(explicit>0?'Проверьте, не учтены ли они дважды.':'При заполнении видов отпуска этот остаток автоматически уменьшается.')
+      :'';
+    document.querySelector('#staff-legacy-value').textContent=String(legacy);
+  }
+  function recalculateAnnualLeave(e){
+    const explicit=explicitLeaveIds.reduce((sum,id)=>sum+leaveNumber(id),0);
+    const legacyInput=document.querySelector('#staff-leave-legacy');
+    if(e?.target&&explicitLeaveIds.includes(e.target.id)){
+      const previousLegacy=leaveNumber('staff-leave-legacy');
+      const priorTotal=Number(document.querySelector('#staff-allowance').value)||0;
+      const priorExplicit=priorTotal-previousLegacy;
+      // Переносим ранее записанные дни в состав отпуска, но не добавляем их второй раз.
+      if(previousLegacy>0&&explicit>priorExplicit)legacyInput.value=Math.max(0,previousLegacy-(explicit-priorExplicit));
+    }
+    const total=explicit+leaveNumber('staff-leave-legacy');
     document.querySelector('#staff-allowance').value=total;
-    document.querySelector('#staff-legacy-value').textContent=String(Number(document.querySelector('#staff-leave-legacy').value)||0);
     document.querySelector('#staff-leave-year-hint').textContent='Норма за '+selectedLeaveYear+' год · '+total+' дн.';
+    updateLegacyNotice();
     redrawDayOperations();
   }
-  leaveFieldIds.forEach(id=>document.querySelector('#'+id).addEventListener('input',recalculateAnnualLeave));
+  explicitLeaveIds.forEach(id=>document.querySelector('#'+id).addEventListener('input',recalculateAnnualLeave));
+  document.querySelector('#staff-legacy-fix').onclick=()=>{
+    const legacy=leaveNumber('staff-leave-legacy');
+    const explicit=explicitLeaveIds.reduce((sum,id)=>sum+leaveNumber(id),0);
+    if(!legacy||!explicit)return;
+    if(!confirm('Сейчас итог включает '+explicit+' дн. по видам и ещё '+legacy+' дн. из прежней нормы.\\n\\nУбрать прежнюю нераспределённую часть ('+legacy+' дн.)? Итог станет '+explicit+' дн.\\n\\nДействие затронет только выбранный год после сохранения карточки.'))return;
+    document.querySelector('#staff-leave-legacy').value=0;
+    recalculateAnnualLeave();
+  };
   document.querySelector('#staff-days-add').onclick=()=>{
     const type=document.querySelector('#staff-days-type').value,year=document.querySelector('#staff-days-year').value.trim(),count=Number(document.querySelector('#staff-days-count').value),reason=document.querySelector('#staff-days-reason').value.trim();
     if(!year||!Number.isInteger(count)||count<1||count>365||!reason){alert('Укажите рабочий год, количество дней и основание.');return}
