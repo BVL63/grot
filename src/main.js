@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.91';
+const APP_VERSION='0.3.92';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -59,7 +59,7 @@ const staffKey='vacationStaff2027';
 let drivers;
 try { const stored=JSON.parse(localStorage.getItem(staffKey)||'null'); drivers=Array.isArray(stored)&&stored.length?stored:defaultDrivers.map(d=>({...d,allowance:36,department:''})); } catch { drivers=defaultDrivers.map(d=>({...d,allowance:36,department:''})); }
 drivers=drivers.map(d=>({...d,allowance:Number.isFinite(Number(d.allowance))?Number(d.allowance):36}));
-function availableLeaveDays(d){return Math.max(0,(Number(d.allowance)||0)+(Array.isArray(d.dayOperations)?d.dayOperations.reduce((sum,x)=>sum+(Number(x.days)||0),0):0));}
+function availableLeaveDays(d){return Math.max(0,(Number(d.leaveByYear?.['2027']?.allowance??d.allowance)||0)+(Array.isArray(d.dayOperations)?d.dayOperations.filter(x=>!x.scopeYear||Number(x.scopeYear)===2027).reduce((sum,x)=>sum+(Number(x.days)||0),0):0));}
 function staffParts(d){if(d.lastName)return {last:d.lastName,first:d.firstName||'',middle:d.middleName||''};const v=String(d.name||'').trim();const m=v.match(/^(.+?)\s+([А-ЯЁA-Z])\.\s*([А-ЯЁA-Z])\.$/i);return m?{last:m[1],first:m[2]+'.',middle:m[3]+'.'}:{last:v,first:'',middle:''};}
 function shortStaffName(d){const p=staffParts(d);return p.last+((p.first&&p.middle)?' '+p.first[0].toUpperCase()+'.'+p.middle[0].toUpperCase()+'.':p.first?' '+p.first[0].toUpperCase()+'.':'');}
 function compareGroupAndName(a,b){const ga=String(a.group??''),gb=String(b.group??'');return ga.localeCompare(gb,'ru',{numeric:true})||shortStaffName(a).localeCompare(shortStaffName(b),'ru');}
@@ -669,7 +669,7 @@ function render() {
         <label>Фамилия <input id="staff-last" required maxlength="100"></label><label>Имя <input id="staff-first" required maxlength="100"></label><label>Отчество <input id="staff-middle" maxlength="100"></label>
         <label>Подразделение <input id="staff-department" maxlength="100"></label>
         <label>Должность <input id="staff-position" list="staff-position-options" maxlength="120" autocomplete="off"><datalist id="staff-position-options"></datalist></label><label>Код структурного звена <input id="staff-structure-code" readonly></label><label>Группа отпусков <input id="staff-group" maxlength="30"></label>
-        <label>Дата приёма <input id="staff-hired" type="date"></label><label>Дата увольнения <input id="staff-dismissal" type="date"></label><label><input id="staff-dismissed" type="checkbox"> Уволен (если дата неизвестна)</label><section class="leave-breakdown" style="grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:8px"><strong>Ежегодный отпуск</strong><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px"><label>Основной отпуск, дней <input id="staff-leave-basic" type="number" min="0" max="120" value="28"></label><label>Дополнительный за территорию, дней <input id="staff-leave-territory" type="number" min="0" max="120" value="8"></label><label>Другие дополнительные отпуска, дней <input id="staff-leave-other" type="number" min="0" max="120" value="0"></label><label>Нераспределённая норма, дней <input id="staff-leave-legacy" type="number" min="0" max="120" value="0"></label></div><label>Итого ежегодный отпуск, дней <input id="staff-allowance" type="number" readonly value="36"></label><small>Для ранее введённых норм сохраняется прежнее число дней в поле «Нераспределённая норма». Распределите его по составляющим вручную.</small></section>
+        <label>Дата приёма <input id="staff-hired" type="date"></label><label>Дата увольнения <input id="staff-dismissal" type="date"></label><label><input id="staff-dismissed" type="checkbox"> Уволен (если дата неизвестна)</label><section class="leave-breakdown" style="grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:8px"><strong>Ежегодный отпуск</strong><label style="display:flex;align-items:center;gap:9px;margin-top:8px">Год <select id="staff-leave-year" style="max-width:120px"></select></label><p id="staff-leave-year-hint" class="muted" style="margin:6px 0"></p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px"><label>Основной отпуск, дней <input id="staff-leave-basic" type="number" min="0" max="120" value="28"></label><label>Дополнительный за территорию, дней <input id="staff-leave-territory" type="number" min="0" max="120" value="8"></label><label>За выслугу лет, дней <input id="staff-leave-seniority" type="number" min="0" max="120" value="0"></label><label>Другие дополнительные отпуска, дней <input id="staff-leave-other" type="number" min="0" max="120" value="0"></label><label>Нераспределённая норма, дней <input id="staff-leave-legacy" type="number" min="0" max="120" value="0"></label></div><label>Итого ежегодный отпуск, дней <input id="staff-allowance" type="number" readonly value="36"></label><small>Для ранее введённых норм сохраняется прежнее число дней в поле «Нераспределённая норма». Распределите его по составляющим вручную.</small></section>
         <section id="staff-days-section" style="grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:8px"><strong>Учёт отпускных дней</strong><p id="staff-days-summary" style="margin:6px 0"></p><div id="staff-days-history" style="max-height:145px;overflow:auto"></div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px"><select id="staff-days-type"><option value="balance">Остаток прошлых лет</option><option value="addition">Добавить дни</option><option value="reduction">Уменьшить дни</option><option value="compensation">Компенсация</option></select><input id="staff-days-year" type="text" placeholder="Рабочий год" style="width:135px" maxlength="30"><input id="staff-days-count" type="number" min="1" max="365" placeholder="Дней" style="width:85px"><input id="staff-days-reason" placeholder="Причина / основание" maxlength="250" style="flex:1;min-width:150px"><button type="button" id="staff-days-add">Записать</button></div><small>Изменения сохраняются вместе с карточкой сотрудника. Удаление записи требует подтверждения.</small></section><p id="staff-error" role="alert"></p>
         <div class="actions"><button type="submit">Сохранить</button><button type="button" id="staff-card-close">Закрыть</button></div>
       </form>
@@ -886,18 +886,42 @@ function render() {
     }catch(err){alert('Восстановление отменено: '+err.message);}
   };
   let pendingDayOperations=[];
+  let editingStaff=null, yearlyLeaveDraft={}, originalLeaveYears=new Set(), selectedLeaveYear='2027';
+  const yearlyFields={basic:'staff-leave-basic',territory:'staff-leave-territory',seniority:'staff-leave-seniority',other:'staff-leave-other',legacy:'staff-leave-legacy'};
+  const emptyBreakdown=()=>({basic:0,territory:0,seniority:0,other:0,legacy:0});
+  const normalizeBreakdown=(b,allowance)=>{
+    const output=Object.fromEntries(Object.keys(yearlyFields).map(key=>[key,Math.max(0,Number(b?.[key])||0)]));
+    const sum=Object.values(output).reduce((n,x)=>n+x,0);
+    if(sum===0&&Number(allowance)>0)output.legacy=Number(allowance);
+    return {...output,allowance:Object.values(output).reduce((n,x)=>n+x,0)};
+  };
+  function saveDisplayedLeaveYear(){
+    const existing=yearlyLeaveDraft[selectedLeaveYear],breakdown=Object.fromEntries(Object.entries(yearlyFields).map(([key,id])=>[key,Math.max(0,Number(document.querySelector('#'+id).value)||0)]));
+    const allowance=Object.values(breakdown).reduce((n,x)=>n+x,0);
+    if(existing||allowance>0||originalLeaveYears.has(selectedLeaveYear))yearlyLeaveDraft[selectedLeaveYear]={...breakdown,allowance};
+    else delete yearlyLeaveDraft[selectedLeaveYear];
+  }
+  function showDisplayedLeaveYear(){
+    const data=yearlyLeaveDraft[selectedLeaveYear];
+    for(const [key,id] of Object.entries(yearlyFields))document.querySelector('#'+id).value=data?.[key]??0;
+    document.querySelector('#staff-leave-year-hint').textContent=data?'Норма за '+selectedLeaveYear+' год. Изменения сохраняются с карточкой.':'За '+selectedLeaveYear+' год норма ещё не указана. Введите состав отпуска для этого года.';
+    document.querySelector('#staff-allowance').value=data?.allowance??0;
+    redrawDayOperations();
+  }
+  document.querySelector('#staff-leave-year').onchange=e=>{saveDisplayedLeaveYear();selectedLeaveYear=e.target.value;showDisplayedLeaveYear()};
   function redrawDayOperations(){
     const base=Number(document.querySelector('#staff-allowance').value)||0;
-    const delta=pendingDayOperations.reduce((sum,x)=>sum+x.days,0);
-    document.querySelector('#staff-days-summary').textContent='Ежегодный отпуск: '+base+' дн. · Корректировки: '+(delta>=0?'+':'')+delta+' дн. · Доступно: '+(base+delta)+' дн.';
+    const delta=pendingDayOperations.filter(x=>x.scopeYear?String(x.scopeYear)===selectedLeaveYear:selectedLeaveYear==='2027').reduce((sum,x)=>sum+x.days,0);
+    document.querySelector('#staff-days-summary').textContent='Год '+selectedLeaveYear+' · Ежегодный отпуск: '+base+' дн. · Корректировки: '+(delta>=0?'+':'')+delta+' дн. · Доступно: '+(base+delta)+' дн.';
     const container=document.querySelector('#staff-days-history');
     container.innerHTML=pendingDayOperations.map((x,i)=>'<div style="display:flex;gap:8px;align-items:center;border-bottom:1px solid #ddd;padding:3px 0"><span style="flex:1">'+escapeHtml(x.date)+' · '+escapeHtml(x.year)+' · '+escapeHtml(x.type)+' · '+(x.days>0?'+':'')+x.days+' дн. · '+escapeHtml(x.reason)+'</span><button type="button" data-day-remove="'+i+'">×</button></div>').join('')||'<span class="muted">Записей нет</span>';
     container.querySelectorAll('[data-day-remove]').forEach(b=>b.onclick=()=>{if(confirm('Удалить эту запись?')){pendingDayOperations.splice(Number(b.dataset.dayRemove),1);redrawDayOperations()}});
   }
-  const leaveFieldIds=['staff-leave-basic','staff-leave-territory','staff-leave-other','staff-leave-legacy'];
+  const leaveFieldIds=Object.values(yearlyFields);
   function recalculateAnnualLeave(){
     const total=leaveFieldIds.reduce((sum,id)=>sum+(Number(document.querySelector('#'+id).value)||0),0);
     document.querySelector('#staff-allowance').value=total;
+    document.querySelector('#staff-leave-year-hint').textContent='Норма за '+selectedLeaveYear+' год · '+total+' дн.';
     redrawDayOperations();
   }
   leaveFieldIds.forEach(id=>document.querySelector('#'+id).addEventListener('input',recalculateAnnualLeave));
@@ -906,20 +930,30 @@ function render() {
     if(!year||!Number.isInteger(count)||count<1||count>365||!reason){alert('Укажите рабочий год, количество дней и основание.');return}
     const days=['reduction','compensation'].includes(type)?-count:count;
     const allowance=Number(document.querySelector('#staff-allowance').value)||0;
-    if(allowance+pendingDayOperations.reduce((a,x)=>a+x.days,0)+days<0){alert('Нельзя получить отрицательный остаток дней.');return}
-    pendingDayOperations.push({date:new Date().toISOString().slice(0,10),year,type,days,reason});
+    if(allowance+pendingDayOperations.filter(x=>x.scopeYear?String(x.scopeYear)===selectedLeaveYear:selectedLeaveYear==='2027').reduce((a,x)=>a+x.days,0)+days<0){alert('Нельзя получить отрицательный остаток дней.');return}
+    pendingDayOperations.push({date:new Date().toISOString().slice(0,10),year,type,days,reason,scopeYear:selectedLeaveYear});
     document.querySelector('#staff-days-count').value='';document.querySelector('#staff-days-reason').value='';redrawDayOperations();
   };
   document.querySelector('#staff-allowance').addEventListener('input',redrawDayOperations);
   function openStaffCard(d,structureId=null){
     const form=document.querySelector('#staff-form');form.reset();updatePositionSuggestions();pendingDayOperations=(d?.dayOperations||[]).map(x=>({...x}));
+    editingStaff=d||null;
+    yearlyLeaveDraft={};
+    if(d?.leaveByYear&&typeof d.leaveByYear==='object'&&!Array.isArray(d.leaveByYear)){
+      for(const [year,data] of Object.entries(d.leaveByYear))if(/^\\d{4}$/.test(year))yearlyLeaveDraft[year]=normalizeBreakdown(data,data?.allowance);
+    }
+    if(!yearlyLeaveDraft['2027'])yearlyLeaveDraft['2027']=d?normalizeBreakdown(d.leaveBreakdown,d.allowance):{basic:28,territory:8,seniority:0,other:0,legacy:0,allowance:36};
+    originalLeaveYears=new Set(Object.keys(yearlyLeaveDraft));
+    const select=document.querySelector('#staff-leave-year');
+    const years=new Set(['2025','2026','2027','2028',...Object.keys(yearlyLeaveDraft)]);
+    select.innerHTML=[...years].sort((x,y)=>Number(x)-Number(y)).map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+    selectedLeaveYear='2027';select.value=selectedLeaveYear;
     form.dataset.structureId=structureId||'';
     form.dataset.fromStructure=structureId?'1':'0';
     document.querySelector('#staff-id').value=d?.id||'';
     document.querySelector('#staff-card-title').textContent=d?'Карточка сотрудника':'Новый сотрудник';
-    if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-position').value=d.position||'';document.querySelector('#staff-leave-basic').value=d.leaveBreakdown?.basic??0;document.querySelector('#staff-leave-territory').value=d.leaveBreakdown?.territory??0;document.querySelector('#staff-leave-other').value=d.leaveBreakdown?.other??0;document.querySelector('#staff-leave-legacy').value=d.leaveBreakdown?.legacy??d.allowance;document.querySelector('#staff-allowance').value=d.allowance;document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
-    if(!d){document.querySelector('#staff-leave-basic').value=28;document.querySelector('#staff-leave-territory').value=8;document.querySelector('#staff-leave-other').value=0;document.querySelector('#staff-leave-legacy').value=0;}
-    recalculateAnnualLeave();
+    if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-position').value=d.position||'';document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
+    showDisplayedLeaveYear();
     const effectiveStructureId=structureId||d?.structureId;document.querySelector('#staff-structure-code').value=structureNodes.find(n=>n.id===effectiveStructureId)?.code||'';
     if(structureId){const hierarchy=structureAncestors(structureId);const division=hierarchy.find(x=>x.type==='division');document.querySelector('#staff-department').value=division?.name||'';}
     redrawDayOperations();
@@ -1020,11 +1054,17 @@ function render() {
     e.preventDefault();
     const id=Number(document.querySelector('#staff-id').value);
     const lastName=document.querySelector('#staff-last').value.trim(),firstName=document.querySelector('#staff-first').value.trim(),middleName=document.querySelector('#staff-middle').value.trim(),name=lastName+' '+firstName[0]?.toUpperCase()+'.'+(middleName?middleName[0].toUpperCase()+'.':''),department=document.querySelector('#staff-department').value.trim(),group=document.querySelector('#staff-group').value.trim(),position=document.querySelector('#staff-position').value.trim(),allowance=Number(document.querySelector('#staff-allowance').value),hireDate=document.querySelector('#staff-hired').value,dismissalDate=document.querySelector('#staff-dismissal').value,dismissed=document.querySelector('#staff-dismissed').checked||Boolean(dismissalDate);
-    if(!lastName||!firstName||!Number.isInteger(allowance)||allowance<1||allowance>120)return;
+    if(!lastName||!firstName)return;
     if(hireDate&&dismissalDate&&dismissalDate<hireDate){document.querySelector('#staff-error').textContent='Дата увольнения раньше даты приёма.';return;}
-    const leaveBreakdown={basic:Number(document.querySelector('#staff-leave-basic').value)||0,territory:Number(document.querySelector('#staff-leave-territory').value)||0,other:Number(document.querySelector('#staff-leave-other').value)||0,legacy:Number(document.querySelector('#staff-leave-legacy').value)||0};
-    if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department,group,position,allowance,leaveBreakdown,hireDate,dismissalDate,dismissed,dayOperations:pendingDayOperations.map(x=>({...x}))});}
-    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,position,allowance,hireDate,dismissalDate,dismissed,dayOperations:pendingDayOperations.map(x=>({...x})),...(e.currentTarget.dataset.structureId?{structureId:e.currentTarget.dataset.structureId}:{})});
+    saveDisplayedLeaveYear();
+    const leaveByYear=Object.fromEntries(Object.entries(yearlyLeaveDraft).map(([year,data])=>[year,{...data}]));
+    const current=leaveByYear['2027'];
+    if(!current||current.allowance<1||current.allowance>120){document.querySelector('#staff-error').textContent='Проверьте норму отпуска за 2027 год.';return;}
+    for(const [year,record] of Object.entries(leaveByYear))if(record.allowance>120){document.querySelector('#staff-error').textContent='Норма за '+year+' год превышает 120 дней.';return;}
+    const leaveBreakdown={basic:current.basic,territory:current.territory,seniority:current.seniority,other:current.other,legacy:current.legacy};
+    const activeAllowance=current.allowance;
+    if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department,group,position,allowance:activeAllowance,leaveBreakdown,leaveByYear,hireDate,dismissalDate,dismissed,dayOperations:pendingDayOperations.map(x=>({...x}))});}
+    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,position,allowance:activeAllowance,leaveBreakdown,leaveByYear,hireDate,dismissalDate,dismissed,dayOperations:pendingDayOperations.map(x=>({...x})),...(e.currentTarget.dataset.structureId?{structureId:e.currentTarget.dataset.structureId}:{})});
     const fromStructure=e.currentTarget.dataset.fromStructure==='1';
     const selectedStructureId=e.currentTarget.dataset.structureId;
     saveStaff();
