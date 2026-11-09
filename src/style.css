@@ -658,3 +658,9 @@ main{padding-top:5px!important}
 .chart-info-dialog .actions{display:flex;justify-content:flex-end;margin-top:14px}
 .chart-info-dialog::backdrop{background:rgba(15,23,42,.5)}
 @media(max-width:600px){#app>main>.chart-actionbar .chart-info-button{width:28px;height:28px;min-width:28px;font-size:19px;padding:0}}
+
+/* v0.3.81: service messages live in their own dialog, not in the chart space */
+.chart-actionbar .service-messages-button{position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:30px;min-width:32px;padding:0;border:1px solid #94a3b8;border-radius:7px;background:#f0f6fc;font-size:19px;cursor:pointer}
+.service-alert-dot{position:absolute;top:1px;right:1px;width:7px;height:7px;border-radius:50%;background:#d97706;border:1px solid #fff}
+.service-messages-dialog .service-message-current{border-left:3px solid #1b6d9c;padding:8px 10px;background:#eef6fc;white-space:pre-wrap}
+@media(max-width:600px){#app>main>.chart-actionbar .service-messages-button{width:28px;min-width:28px;height:28px;padding:0;font-size:17px}}
