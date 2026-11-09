@@ -678,3 +678,19 @@ main{padding-bottom:64px!important;}
 
 /* Center footer content on every screen size. */
 .grot-version-footer{text-align:center!important;}
+
+/* Driver vacation dialog: keep all controls in normal document flow on phones. */
+#driver-card{box-sizing:border-box;max-height:calc(100dvh - 24px);overflow-y:auto;overflow-x:hidden;}
+#driver-card #period-list{max-height:none;overflow:visible;min-width:0;}
+#driver-card .period-row{grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;}
+#driver-card .period-row .period-dates{grid-column:1 / -1;min-width:0;overflow-wrap:anywhere;}
+#driver-card .period-row .period-days{grid-column:1;width:auto;transform:none;margin:0;justify-self:start;text-align:left;}
+#driver-card .period-row button{min-width:0;max-width:100%;white-space:normal;}
+#driver-card #period-total,#driver-card #split-rule{position:static;clear:both;}
+#driver-card>.actions{position:static;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;}
+@media(max-width:600px){
+  #driver-card{width:calc(100vw - 24px);max-width:calc(100vw - 24px);padding:14px;}
+  #driver-card .period-row{grid-template-columns:minmax(0,1fr) auto auto;}
+  #driver-card .period-row button{font-size:14px;padding:7px 8px;}
+  #driver-card>.actions button{max-width:100%;white-space:normal;}
+}
