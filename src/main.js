@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.78';
+const APP_VERSION='0.3.79';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -600,14 +600,14 @@ function render() {
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden>
       </nav>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="priority-calculate">Рассчитать приоритет</button><span>${priorityCurrent?(priorityData.incomplete?'Предварительный расчёт: не у всех есть данные за 2026 год':'Приоритет рассчитан по 2026 году'):priorityData?'Состав изменён — пересчитайте приоритет':'Приоритет ещё не рассчитан'}</span></div>
-      <div class="scroll"><table class="annual-table"><thead><tr>
+      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="priority-calculate">Рассчитать приоритет</button><span>${priorityCurrent?(priorityData.incomplete?'Предварительный расчёт: не у всех есть данные за 2026 год':'Приоритет рассчитан по 2026 году'):priorityData?'Состав изменён — пересчитайте приоритет':'Приоритет ещё не рассчитан'}</span></div>
+      <p class="notice mobile-status" role="status">${notice}</p><div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name"><span class="header-filter">${escapeHtml(activeVacationChart().name)} <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
       <th>Приоритет</th><th class="fixed group"><span class="header-filter">Группа <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}<th class="annual-total-heading">Запланировано</th><th>Доступно</th><th>Остаток</th></tr></thead>
       <tbody>${rows}</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td></td><td class="fixed group"></td>${totals}<td class="annual-total">${visibleDrivers.filter(d=>annualCount(d.id)>0).length||''}</td><td></td><td></td></tr></tfoot></table></div>
-      <p>Нажмите на название месяца, чтобы развернуть его дни; повторное нажатие свернёт только этот месяц. Можно открыть несколько месяцев одновременно. Нажмите на фамилию для просмотра отпусков.</p>
+      <p class="table-help">Нажмите на название месяца, чтобы развернуть его дни; повторное нажатие свернёт только этот месяц. Можно открыть несколько месяцев одновременно. Нажмите на фамилию для просмотра отпусков.</p>
       <p class="notice" role="status">${notice}</p>
-      <p class="muted">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
+      <p class="muted storage-warning">Тестовая версия: данные хранятся только в этом браузере, не в облаке.</p>
     <footer class="grot-version-footer">ГРОТ · версия ${APP_VERSION}<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
     <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">Выбрать сотрудников</button><button type="button" id="structure-new-employee">＋ Новый сотрудник</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<select id="structure-card-leader"></select></label></div><div class="actions"><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog>
