@@ -892,7 +892,7 @@ function render() {
   const normalizeBreakdown=(b,allowance)=>{
     const output=Object.fromEntries(Object.keys(yearlyFields).map(key=>[key,Math.max(0,Number(b?.[key])||0)]));
     const sum=Object.values(output).reduce((n,x)=>n+x,0);
-    if(sum===0&&Number(allowance)>0)output.legacy=Number(allowance);
+    if(Number.isFinite(Number(allowance))&&Number(allowance)>sum)output.legacy+=Number(allowance)-sum;
     return {...output,allowance:Object.values(output).reduce((n,x)=>n+x,0)};
   };
   function saveDisplayedLeaveYear(){
@@ -940,7 +940,7 @@ function render() {
     editingStaff=d||null;
     yearlyLeaveDraft={};
     if(d?.leaveByYear&&typeof d.leaveByYear==='object'&&!Array.isArray(d.leaveByYear)){
-      for(const [year,data] of Object.entries(d.leaveByYear))if(/^\\d{4}$/.test(year))yearlyLeaveDraft[year]=normalizeBreakdown(data,data?.allowance);
+      for(const [year,data] of Object.entries(d.leaveByYear))if(/^\d{4}$/.test(year))yearlyLeaveDraft[year]=normalizeBreakdown(data,data?.allowance);
     }
     if(!yearlyLeaveDraft['2027'])yearlyLeaveDraft['2027']=d?normalizeBreakdown(d.leaveBreakdown,d.allowance):{basic:28,territory:8,seniority:0,other:0,legacy:0,allowance:36};
     originalLeaveYears=new Set(Object.keys(yearlyLeaveDraft));
