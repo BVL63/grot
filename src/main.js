@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.92';
+const APP_VERSION='0.3.93';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -664,14 +664,56 @@ function render() {
     <dialog id="archive-import-dialog" class="structure-dialog"><h2>Загрузка архивных отпусков</h2><p>Импорт добавляет историю за 2025–2026 годы. Данные сотрудников и графики 2027 года не изменяются.</p><div id="archive-import-summary" style="white-space:pre-line;line-height:1.7"></div><div class="actions"><button type="button" id="archive-import-cancel">Отмена</button><button type="button" id="archive-import-confirm" disabled>Создать копию и загрузить</button></div></dialog>
     <dialog id="backup-preview-dialog" class="structure-dialog"><h2>Резервное копирование</h2><div id="backup-preview-details" style="white-space:pre-line;line-height:1.8"></div><p class="muted">В копию также входят справочники, настройки и доступная история.</p><div class="actions"><button type="button" id="backup-preview-cancel">Отмена</button><button type="button" id="backup-preview-save">Сохранить копию</button></div></dialog>
     <dialog id="backup-result-dialog" class="structure-dialog"><h2 id="backup-result-title">Резервная копия</h2><div id="backup-result-details" style="white-space:pre-line;line-height:1.8"></div><div class="actions"><button type="button" id="backup-result-close">Закрыть</button></div></dialog>
-    <dialog id="backup-settings-dialog" class="structure-dialog"><h2>Настройки · Резервные копии</h2><p id="backup-directory-status"></p><p class="muted">Выберите папку для сохранения и восстановления копий. Браузер может повторно запросить доступ к ней.</p><div class="actions"><button type="button" id="backup-directory-choose">Выбрать папку</button><button type="button" id="backup-settings-close">Закрыть</button></div></dialog><dialog id="staff-card"><h2 id="staff-card-title">Карточка сотрудника</h2><form id="staff-form">
+    <dialog id="backup-settings-dialog" class="structure-dialog"><h2>Настройки · Резервные копии</h2><p id="backup-directory-status"></p><p class="muted">Выберите папку для сохранения и восстановления копий. Браузер может повторно запросить доступ к ней.</p><div class="actions"><button type="button" id="backup-directory-choose">Выбрать папку</button><button type="button" id="backup-settings-close">Закрыть</button></div></dialog><dialog id="staff-card"><div class="staff-card-header"><h2 id="staff-card-title">Карточка сотрудника</h2><button type="button" id="staff-card-x" aria-label="Закрыть карточку">×</button></div><form id="staff-form">
         <input type="hidden" id="staff-id">
-        <label>Фамилия <input id="staff-last" required maxlength="100"></label><label>Имя <input id="staff-first" required maxlength="100"></label><label>Отчество <input id="staff-middle" maxlength="100"></label>
-        <label>Подразделение <input id="staff-department" maxlength="100"></label>
-        <label>Должность <input id="staff-position" list="staff-position-options" maxlength="120" autocomplete="off"><datalist id="staff-position-options"></datalist></label><label>Код структурного звена <input id="staff-structure-code" readonly></label><label>Группа отпусков <input id="staff-group" maxlength="30"></label>
-        <label>Дата приёма <input id="staff-hired" type="date"></label><label>Дата увольнения <input id="staff-dismissal" type="date"></label><label><input id="staff-dismissed" type="checkbox"> Уволен (если дата неизвестна)</label><section class="leave-breakdown" style="grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:8px"><strong>Ежегодный отпуск</strong><label style="display:flex;align-items:center;gap:9px;margin-top:8px">Год <select id="staff-leave-year" style="max-width:120px"></select></label><p id="staff-leave-year-hint" class="muted" style="margin:6px 0"></p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px"><label>Основной отпуск, дней <input id="staff-leave-basic" type="number" min="0" max="120" value="28"></label><label>Дополнительный за территорию, дней <input id="staff-leave-territory" type="number" min="0" max="120" value="8"></label><label>За выслугу лет, дней <input id="staff-leave-seniority" type="number" min="0" max="120" value="0"></label><label>Другие дополнительные отпуска, дней <input id="staff-leave-other" type="number" min="0" max="120" value="0"></label><label>Нераспределённая норма, дней <input id="staff-leave-legacy" type="number" min="0" max="120" value="0"></label></div><label>Итого ежегодный отпуск, дней <input id="staff-allowance" type="number" readonly value="36"></label><small>Для ранее введённых норм сохраняется прежнее число дней в поле «Нераспределённая норма». Распределите его по составляющим вручную.</small></section>
-        <section id="staff-days-section" style="grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:8px"><strong>Учёт отпускных дней</strong><p id="staff-days-summary" style="margin:6px 0"></p><div id="staff-days-history" style="max-height:145px;overflow:auto"></div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px"><select id="staff-days-type"><option value="balance">Остаток прошлых лет</option><option value="addition">Добавить дни</option><option value="reduction">Уменьшить дни</option><option value="compensation">Компенсация</option></select><input id="staff-days-year" type="text" placeholder="Рабочий год" style="width:135px" maxlength="30"><input id="staff-days-count" type="number" min="1" max="365" placeholder="Дней" style="width:85px"><input id="staff-days-reason" placeholder="Причина / основание" maxlength="250" style="flex:1;min-width:150px"><button type="button" id="staff-days-add">Записать</button></div><small>Изменения сохраняются вместе с карточкой сотрудника. Удаление записи требует подтверждения.</small></section><p id="staff-error" role="alert"></p>
-        <div class="actions"><button type="submit">Сохранить</button><button type="button" id="staff-card-close">Закрыть</button></div>
+        <div class="staff-card-top">
+          <div class="staff-card-left">
+            <label class="staff-info-field"><span>Фамилия</span><input id="staff-last" required maxlength="100"></label>
+            <label class="staff-info-field"><span>Имя</span><input id="staff-first" required maxlength="100"></label>
+            <label class="staff-info-field"><span>Отчество</span><input id="staff-middle" maxlength="100"></label>
+            <label class="staff-info-field staff-work-field"><span>Место<br>работы</span><textarea id="staff-department" rows="2" maxlength="300"></textarea></label>
+          </div>
+          <div class="staff-card-right">
+            <label class="staff-info-field"><span>Должность</span><input id="staff-position" list="staff-position-options" maxlength="120" autocomplete="off"><datalist id="staff-position-options"></datalist></label>
+            <label class="staff-info-field"><span>Принят</span><input id="staff-hired" type="date"></label>
+            <div class="staff-info-field staff-dismiss-row"><label for="staff-dismissal">Уволен</label><input id="staff-dismissal" type="date"><label class="staff-dismiss-check"><input id="staff-dismissed" type="checkbox"> Уволен</label></div>
+            <label class="staff-info-field"><span>Код</span><input id="staff-structure-code" readonly title="Код определяется структурой предприятия"></label>
+            <label class="staff-info-field"><span>Группа</span><input id="staff-group" maxlength="30"></label>
+          </div>
+        </div>
+        <div class="staff-card-lower">
+          <section class="leave-breakdown">
+            <div class="staff-card-section-heading"><strong>Ежегодный отпуск</strong><label>Год: <select id="staff-leave-year"></select></label></div>
+            <table class="staff-leave-table"><thead><tr><th>Вид отпуска</th><th>Дней</th></tr></thead><tbody>
+              <tr><td><label for="staff-leave-basic">Основной</label></td><td><input id="staff-leave-basic" type="number" min="0" max="120" value="28"></td></tr>
+              <tr><td><label for="staff-leave-territory">Дальневосточный (ДВ)</label></td><td><input id="staff-leave-territory" type="number" min="0" max="120" value="8"></td></tr>
+              <tr><td><label for="staff-leave-seniority">За выслугу лет</label></td><td><input id="staff-leave-seniority" type="number" min="0" max="120" value="0"></td></tr>
+              <tr><td><label for="staff-leave-other">Другие дополнительные</label></td><td><input id="staff-leave-other" type="number" min="0" max="120" value="0"></td></tr>
+              <tr class="staff-leave-total"><th>Итого ежегодный отпуск</th><td><input id="staff-allowance" type="number" readonly value="36"></td></tr>
+            </tbody></table>
+            <details class="staff-leave-legacy-details"><summary>Нераспределённая норма предыдущих записей: <strong id="staff-legacy-value">0</strong> дн.</summary><label>Распределите дни по видам отпуска либо оставьте прежнюю норму: <input id="staff-leave-legacy" type="number" min="0" max="120" value="0"></label></details>
+            <p id="staff-leave-year-hint" class="muted"></p>
+          </section>
+          <section id="staff-days-section" class="staff-card-operations">
+            <div class="staff-card-section-heading"><strong>Корректировка</strong></div>
+            <div class="staff-table-wrap"><table class="staff-operations-table"><thead><tr><th>Год</th><th>Дней</th><th>Основание</th><th aria-label="Действия"></th></tr></thead><tbody id="staff-corrections-rows"></tbody></table></div>
+            <div class="staff-card-section-heading staff-balance-heading"><strong>Остаток прошлых лет</strong><span id="staff-balance-total">0 дн.</span><button type="button" id="staff-balance-add">＋ Добавить</button></div>
+            <div class="staff-table-wrap"><table class="staff-operations-table"><thead><tr><th>Год</th><th>Дней</th><th>Примечание</th><th aria-label="Действия"></th></tr></thead><tbody id="staff-balance-rows"></tbody></table></div>
+            <details class="staff-operation-editor" id="staff-operation-editor"><summary>＋ Новая корректировка</summary>
+              <div class="staff-operation-fields">
+                <label>Тип<select id="staff-days-type"><option value="balance">Остаток прошлых лет</option><option value="addition">Добавить дни</option><option value="reduction">Уменьшить дни</option><option value="compensation">Компенсация</option></select></label>
+                <label>Рабочий год<input id="staff-days-year" type="text" placeholder="2026" maxlength="30"></label>
+                <label>Дней<input id="staff-days-count" type="number" min="1" max="365" placeholder="Дней"></label>
+                <label>Основание<input id="staff-days-reason" placeholder="Причина / основание" maxlength="250"></label>
+                <button type="button" id="staff-days-add">Записать</button>
+              </div>
+            </details>
+            <p id="staff-days-summary" class="muted"></p>
+            <div id="staff-days-history" hidden></div>
+          </section>
+        </div>
+        <p id="staff-error" role="alert"></p>
+        <div class="staff-card-actions"><button type="button" id="staff-history-open">◷ История отпусков по годам</button><span class="staff-card-action-spacer"></span><button type="submit" class="staff-card-save">Сохранить</button><button type="button" id="staff-card-close">Закрыть</button></div>
       </form>
     </dialog>
     <dialog id="editor"><form id="vacation-form">
