@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.98';
+const APP_VERSION='0.3.99';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -661,7 +661,7 @@ function render() {
       </nav>
       <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong>${chart.allStaff?'':'<button type="button" id="chart-members-add" title="Выбрать сотрудников из общего справочника">＋ Добавить сотрудников</button>'}<button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
-      <th rowspan="2" class="fixed name"><span class="header-filter"><span class="heading-full">${escapeHtml(activeVacationChart().name)}</span><span class="heading-phone" aria-hidden="true">Сотрудник</span> <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
+      <th rowspan="2" class="fixed name"><span class="header-filter"><span class="heading-full">${escapeHtml(activeVacationChart().name)}</span><span class="heading-phone" aria-hidden="true">Сотрудник</span> <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр сотрудников">▾</button></span></th>
       <th rowspan="2" title="Приоритет"><span class="heading-full">Приоритет</span><span class="heading-phone" aria-hidden="true">Приор.</span></th><th rowspan="2" class="fixed group"><span class="header-filter"><span class="heading-full">Группа</span><span class="heading-phone" aria-hidden="true">Гр.</span> <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${monthHeadings}<th rowspan="2" class="annual-total-heading" title="Запланировано"><span class="heading-full">Запланировано</span><span class="heading-phone" aria-hidden="true">План.</span></th><th rowspan="2" title="Доступно"><span class="heading-full">Доступно</span><span class="heading-phone" aria-hidden="true">Дост.</span></th><th rowspan="2" title="Остаток"><span class="heading-full">Остаток</span><span class="heading-phone" aria-hidden="true">Ост.</span></th></tr><tr class="calendar-days-row">${headings}</tr></thead>
       <tbody>${rows}</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td></td><td class="fixed group"></td>${totals}<td class="annual-total">${visibleDrivers.filter(d=>annualCount(d.id)>0).length||''}</td><td></td><td></td></tr></tfoot></table></div>
       <p class="table-help">Нажмите на название месяца, чтобы развернуть его дни; повторное нажатие свернёт только этот месяц. Можно открыть несколько месяцев одновременно. Нажмите на фамилию для просмотра отпусков.</p>
@@ -1258,12 +1258,15 @@ function render() {
   document.querySelector('#help-close').onclick=()=>document.querySelector('#help-dialog').close();
   let activeFilter=null;
   const filterDialog=document.querySelector('#filter-dialog');
-  const getFilterValues=()=>activeFilter==='driver'?drivers.map(d=>({id:String(d.id),label:d.name})):groups.map(g=>({id:g,label:g}));
+  const chartFilterMembers=()=>{const current=activeVacationChart();return drivers.filter(d=>(current.allStaff||(current.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027)).sort(compareGroupAndName);};
+  const getFilterValues=()=>activeFilter==='driver'
+    ?chartFilterMembers().map(d=>({id:String(d.id),label:shortStaffName(d)}))
+    :[...new Set(chartFilterMembers().map(d=>String(d.group||'')))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true})).map(g=>({id:g,label:g||'Без группы'}));
   document.querySelectorAll('[data-filter-open]').forEach(b=>b.onclick=()=>{
     activeFilter=b.dataset.filterOpen;
-    document.querySelector('#filter-title').textContent=activeFilter==='driver'?'Фильтр водителей':'Фильтр групп';
+    document.querySelector('#filter-title').textContent=activeFilter==='driver'?'Фильтр сотрудников':'Фильтр групп';
     const selected=activeFilter==='driver'?selectedDriverIds:selectedGroups;
-    document.querySelector('#filter-options').innerHTML=getFilterValues().map(v=>'<label class="filter-option"><input type="checkbox" value="'+escapeHtml(v.id)+'" '+(selected===null||selected.has(v.id)?'checked':'')+'> '+escapeHtml(v.label)+'</label>').join('');
+    document.querySelector('#filter-options').innerHTML=getFilterValues().map(v=>'<label class="filter-option"><input type="checkbox" value="'+escapeHtml(v.id)+'" '+(selected===null||selected.has(v.id)?'checked':'')+'><span>'+escapeHtml(v.label)+'</span></label>').join('');
     filterDialog.showModal();
   });
   document.querySelector('#filter-all').onclick=()=>document.querySelectorAll('#filter-options input').forEach(x=>x.checked=true);
