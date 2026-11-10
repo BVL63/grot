@@ -1047,3 +1047,14 @@ main{padding-bottom:64px!important;}
  #app>main>.scroll .annual-table thead tr.calendar-days-row>th:nth-child(2){position:sticky;top:38px;left:132px!important;width:56px!important;min-width:56px!important;max-width:56px!important;display:table-cell!important;z-index:9;background:#f3f7fb!important}
  #app>main>.scroll .annual-table thead .header-action .filter-trigger{width:24px;min-width:24px;height:24px}
 }
+
+/* Активные фильтры заметны даже при прокрутке таблицы */
+#app>main>.scroll .annual-table thead .header-action .filter-trigger.filter-active{
+ background:#145b91!important;color:#fff!important;border-color:#0e4977!important;
+ box-shadow:0 0 0 2px rgba(20,91,145,.2);font-weight:800
+}
+#app>main>.scroll .annual-table thead .header-action .filter-trigger.filter-active::after{
+ content:"";position:absolute;top:-3px;right:-3px;width:7px;height:7px;
+ border-radius:50%;background:#f59e0b;border:1px solid #fff
+}
+#app>main>.scroll .annual-table thead .header-action .filter-trigger{position:relative}
