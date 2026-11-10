@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.97';
+const APP_VERSION='0.3.98';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -673,6 +673,7 @@ function render() {
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
     <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">Выбрать сотрудников</button><button type="button" id="structure-new-employee">＋ Новый сотрудник</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<select id="structure-card-leader"></select></label></div><div class="actions"><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog>
 <dialog id="structure-assign-dialog" class="structure-dialog"><h2 id="structure-assignment-title">Добавить сотрудников</h2><p class="muted">Отметьте сотрудников для выбранного звена. Снятие отметки открепит сотрудника от него. Отпуска сохраняются.</p><div id="structure-employees"></div><div class="actions"><button type="button" id="structure-assign-cancel">Отмена</button><button type="button" id="structure-assign-save">Сохранить</button></div></dialog>
+<dialog id="group-edit-dialog" class="group-edit-dialog"><form id="group-edit-form"><h2>Группа отпусков</h2><p id="group-edit-person"></p><label>Номер группы <input type="text" id="group-edit-input" maxlength="30" autocomplete="off" placeholder="Например, 2 или 9.1"></label><p class="muted">Пустое значение означает отсутствие группы.</p><p id="group-edit-error" role="alert"></p><div class="actions"><button type="submit">Сохранить</button><button type="button" id="group-edit-cancel">Отмена</button></div></form></dialog>
 <dialog id="vacation-charts-dialog"><h2>Графики отпусков · 2027</h2><table class="staff-table"><thead><tr><th>Название</th><th>Год</th><th>Сотрудников</th><th></th></tr></thead><tbody id="vacation-charts-list"></tbody></table><div class="actions"><button type="button" id="vacation-chart-add">＋ Добавить</button><button type="button" id="vacation-charts-close">Закрыть</button></div></dialog><dialog id="vacation-chart-members-dialog"><h2>Состав графика: <span id="vacation-chart-name"></span></h2><div id="vacation-chart-members" style="max-height:55vh;overflow:auto"></div><div class="actions"><button type="button" id="vacation-chart-save">Сохранить</button><button type="button" id="vacation-chart-cancel">Отмена</button></div></dialog><dialog id="positions-dialog"><h2>Справочник должностей</h2><div id="positions-list" style="max-height:50vh;overflow:auto"></div><div style="display:flex;gap:8px"><input id="positions-new" placeholder="Новая должность" maxlength="120"><button type="button" id="positions-add">Добавить</button></div><div class="actions"><button type="button" id="positions-close">Закрыть</button></div></dialog><dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◎</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled>✎</button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>⌫</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span><button type="button" id="staff-close" title="Закрыть" aria-label="Закрыть">×</button></div><div class="staff-search-row"><label for="staff-search">Поиск</label><input id="staff-search" type="search" placeholder="Фамилия, имя, должность, подразделение или группа" autocomplete="off"><button type="button" id="staff-search-clear" title="Очистить поиск" aria-label="Очистить поиск">×</button><span id="staff-search-count"></span></div><div id="staff-list"></div>
     </dialog>
@@ -1289,17 +1290,32 @@ function render() {
     alert('Пересечения отпусков в группе '+(d?.group||'—')+' для '+(d?shortStaffName(d):'сотрудника')+':\n\n'+entries.join('\n'));
   });
   document.querySelectorAll('[data-priority-id]').forEach(b=>b.onclick=()=>showPriorityDetails(b.dataset.priorityId));
+  const groupEditDialog=document.querySelector('#group-edit-dialog');
+  const groupEditForm=document.querySelector('#group-edit-form');
+  document.querySelector('#group-edit-cancel').onclick=()=>groupEditDialog.close();
   document.querySelectorAll('[data-edit-group]').forEach(b=>b.onclick=()=>{
     const d=drivers.find(x=>String(x.id)===b.dataset.editGroup);if(!d)return;
-    const answer=prompt('Группа отпусков для '+shortStaffName(d)+' (например, 1 или 2). Пустая группа — без ограничений по пересечению отпусков:',d.group||'');
-    if(answer===null)return;
-    const group=answer.trim();
-    if(group.length>30){alert('Номер группы не должен превышать 30 символов.');return}
-    if(group===String(d.group||''))return;
-    d.group=group;saveStaff();
-    notice='Группа сотрудника '+shortStaffName(d)+' изменена на '+(group||'«без группы»')+'.';
-    render();
+    groupEditForm.dataset.staffId=String(d.id);
+    document.querySelector('#group-edit-person').textContent='Сотрудник: '+shortStaffName(d);
+    document.querySelector('#group-edit-input').value=d.group||'';
+    document.querySelector('#group-edit-error').textContent='';
+    groupEditDialog.showModal();
+    document.querySelector('#group-edit-input').focus();
+    document.querySelector('#group-edit-input').select();
   });
+  groupEditForm.onsubmit=e=>{
+    e.preventDefault();
+    const d=drivers.find(x=>String(x.id)===groupEditForm.dataset.staffId);
+    if(!d)return;
+    const group=document.querySelector('#group-edit-input').value.trim();
+    if(group.length>30){document.querySelector('#group-edit-error').textContent='Не более 30 символов.';return;}
+    if(group!==String(d.group||'')){
+      d.group=group;saveStaff();
+      notice='Группа сотрудника '+shortStaffName(d)+' изменена на '+(group||'«без группы»')+'.';
+    }
+    groupEditDialog.close();
+    render();
+  };
   document.querySelector('#app-refresh').onclick=()=>location.reload();
   document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
   const dialog = document.querySelector('#editor');
