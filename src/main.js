@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.105';
+const APP_VERSION='0.3.106';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -18,10 +18,38 @@ try{const stored=JSON.parse(localStorage.getItem(vacationChartsKey)||'null');vac
 let activeVacationChartId=localStorage.getItem('grotActiveVacationChart')||vacationCharts[0].id;
 function activeVacationChart(){return vacationCharts.find(x=>x.id===activeVacationChartId)||vacationCharts[0]}
 function saveVacationCharts(){localStorage.setItem(vacationChartsKey,JSON.stringify(vacationCharts));localStorage.setItem('grotActiveVacationChart',activeVacationChartId)}
+/** Действительный состав графика: общая база, подразделения со всеми дочерними звеньями,
+ *  либо старый ручной список. Исключения применяются только для структурного режима. */
+function staffIdsInStructure(nodeIds){
+ const selected=new Set((nodeIds||[]).map(String));
+ const reachable=new Set(selected), queue=[...selected];
+ while(queue.length){
+  const parent=queue.shift();
+  for(const node of structureNodes){
+   if(String(node.parentId)===parent&&!reachable.has(String(node.id))){
+    reachable.add(String(node.id));queue.push(String(node.id));
+   }
+  }
+ }
+ const ids=new Set();
+ for(const d of drivers)if(d.structureId&&reachable.has(String(d.structureId)))ids.add(String(d.id));
+ for(const node of structureNodes)if(reachable.has(String(node.id))&&node.leaderId&&drivers.some(d=>String(d.id)===String(node.leaderId)))ids.add(String(node.leaderId));
+ return ids;
+}
+function chartMemberIds(chart){
+ if(!chart)return new Set();
+ if(chart.allStaff)return new Set(drivers.map(d=>String(d.id)));
+ if(!Array.isArray(chart.structureIds)||!chart.structureIds.length)return new Set((chart.staffIds||[]).map(String));
+ const result=staffIdsInStructure(chart.structureIds);
+ for(const id of chart.includeStaffIds||[])if(drivers.some(d=>String(d.id)===String(id)))result.add(String(id));
+ for(const id of chart.excludeStaffIds||[])result.delete(String(id));
+ return result;
+}
+function chartContains(chart,driver){return chartMemberIds(chart).has(String(driver.id))}
 function vacationChartOpen(){
  const dlg=document.querySelector('#vacation-charts-dialog');if(!dlg)return;
  const list=document.querySelector('#vacation-charts-list');
- list.innerHTML=vacationCharts.map(c=>'<tr data-chart-id="'+escapeHtml(c.id)+'"><td><button type="button" data-chart-open="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+'</button></td><td>'+c.year+'</td><td>'+(c.allStaff?'Все':c.staffIds.length)+'</td><td><button type="button" data-chart-edit="'+escapeHtml(c.id)+'" title="Изменить">✏️</button> <button type="button" data-chart-remove="'+escapeHtml(c.id)+'" title="Удалить график" '+(vacationCharts.length===1?'disabled':'')+'>🗑️</button></td></tr>').join('');
+ list.innerHTML=vacationCharts.map(c=>'<tr data-chart-id="'+escapeHtml(c.id)+'"><td><button type="button" data-chart-open="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+'</button></td><td>'+c.year+'</td><td>'+(c.allStaff?'Все':chartMemberIds(c).size)+'</td><td><button type="button" data-chart-edit="'+escapeHtml(c.id)+'" title="Изменить">✏️</button> <button type="button" data-chart-remove="'+escapeHtml(c.id)+'" title="Удалить график" '+(vacationCharts.length===1?'disabled':'')+'>🗑️</button></td></tr>').join('');
  list.querySelectorAll('[data-chart-open]').forEach(b=>b.onclick=()=>{activeVacationChartId=b.dataset.chartOpen;saveVacationCharts();dlg.close();selectedDriverIds=null;selectedGroups=null;render()});
  list.querySelectorAll('[data-chart-edit]').forEach(b=>b.onclick=()=>vacationChartEdit(b.dataset.chartEdit));
  list.querySelectorAll('[data-chart-remove]').forEach(b=>b.onclick=()=>{
@@ -67,7 +95,7 @@ function compareGroupAndName(a,b){const ga=String(a.group??''),gb=String(b.group
 function isEligibleForYear(d,year){return !(d.dismissalDate&&d.dismissalDate<year+'-01-01')&&!(d.dismissed&&!d.dismissalDate);}
 function openSeasonality(year){
   const chart=activeVacationChart();
-  const members=drivers.filter(d=>chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)));
+  const members=drivers.filter(d=>chartContains(chart,d));
   const memberIds=new Set(members.map(d=>String(d.id)));
   const history=loadHistory();
   const rosterForYear=selectedYear=>{
@@ -415,7 +443,7 @@ function personnelCsv(){
 }
 function printGroupOverlaps(){
  const chart=activeVacationChart(),esc=escapeHtml;
- const members=drivers.filter(d=>(chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027));
+ const members=drivers.filter(d=>chartContains(chart,d)&&isEligibleForYear(d,2027));
  const matches=[];
  for(let i=0;i<members.length;i++)for(let j=i+1;j<members.length;j++){
   const a=members[i],b=members[j];
@@ -593,7 +621,7 @@ function render() {
   const monthHeadings=months.map((label,m)=>'<th class="month-heading" colspan="'+(expandedMonths.has(m)?monthDays(m):1)+'"><button type="button" data-month="'+m+'" title="'+(expandedMonths.has(m)?'Свернуть ':'Развернуть ')+label+'">'+escapeHtml(label)+' '+(expandedMonths.has(m)?'▴':'▾')+'</button></th>').join('');
   const headings=columns.map(c=>'<th class="'+(c.day?'day-heading':'month-placeholder')+'">'+(c.day?'<button type="button" data-month="'+c.m+'" title="'+months[c.m]+'">'+c.day+'</button>':'')+'</th>').join('');
   const chart=activeVacationChart();
-  const visibleDrivers=drivers.filter(d=>(chart.allStaff||chart.staffIds.map(String).includes(String(d.id)))&&isEligibleForYear(d,2027)&&(selectedDriverIds===null||selectedDriverIds.has(String(d.id)))&&(selectedGroups===null||selectedGroups.has(String(d.group)))).sort(compareGroupAndName);
+  const visibleDrivers=drivers.filter(d=>(chartContains(chart,d))&&isEligibleForYear(d,2027)&&(selectedDriverIds===null||selectedDriverIds.has(String(d.id)))&&(selectedGroups===null||selectedGroups.has(String(d.group)))).sort(compareGroupAndName);
   const chartMembers=drivers.filter(d=>(chart.allStaff||(chart.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027));
   const groupConflicts=new Map(),conflictDates=new Map();
   for(let i=0;i<chartMembers.length;i++)for(let j=i+1;j<chartMembers.length;j++){
@@ -655,7 +683,7 @@ function render() {
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="archive-import-file" accept=".json,application/json" hidden>
       </nav>
-      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong>${chart.allStaff?'':'<button type="button" id="chart-members-add" title="Выбрать сотрудников из общего справочника">＋ Добавить сотрудников</button>'}<button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
+      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong>${chart.allStaff?'':'<button type="button" id="chart-members-add" title="Структурные звенья и исключения">Состав</button>'}<button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
       <th rowspan="2" class="fixed name"><span class="header-filter"><span class="heading-full">${escapeHtml(activeVacationChart().name)}</span><span class="heading-phone" aria-hidden="true">Сотрудник</span> <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр сотрудников">▾</button></span></th>
       <th rowspan="2" title="Приоритет"><span class="heading-full">Приоритет</span><span class="heading-phone" aria-hidden="true">Приор.</span></th><th rowspan="2" class="fixed group"><span class="header-filter"><span class="heading-full">Группа</span><span class="heading-phone" aria-hidden="true">Гр.</span> <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${monthHeadings}<th rowspan="2" class="annual-total-heading" title="Запланировано"><span class="heading-full">Запланировано</span><span class="heading-phone" aria-hidden="true">План.</span></th><th rowspan="2" title="Доступно"><span class="heading-full">Доступно</span><span class="heading-phone" aria-hidden="true">Дост.</span></th><th rowspan="2" title="Остаток"><span class="heading-full">Остаток</span><span class="heading-phone" aria-hidden="true">Ост.</span></th></tr><tr class="calendar-days-row">${headings}</tr></thead>
@@ -1254,7 +1282,7 @@ function render() {
   document.querySelector('#help-close').onclick=()=>document.querySelector('#help-dialog').close();
   let activeFilter=null;
   const filterDialog=document.querySelector('#filter-dialog');
-  const chartFilterMembers=()=>{const current=activeVacationChart();return drivers.filter(d=>(current.allStaff||(current.staffIds||[]).map(String).includes(String(d.id)))&&isEligibleForYear(d,2027)).sort(compareGroupAndName);};
+  const chartFilterMembers=()=>{const current=activeVacationChart();return drivers.filter(d=>chartContains(current,d)&&isEligibleForYear(d,2027)).sort(compareGroupAndName);};
   const getFilterValues=()=>activeFilter==='driver'
     ?chartFilterMembers().map(d=>({id:String(d.id),label:shortStaffName(d)}))
     :[...new Set(chartFilterMembers().map(d=>String(d.group||'')))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true})).map(g=>({id:g,label:g||'Без группы'}));
