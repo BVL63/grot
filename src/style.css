@@ -605,6 +605,8 @@ main{padding-top:5px!important}
 #staff-dialog .staff-search-row{display:flex;align-items:center;gap:8px;margin:8px 0 10px;flex-wrap:wrap}
 #staff-dialog .staff-search-row input{flex:1;min-width:180px;max-width:520px;height:34px;padding:5px 9px}
 #staff-dialog .staff-search-row button{width:32px;height:32px;padding:0;font-size:18px}
+#staff-dialog .staff-search-row .staff-dismissed-filter{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:13px;cursor:pointer}
+#staff-dialog .staff-search-row .staff-dismissed-filter input[type="checkbox"]{flex:none;min-width:0;max-width:none;width:16px;height:16px;padding:0;margin:0}
 #staff-dialog .staff-search-row #staff-search-count{font-size:12px;color:#64748b}
 #staff-dialog .staff-toolbar>button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:34px;min-width:36px;padding:0;font-family:Arial,sans-serif;font-size:20px;font-weight:500;line-height:1;border-radius:6px}
 #staff-dialog .staff-toolbar>button:disabled{opacity:.4;cursor:default}
