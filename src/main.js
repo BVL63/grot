@@ -307,7 +307,7 @@ function scrollToCalendarMonth(month,archive=false){
  const button=table?.querySelector('thead tr:first-child th.month-heading button['+(archive?'data-history-month':'data-month')+'="'+month+'"]');
  const heading=button?.closest('th');
  if(!scroll||!table||!heading)return;
- const frozen=[...table.querySelectorAll('thead tr:first-child th.fixed')].reduce((width,th)=>width+th.getBoundingClientRect().width,0);
+ const frozen=[...table.querySelectorAll('thead tr:first-child th.fixed'+(archive?'':', thead tr:first-child th:nth-child(2)'))].reduce((width,th)=>width+th.getBoundingClientRect().width,0);
  const tableLeft=table.getBoundingClientRect().left;
  const left=heading.getBoundingClientRect().left-tableLeft;
  const max=Math.max(0,scroll.scrollWidth-scroll.clientWidth);
