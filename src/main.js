@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.109';
+const APP_VERSION='0.3.110';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -87,13 +87,36 @@ function vacationChartEdit(id,membersOnly=false){
   for(const id of fromStructure)if(!oldIds.has(id))excludes.add(id);
  }
  const unitsBox=document.querySelector('#chart-structure-units');
- const root=structureNodes.filter(n=>n.type!=='organization');
- unitsBox.innerHTML=root.map(n=>{
-  const ancestors=structureAncestors(n.id);
-  const level=Math.max(0,ancestors.length-2);
-  const currentCount=staffIdsInStructure([n.id]).size;
-  return '<label class="chart-structure-option" style="--chart-level:'+level+'"><input type="checkbox" value="'+escapeHtml(String(n.id))+'" '+(unitIds.has(String(n.id))?'checked':'')+'><span class="chart-structure-title">'+escapeHtml(n.name)+'</span><span class="chart-structure-code">'+escapeHtml(n.code||'—')+'</span><span class="chart-structure-count">'+currentCount+' чел.</span></label>';
- }).join('')||'<p class="muted">Структура ещё не заполнена. Создайте подразделение в справочнике «Структура предприятия».</p>';
+ const roots=structureNodes.filter(n=>n.type==='organization');
+ const rootIds=new Set(roots.map(n=>String(n.id)));
+ const openIds=new Set();
+ for(const selected of unitIds)for(const ancestor of structureAncestors(selected))openIds.add(String(ancestor.id));
+ const visited=new Set();
+ const renderBranch=(parentId,level)=>{
+  return structureNodes.filter(n=>String(n.parentId||'')===String(parentId||'')&&n.type!=='organization').map(n=>{
+   if(visited.has(String(n.id)))return '';
+   visited.add(String(n.id));
+   const children=renderBranch(n.id,level+1);
+   const currentCount=staffIdsInStructure([n.id]).size;
+   const expanded=openIds.has(String(n.id));
+   return '<div class="chart-structure-node"><div class="chart-structure-row">'+
+     (children?'<button type="button" class="chart-structure-toggle" aria-expanded="'+expanded+'" title="Раскрыть или свернуть вложенные звенья">'+(expanded?'▾':'▸')+'</button>':'<span class="chart-structure-toggle-placeholder"></span>')+
+     '<label class="chart-structure-option"><input type="checkbox" value="'+escapeHtml(String(n.id))+'" '+(unitIds.has(String(n.id))?'checked':'')+'><span class="chart-structure-title">'+escapeHtml(n.name)+'</span><span class="chart-structure-code">'+escapeHtml(n.code||'—')+'</span><span class="chart-structure-count">'+currentCount+' чел.</span></label></div>'+
+     (children?'<div class="chart-structure-children" '+(expanded?'':'hidden')+'>'+children+'</div>':'')+'</div>';
+  }).join('');
+ };
+ let tree=roots.map(n=>renderBranch(n.id,0)).join('');
+ // Preserve access to units with a missing parent in imported/legacy structures.
+ tree+=structureNodes.filter(n=>n.type!=='organization'&&!visited.has(String(n.id))).map(n=>renderBranch(n.parentId,0)).join('');
+ unitsBox.innerHTML=tree||'<p class="muted">Структура ещё не заполнена. Создайте подразделение в справочнике «Структура предприятия».</p>';
+ unitsBox.querySelectorAll('.chart-structure-toggle').forEach(button=>button.onclick=()=>{
+  const branch=button.closest('.chart-structure-node');
+  const children=branch?.querySelector(':scope > .chart-structure-children');
+  if(!children)return;
+  children.hidden=!children.hidden;
+  button.textContent=children.hidden?'▸':'▾';
+  button.setAttribute('aria-expanded',String(!children.hidden));
+ });
  const summary=document.querySelector('#chart-composition-summary');
  const overrides=document.querySelector('#chart-composition-overrides');
  const search=document.querySelector('#chart-composition-search');
