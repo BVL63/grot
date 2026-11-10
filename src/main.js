@@ -69,21 +69,95 @@ function vacationChartOpen(){
 }
 function vacationChartEdit(id,membersOnly=false){
  const chart=vacationCharts.find(c=>c.id===id);
- if(membersOnly&&(!chart||chart.allStaff)){alert('Для общего графика состав определяется общим справочником.');return;}
- const name=membersOnly?chart.name:prompt('Название графика',chart?.name||'');if(name===null||!name.trim())return;
- const chosen=new Set(chart?.allStaff?drivers.map(d=>String(d.id)):(chart?.staffIds||[]).map(String));
+ if(membersOnly&&(!chart||chart.allStaff)){alert('В общем графике отображаются все сотрудники справочника.');return;}
  const dialog=document.querySelector('#vacation-chart-members-dialog');
- document.querySelector('#vacation-chart-name').textContent=name.trim();
- document.querySelector('#vacation-chart-members').innerHTML=drivers.slice().sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).map(d=>'<label class="chart-member-option"><input type="checkbox" value="'+d.id+'" '+(chosen.has(String(d.id))?'checked':'')+'><span class="chart-member-details"><strong>'+escapeHtml(shortStaffName(d))+'</strong><small>'+escapeHtml(d.department||'Место работы не указано')+'</small></span></label>').join('');
+ const nameInput=document.querySelector('#vacation-chart-edit-name');
+ nameInput.value=chart?.name||'';
+ const oldIds=chart?chartMemberIds(chart):new Set();
+ const originalManual=Boolean(chart&&!chart.allStaff&&!(chart.structureIds||[]).length);
+ // For old graphs, propose the units already assigned to their staff.
+ // Preserve the exact existing selection via initial include/exclude deltas.
+ const unitIds=new Set((chart?.structureIds||[]).map(String));
+ if(originalManual)for(const d of drivers)if(oldIds.has(String(d.id))&&d.structureId&&structureNodes.some(n=>String(n.id)===String(d.structureId)))unitIds.add(String(d.structureId));
+ const includes=new Set((chart?.includeStaffIds||[]).map(String));
+ const excludes=new Set((chart?.excludeStaffIds||[]).map(String));
+ if(originalManual&&unitIds.size){
+  const fromStructure=staffIdsInStructure([...unitIds]);
+  for(const id of oldIds)if(!fromStructure.has(id))includes.add(id);
+  for(const id of fromStructure)if(!oldIds.has(id))excludes.add(id);
+ }
+ const unitsBox=document.querySelector('#chart-structure-units');
+ const root=structureNodes.filter(n=>n.type!=='organization');
+ unitsBox.innerHTML=root.map(n=>{
+  const ancestors=structureAncestors(n.id);
+  const level=Math.max(0,ancestors.length-2);
+  const currentCount=staffIdsInStructure([n.id]).size;
+  return '<label class="chart-structure-option" style="padding-left:'+(8+level*14)+'px"><input type="checkbox" value="'+escapeHtml(String(n.id))+'" '+(unitIds.has(String(n.id))?'checked':'')+'><span><strong>'+escapeHtml(n.name)+'</strong><small> · '+escapeHtml(n.code||'—')+' · '+currentCount+' чел.</small></span></label>';
+ }).join('')||'<p class="muted">Структура ещё не заполнена. Создайте подразделение в справочнике «Структура предприятия».</p>';
+ const summary=document.querySelector('#chart-composition-summary');
+ const overrides=document.querySelector('#chart-composition-overrides');
+ const search=document.querySelector('#chart-composition-search');
+ const matches=document.querySelector('#chart-composition-matches');
+ const error=document.querySelector('#chart-composition-error');
+ search.value='';error.textContent='';
+ const selectedUnits=()=>[...unitsBox.querySelectorAll('input:checked')].map(x=>x.value);
+ const candidateIds=()=>{
+  const unitSelection=selectedUnits();
+  const ids=unitSelection.length?staffIdsInStructure(unitSelection):new Set(originalManual?oldIds:[]);
+  for(const id of includes)ids.add(id);
+  for(const id of excludes)ids.delete(id);
+  return ids;
+ };
+ const refresh=()=>{
+  const unitSelection=selectedUnits();
+  const ids=candidateIds();
+  summary.textContent='Выбрано структурных звеньев: '+unitSelection.length+' · Сотрудников в графике: '+ids.size+(originalManual&&!unitSelection.length?' · Пока действует прежний ручной состав':'');
+  const corrections=[...new Set([...includes,...excludes])].filter(id=>drivers.some(d=>String(d.id)===id));
+  overrides.innerHTML=corrections.map(id=>{
+   const d=drivers.find(x=>String(x.id)===id);
+   const isExtra=includes.has(id);
+   return '<div class="chart-composition-override"><span>'+escapeHtml(shortStaffName(d))+' — '+(isExtra?'включён отдельно':'исключён')+'</span><button type="button" data-override-clear="'+escapeHtml(id)+'">×</button></div>';
+  }).join('')||'<p class="muted">Исключений нет</p>';
+  overrides.querySelectorAll('[data-override-clear]').forEach(btn=>btn.onclick=()=>{includes.delete(btn.dataset.overrideClear);excludes.delete(btn.dataset.overrideClear);refresh()});
+  const query=search.value.trim().toLocaleLowerCase('ru');
+  matches.innerHTML=query.length<2?'':drivers.filter(d=>(shortStaffName(d)+' '+d.name+' '+d.department).toLocaleLowerCase('ru').includes(query))
+   .sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).slice(0,12)
+   .map(d=>{
+    const active=ids.has(String(d.id));
+    return '<div class="chart-composition-match"><span>'+escapeHtml(shortStaffName(d))+'</span><button type="button" data-special-id="'+d.id+'" data-special-action="'+(active?'exclude':'include')+'">'+(active?'Исключить':'Включить')+'</button></div>';
+   }).join('')|| (query.length>=2?'<p class="muted">Совпадений нет</p>':'');
+  matches.querySelectorAll('[data-special-id]').forEach(btn=>btn.onclick=()=>{
+   const key=String(btn.dataset.specialId);
+   if(btn.dataset.specialAction==='exclude'){excludes.add(key);includes.delete(key)}
+   else{includes.add(key);excludes.delete(key)}
+   refresh();
+  });
+ };
+ unitsBox.querySelectorAll('input[type=checkbox]').forEach(input=>input.onchange=refresh);
+ search.oninput=refresh;
+ refresh();
  document.querySelector('#vacation-chart-save').onclick=()=>{
-  const ids=[...dialog.querySelectorAll('#vacation-chart-members input:checked')].map(e=>Number(e.value));
-  if(chart){chart.name=name.trim();chart.staffIds=ids;chart.allStaff=false}
-  else{const created={id:'chart-'+Date.now(),name:name.trim(),year:2027,staffIds:ids,allStaff:false};vacationCharts.push(created);activeVacationChartId=created.id}
-  saveVacationCharts();dialog.close();document.querySelector('#vacation-charts-dialog').close();selectedDriverIds=null;selectedGroups=null;render();
+  const name=nameInput.value.trim();
+  if(!name){error.textContent='Введите название графика.';nameInput.focus();return}
+  const selected=selectedUnits();
+  if(!selected.length&&!originalManual){error.textContent='Выберите хотя бы одно структурное звено.';return}
+  const ids=[...candidateIds()].map(Number);
+  if(chart){
+   chart.name=name;
+   chart.staffIds=ids;
+   chart.allStaff=false;
+   if(selected.length){chart.structureIds=selected;chart.includeStaffIds=[...includes].map(Number);chart.excludeStaffIds=[...excludes].map(Number)}
+   else{delete chart.structureIds;delete chart.includeStaffIds;delete chart.excludeStaffIds}
+  }else{
+   const created={id:'chart-'+Date.now(),name,year:2027,staffIds:ids,allStaff:false,structureIds:selected,includeStaffIds:[...includes].map(Number),excludeStaffIds:[...excludes].map(Number)};
+   vacationCharts.push(created);activeVacationChartId=created.id;
+  }
+  saveVacationCharts();
+  dialog.close();document.querySelector('#vacation-charts-dialog').close();
+  selectedDriverIds=null;selectedGroups=null;render();
  };
  dialog.showModal();
 }
-
 const staffKey='vacationStaff2027';
 let drivers;
 try { const stored=JSON.parse(localStorage.getItem(staffKey)||'null'); drivers=Array.isArray(stored)&&stored.length?stored:defaultDrivers.map(d=>({...d,allowance:36,department:''})); } catch { drivers=defaultDrivers.map(d=>({...d,allowance:36,department:''})); }
@@ -698,7 +772,7 @@ function render() {
     <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><div class="staff-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit">✏️ Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">Выбрать сотрудников</button><button type="button" id="structure-new-employee">＋ Новый сотрудник</button><button type="button" id="structure-close">× Закрыть</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<select id="structure-card-leader"></select></label></div><div class="actions"><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog>
 <dialog id="structure-assign-dialog" class="structure-dialog"><h2 id="structure-assignment-title">Добавить сотрудников</h2><p class="muted">Отметьте сотрудников для выбранного звена. Снятие отметки открепит сотрудника от него. Отпуска сохраняются.</p><div id="structure-employees"></div><div class="actions"><button type="button" id="structure-assign-cancel">Отмена</button><button type="button" id="structure-assign-save">Сохранить</button></div></dialog>
 <dialog id="group-edit-dialog" class="group-edit-dialog"><form id="group-edit-form"><h2>Группа отпусков</h2><p id="group-edit-person"></p><label>Номер группы <input type="text" id="group-edit-input" maxlength="30" autocomplete="off" placeholder="Например, 2 или 9.1"></label><p class="muted">Пустое значение означает отсутствие группы.</p><p id="group-edit-error" role="alert"></p><div class="actions"><button type="submit">Сохранить</button><button type="button" id="group-edit-cancel">Отмена</button></div></form></dialog>
-<dialog id="vacation-charts-dialog"><h2>Графики отпусков · 2027</h2><table class="staff-table"><thead><tr><th>Название</th><th>Год</th><th>Сотрудников</th><th></th></tr></thead><tbody id="vacation-charts-list"></tbody></table><div class="actions"><button type="button" id="vacation-chart-add">＋ Добавить</button><button type="button" id="vacation-charts-close">Закрыть</button></div></dialog><dialog id="vacation-chart-members-dialog"><h2>Состав графика: <span id="vacation-chart-name"></span></h2><div id="vacation-chart-members" style="max-height:55vh;overflow:auto"></div><div class="actions"><button type="button" id="vacation-chart-save">Сохранить</button><button type="button" id="vacation-chart-cancel">Отмена</button></div></dialog><dialog id="positions-dialog"><h2>Справочник должностей</h2><div id="positions-list" style="max-height:50vh;overflow:auto"></div><div style="display:flex;gap:8px"><input id="positions-new" placeholder="Новая должность" maxlength="120"><button type="button" id="positions-add">Добавить</button></div><div class="actions"><button type="button" id="positions-close">Закрыть</button></div></dialog><dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
+<dialog id="vacation-charts-dialog"><h2>Графики отпусков · 2027</h2><table class="staff-table"><thead><tr><th>Название</th><th>Год</th><th>Сотрудников</th><th></th></tr></thead><tbody id="vacation-charts-list"></tbody></table><div class="actions"><button type="button" id="vacation-chart-add">＋ Добавить</button><button type="button" id="vacation-charts-close">Закрыть</button></div></dialog><dialog id="vacation-chart-members-dialog" class="chart-composition-dialog"><h2>Состав графика</h2><label class="chart-composition-name">Название графика <input id="vacation-chart-edit-name" maxlength="120"></label><p class="muted">Выберите нужные структурные звенья. Сотрудники этих отделов включаются автоматически, включая вновь добавленных.</p><div id="chart-structure-units" class="chart-composition-units"></div><p id="chart-composition-summary" class="chart-composition-summary"></p><details class="chart-composition-special"><summary>Исключения и отдельные сотрудники</summary><p class="muted">Поиск по фамилии — только если требуется добавить или исключить конкретного сотрудника.</p><input id="chart-composition-search" placeholder="Введите первые буквы фамилии" autocomplete="off"><div id="chart-composition-matches"></div><div id="chart-composition-overrides"></div></details><p id="chart-composition-error" role="alert"></p><div class="actions"><button type="button" id="vacation-chart-save">Сохранить</button><button type="button" id="vacation-chart-cancel">Отмена</button></div></dialog><dialog id="positions-dialog"><h2>Справочник должностей</h2><div id="positions-list" style="max-height:50vh;overflow:auto"></div><div style="display:flex;gap:8px"><input id="positions-new" placeholder="Новая должность" maxlength="120"><button type="button" id="positions-add">Добавить</button></div><div class="actions"><button type="button" id="positions-close">Закрыть</button></div></dialog><dialog id="staff-dialog"><h2>Справочник сотрудников</h2>
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◎</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled>✎</button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>⌫</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span><button type="button" id="staff-close" title="Закрыть" aria-label="Закрыть">×</button></div><div class="staff-search-row"><label for="staff-search">Поиск</label><input id="staff-search" type="search" placeholder="Фамилия, имя, должность, подразделение или группа" autocomplete="off"><button type="button" id="staff-search-clear" title="Очистить поиск" aria-label="Очистить поиск">×</button><span id="staff-search-count"></span></div><div id="staff-list"></div>
     </dialog>
     <dialog id="staff-import-dialog"><h2>Перенос сотрудников из 2026 года</h2><p>Из архива берутся только фамилии и известные группы. Проверьте полные ФИО, группы и нормы отпуска после переноса. Совпадающие фамилии не добавляются повторно.</p><div class="staff-table-scroll" id="staff-import-list"></div><p id="staff-import-status" role="status"></p><div class="actions"><button type="button" id="staff-import-confirm">Добавить выбранных</button><button type="button" id="staff-import-cancel">Отмена</button></div></dialog>
