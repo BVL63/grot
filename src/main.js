@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.107';
+const APP_VERSION='0.3.108';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -92,7 +92,7 @@ function vacationChartEdit(id,membersOnly=false){
   const ancestors=structureAncestors(n.id);
   const level=Math.max(0,ancestors.length-2);
   const currentCount=staffIdsInStructure([n.id]).size;
-  return '<label class="chart-structure-option" style="padding-left:'+(8+level*14)+'px"><input type="checkbox" value="'+escapeHtml(String(n.id))+'" '+(unitIds.has(String(n.id))?'checked':'')+'><span><strong>'+escapeHtml(n.name)+'</strong><small> · '+escapeHtml(n.code||'—')+' · '+currentCount+' чел.</small></span></label>';
+  return '<label class="chart-structure-option" style="--chart-level:'+level+'"><input type="checkbox" value="'+escapeHtml(String(n.id))+'" '+(unitIds.has(String(n.id))?'checked':'')+'><span class="chart-structure-title">'+escapeHtml(n.name)+'</span><span class="chart-structure-code">'+escapeHtml(n.code||'—')+'</span><span class="chart-structure-count">'+currentCount+' чел.</span></label>';
  }).join('')||'<p class="muted">Структура ещё не заполнена. Создайте подразделение в справочнике «Структура предприятия».</p>';
  const summary=document.querySelector('#chart-composition-summary');
  const overrides=document.querySelector('#chart-composition-overrides');
@@ -111,7 +111,7 @@ function vacationChartEdit(id,membersOnly=false){
  const refresh=()=>{
   const unitSelection=selectedUnits();
   const ids=candidateIds();
-  summary.textContent='Выбрано структурных звеньев: '+unitSelection.length+' · Сотрудников в графике: '+ids.size+(originalManual&&!unitSelection.length?' · Пока действует прежний ручной состав':'');
+  summary.textContent='Выбрано звеньев: '+unitSelection.length+' · Сотрудников: '+ids.size+(originalManual&&!unitSelection.length?' · Пока действует прежний ручной состав':'')+(unitSelection.length?' · '+unitSelection.map(id=>structureNodes.find(n=>String(n.id)===id)?.name||'').filter(Boolean).join(', '):'');
   const corrections=[...new Set([...includes,...excludes])].filter(id=>drivers.some(d=>String(d.id)===id));
   overrides.innerHTML=corrections.map(id=>{
    const d=drivers.find(x=>String(x.id)===id);
