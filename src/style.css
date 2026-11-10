@@ -955,3 +955,28 @@ main{padding-bottom:64px!important;}
 @media(max-width:520px){
  #vacation-chart-members-dialog .chart-composition-units .chart-structure-row .chart-structure-option{grid-template-columns:20px minmax(0,1fr) 54px!important;gap:6px!important}
 }
+
+/* ГРОТ 0.3.111 — сотрудники внутри раскрываемых отделов */
+#vacation-chart-members-dialog .chart-tree-person{
+ display:flex!important;flex-direction:row!important;align-items:center!important;
+ gap:9px!important;padding:7px 8px 7px 35px!important;margin:0!important;
+ min-height:34px;box-sizing:border-box;width:100%;max-width:100%;
+ border-bottom:1px solid #eff3f8;background:#fafcfe;cursor:pointer;
+ font-size:13px;font-weight:400;text-align:left
+}
+#vacation-chart-members-dialog .chart-tree-person input[type="checkbox"]{
+ position:static!important;display:block!important;flex:0 0 18px!important;
+ width:18px!important;height:18px!important;margin:0!important;padding:0!important;
+ transform:none!important
+}
+#vacation-chart-members-dialog .chart-tree-person span{
+ display:inline!important;min-width:0;overflow-wrap:anywhere;line-height:1.25
+}
+#vacation-chart-members-dialog .chart-tree-person:has(input:checked){background:#edf7ef}
+#vacation-chart-members-dialog .chart-structure-unassigned-label{
+ display:block;padding:9px 4px;font-weight:600;font-size:13px;color:#53667c
+}
+#vacation-chart-members-dialog .chart-structure-row:has(input:indeterminate){background:#f1f6fd}
+#vacation-chart-members-dialog .chart-composition-units .chart-structure-children{
+ margin-left:19px!important;padding-left:5px!important;border-left:1px solid #ccddec!important
+}
