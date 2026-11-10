@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.96';
+const APP_VERSION='0.3.97';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -300,6 +300,19 @@ function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;',
 const key = 'vacations2027';
 let selectedMonth = 0;
 const expandedMonths = new Set();
+/** After a month is expanded, position its first column just after frozen employee columns. */
+function scrollToCalendarMonth(month,archive=false){
+ const scroll=document.querySelector('#app>main>.scroll');
+ const table=scroll?.querySelector('table.annual-table');
+ const button=table?.querySelector('thead tr:first-child th.month-heading button['+(archive?'data-history-month':'data-month')+'="'+month+'"]');
+ const heading=button?.closest('th');
+ if(!scroll||!table||!heading)return;
+ const frozen=[...table.querySelectorAll('thead tr:first-child th.fixed')].reduce((width,th)=>width+th.getBoundingClientRect().width,0);
+ const tableLeft=table.getBoundingClientRect().left;
+ const left=heading.getBoundingClientRect().left-tableLeft;
+ const max=Math.max(0,scroll.scrollWidth-scroll.clientWidth);
+ scroll.scrollLeft=Math.max(0,Math.min(max,left-frozen-8));
+}
 let selectedDriverIds=null,selectedGroups=null;
 let vacations;
 try {
@@ -573,7 +586,7 @@ function renderHistory2026(){
  document.querySelector('#archive-refresh').onclick=()=>location.reload();
  document.querySelector('#archive-print').onclick=()=>printMonthlyVacationChart(archiveYear);
  document.querySelectorAll('[data-archive-go]').forEach(b=>b.onclick=()=>{const target=b.dataset.archiveGo;displayYear=2027;render();document.getElementById(target)?.click()});
- document.querySelectorAll('[data-history-month]').forEach(b=>b.onclick=()=>{const m=Number(b.dataset.historyMonth);expandedMonths.has(m)?expandedMonths.delete(m):expandedMonths.add(m);render()});
+ document.querySelectorAll('[data-history-month]').forEach(b=>b.onclick=()=>{const m=Number(b.dataset.historyMonth);expandedMonths.has(m)?expandedMonths.delete(m):expandedMonths.add(m);render();scrollToCalendarMonth(m,true)});
 }
 function render() {
  const previousHeader=app.querySelector('.grot-header');
@@ -1266,7 +1279,7 @@ function render() {
     menu.querySelectorAll('.grot-menu-panel button').forEach(b=>b.addEventListener('click',()=>{menu.open=false;}));
   });
   document.querySelector('#collapse-month').onclick=()=>{expandedMonths.clear();render();};
-  document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();});
+  document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();scrollToCalendarMonth(m);});
   document.querySelector('#seasonality-open').onclick=()=>openSeasonality(2027);
   document.querySelector('#priority-calculate').onclick=calculateChartPriority;
   const addChartMembers=document.querySelector('#chart-members-add');if(addChartMembers)addChartMembers.onclick=()=>vacationChartEdit(activeVacationChart().id,true);
