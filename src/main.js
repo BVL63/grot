@@ -2,6 +2,7 @@ import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
+let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
 const APP_VERSION='0.3.115';
 import grotLogo from '../IMG_0637.jpeg';
 
@@ -771,6 +772,18 @@ function render() {
   const headings=columns.map(c=>'<th class="'+(c.day?'day-heading':'month-placeholder')+'">'+(c.day?'<button type="button" data-month="'+c.m+'" title="'+months[c.m]+'">'+c.day+'</button>':'')+'</th>').join('');
   const chart=activeVacationChart();
   const visibleDrivers=drivers.filter(d=>(chartContains(chart,d))&&isEligibleForYear(d,2027)&&(selectedDriverIds===null||selectedDriverIds.has(String(d.id)))&&(selectedGroups===null||selectedGroups.has(String(d.group)))).sort(compareGroupAndName);
+  if(prioritySortDirection!==0){
+    const sortData=priorityForChart();
+    const valid=sortData&&JSON.stringify(sortData.staffIds)===JSON.stringify(drivers.filter(d=>chartContains(chart,d)).map(d=>String(d.id)).sort());
+    const ranks=new Map((valid?sortData.entries:[]).map(x=>[x.id,x.rank]));
+    visibleDrivers.sort((a,b)=>{
+      const ar=ranks.get(String(a.id)),br=ranks.get(String(b.id));
+      if(ar==null&&br==null)return compareGroupAndName(a,b);
+      if(ar==null)return 1;
+      if(br==null)return -1;
+      return prioritySortDirection*(ar-br)||compareGroupAndName(a,b);
+    });
+  }
   const chartMembers=drivers.filter(d=>(chartContains(chart,d))&&isEligibleForYear(d,2027));
   const groupConflicts=new Map(),conflictDates=new Map();
   for(let i=0;i<chartMembers.length;i++)for(let j=i+1;j<chartMembers.length;j++){
@@ -838,8 +851,11 @@ function render() {
       </nav>
       <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong>${chart.allStaff?'':'<button type="button" id="chart-members-add" title="Структурные звенья и исключения">Состав</button>'}<button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
-      <th rowspan="2" class="fixed name"><span class="header-filter"><span class="heading-full">${escapeHtml(activeVacationChart().name)}</span><span class="heading-phone" aria-hidden="true">Сотрудник</span> <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр сотрудников">▾</button></span></th>
-      <th rowspan="2" title="Приоритет"><span class="heading-full">Приоритет</span><span class="heading-phone" aria-hidden="true">Приор.</span></th><th rowspan="2" class="fixed group"><span class="header-filter"><span class="heading-full">Группа</span><span class="heading-phone" aria-hidden="true">Гр.</span> <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${monthHeadings}<th rowspan="2" class="annual-total-heading" title="Запланировано"><span class="heading-full">Запланировано</span><span class="heading-phone" aria-hidden="true">План.</span></th><th rowspan="2" title="Доступно"><span class="heading-full">Доступно</span><span class="heading-phone" aria-hidden="true">Дост.</span></th><th rowspan="2" title="Остаток"><span class="heading-full">Остаток</span><span class="heading-phone" aria-hidden="true">Ост.</span></th></tr><tr class="calendar-days-row">${headings}</tr></thead>
+      <th class="fixed name header-caption"><span class="heading-full">${escapeHtml(activeVacationChart().name)}</span><span class="heading-phone" aria-hidden="true">Сотрудник</span></th>
+      <th class="header-caption" title="Приоритет"><span class="heading-full">Приоритет</span><span class="heading-phone" aria-hidden="true">Приор.</span></th>
+      <th class="fixed group header-caption"><span class="heading-full">Группа</span><span class="heading-phone" aria-hidden="true">Гр.</span></th>
+      ${monthHeadings}<th rowspan="2" class="annual-total-heading" title="Запланировано"><span class="heading-full">Запланировано</span><span class="heading-phone" aria-hidden="true">План.</span></th><th rowspan="2" title="Доступно"><span class="heading-full">Доступно</span><span class="heading-phone" aria-hidden="true">Дост.</span></th><th rowspan="2" title="Остаток"><span class="heading-full">Остаток</span><span class="heading-phone" aria-hidden="true">Ост.</span></th></tr>
+      <tr class="calendar-days-row"><th class="fixed name header-action"><button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр сотрудников" title="Фильтр сотрудников">▾</button></th><th class="header-action"><button type="button" class="filter-trigger priority-sort-trigger" id="priority-sort" title="Сортировка по приоритету" aria-label="Сортировка по приоритету">${prioritySortDirection===1?'↑':prioritySortDirection===-1?'↓':'↕'}</button></th><th class="fixed group header-action"><button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп" title="Фильтр групп">▾</button></th>${headings}</tr></thead>
       <tbody>${rows}</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td></td><td class="fixed group"></td>${totals}<td class="annual-total">${visibleDrivers.filter(d=>annualCount(d.id)>0).length||''}</td><td></td><td></td></tr></tfoot></table></div>
       <p class="table-help">Нажмите на название месяца, чтобы развернуть его дни; повторное нажатие свернёт только этот месяц. Можно открыть несколько месяцев одновременно. Нажмите на фамилию для просмотра отпусков.</p>
       
@@ -1466,6 +1482,7 @@ function render() {
   document.querySelector('#seasonality-open').onclick=()=>openSeasonality(2027);
   document.querySelector('#personnel-load-open').onclick=()=>{const current=activeVacationChart();openPersonnelLoadReport({chart:current,members:drivers.filter(d=>chartContains(current,d)&&isEligibleForYear(d,2027)),vacations,dayType,onUpdateChart:saveVacationCharts})};
   document.querySelector('#priority-calculate').onclick=calculateChartPriority;
+   document.querySelector('#priority-sort').onclick=()=>{prioritySortDirection=prioritySortDirection===0?1:prioritySortDirection===1?-1:0;render();};
   const addChartMembers=document.querySelector('#chart-members-add');if(addChartMembers)addChartMembers.onclick=()=>vacationChartEdit(activeVacationChart().id,true);
   document.querySelectorAll('[data-conflict-id]').forEach(b=>b.onclick=()=>{
     const d=drivers.find(x=>String(x.id)===b.dataset.conflictId);
