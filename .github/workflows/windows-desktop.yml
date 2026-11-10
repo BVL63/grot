@@ -7,6 +7,9 @@ on:
       - 'scripts/copy-print-vendors.mjs'
       - '.github/workflows/windows-desktop.yml'
       - 'package.json'
+      - 'src/**'
+      - 'index.html'
+      - 'public/**'
 
 permissions:
   contents: read
