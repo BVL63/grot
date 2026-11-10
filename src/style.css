@@ -857,3 +857,12 @@ main{padding-bottom:64px!important;}
 #filter-dialog #filter-options .filter-option{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:10px!important;min-height:36px;box-sizing:border-box;padding:7px 8px!important;margin:0!important;text-align:left!important;border-bottom:1px solid #edf1f6;cursor:pointer}
 #filter-dialog #filter-options .filter-option input[type="checkbox"]{display:inline-block!important;flex:0 0 19px!important;width:19px!important;height:19px!important;margin:0!important;padding:0!important;vertical-align:middle}
 #filter-dialog #filter-options .filter-option span{display:inline!important;flex:1;min-width:0;overflow-wrap:anywhere;font-size:14px;line-height:1.25}
+
+/* ГРОТ 0.3.100 — пересечение отпусков сотрудников одной группы */
+#app>main>.scroll .annual-table tbody .group-conflict-cell,
+#app>main>.scroll .annual-table tbody .group-conflict-cell.has-vacation,
+#app>main>.scroll .annual-table tbody .group-conflict-cell.vacation{
+  background:#fee2e2!important;color:#991b1b!important;font-weight:800!important;
+  outline:2px solid #dc2626;outline-offset:-2px
+}
+#app>main>.scroll .annual-table tbody td.day.group-conflict-cell{white-space:nowrap}
