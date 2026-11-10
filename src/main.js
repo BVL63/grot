@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.100';
+const APP_VERSION='0.3.101';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -604,7 +604,7 @@ function render() {
   const groupConflicts=new Map(),conflictDates=new Map();
   for(let i=0;i<chartMembers.length;i++)for(let j=i+1;j<chartMembers.length;j++){
     const a=chartMembers[i],b=chartMembers[j];
-    if(!String(a.group||'').trim()||String(a.group||'')!==String(b.group||'')||String(a.department||'')!==String(b.department||''))continue;
+    if(!String(a.group||'').trim()||String(a.group||'').trim()!==String(b.group||'').trim())continue;
     for(const pa of periodsFor(Number(a.id)))for(const pb of periodsFor(Number(b.id))){
       const start=pa.start>pb.start?pa.start:pb.start,end=pa.end<pb.end?pa.end:pb.end;
       if(start>end)continue;
