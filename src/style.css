@@ -902,3 +902,35 @@ main{padding-bottom:64px!important;}
 #staff-dialog .staff-dialog-top-close{position:absolute;top:12px;right:14px;width:34px;height:34px;min-width:34px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid #b9cbdc;border-radius:6px;background:#f5f8fc;color:#26476b;font:normal 26px/1 Arial,sans-serif;cursor:pointer;z-index:2}
 #staff-dialog .staff-dialog-top-close:hover{background:#e5eef8}
 #staff-dialog>h2{padding-right:42px}
+
+/* ГРОТ 0.3.108 — строгая горизонтальная сетка в окне «Состав» */
+#vacation-chart-members-dialog .chart-composition-units .chart-structure-option{
+ display:grid!important;grid-template-columns:20px minmax(0,1fr) 74px 56px!important;
+ flex-direction:row!important;align-items:center!important;column-gap:10px!important;
+ width:100%!important;max-width:100%!important;box-sizing:border-box!important;
+ margin:0!important;padding:9px 10px 9px calc(10px + var(--chart-level,0)*14px)!important;
+ min-height:42px!important;text-align:left!important;cursor:pointer;white-space:normal!important
+}
+#vacation-chart-members-dialog .chart-composition-units .chart-structure-option input[type="checkbox"]{
+ position:static!important;grid-column:1;grid-row:1;width:18px!important;height:18px!important;
+ min-width:18px!important;max-width:18px!important;margin:0!important;padding:0!important;
+ align-self:center!important;justify-self:start!important;transform:none!important
+}
+#vacation-chart-members-dialog .chart-composition-units .chart-structure-title{
+ grid-column:2;min-width:0!important;display:block!important;font-size:14px;font-weight:500;
+ overflow-wrap:anywhere;text-align:left!important
+}
+#vacation-chart-members-dialog .chart-composition-units .chart-structure-code{
+ grid-column:3;font-size:12px;color:#60758b;text-align:right!important;white-space:nowrap
+}
+#vacation-chart-members-dialog .chart-composition-units .chart-structure-count{
+ grid-column:4;font-size:12px;color:#60758b;text-align:right!important;white-space:nowrap
+}
+#vacation-chart-members-dialog .chart-composition-units .chart-structure-option:has(input:checked){background:#e8f2fc}
+#vacation-chart-members-dialog .chart-composition-units{overflow-x:hidden!important}
+#vacation-chart-members-dialog .chart-composition-summary{overflow-wrap:anywhere;line-height:1.35}
+@media(max-width:520px){
+ #vacation-chart-members-dialog .chart-composition-units .chart-structure-option{grid-template-columns:20px minmax(0,1fr) 55px!important;column-gap:7px!important}
+ #vacation-chart-members-dialog .chart-composition-units .chart-structure-code{display:none!important}
+ #vacation-chart-members-dialog .chart-composition-units .chart-structure-count{grid-column:3}
+}
