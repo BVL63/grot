@@ -5,8 +5,9 @@
  * Адрес grot://local/grot/ постоянный — браузерное хранилище сохраняется
  * между перезапусками и обновлениями программы.
  */
-const {app, BrowserWindow, protocol, shell} = require('electron');
+const {app, BrowserWindow, protocol, shell, dialog} = require('electron');
 const {readFile} = require('node:fs/promises');
+const {mkdirSync, mkdtempSync, rmSync} = require('node:fs');
 const path = require('node:path');
 
 const APP_SCHEME = 'grot';
@@ -30,8 +31,30 @@ protocol.registerSchemesAsPrivileged([{
   privileges: {standard: true, secure: true, supportFetchAPI: true, stream: true}
 }]);
 
-let mainWindow = null;
-app.setName('ГРОТ');
+// Только сборка Portable получает PORTABLE_EXECUTABLE_DIR от electron-builder.
+ // Хранилище расположено рядом с EXE на флешке, а не в %APPDATA% рабочего ПК.
+ // При недоступности записи завершать запуск, не переключаясь молча на ПК.
+ const portableDir = process.env.PORTABLE_EXECUTABLE_DIR;
+ if (portableDir && process.platform === 'win32') {
+   const portableDataDir = path.join(portableDir, 'ГРОТ-Данные');
+   try {
+     mkdirSync(portableDataDir, {recursive: true});
+     const probe = mkdtempSync(path.join(portableDataDir, '.write-check-'));
+     rmSync(probe, {recursive: true, force: true});
+     app.setPath('userData', portableDataDir);
+   } catch (error) {
+     dialog.showErrorBox(
+       'ГРОТ Portable — нельзя сохранить данные',
+       'Нет доступа к записи в папку «ГРОТ-Данные» рядом с программой. ' +
+       'Проверьте флешку и права доступа. Программа не будет запущена, чтобы не потерять данные.\\n\\n' +
+       String(error.message || error)
+     );
+     process.exit(1);
+   }
+ }
+ 
+ let mainWindow = null;
+ app.setName('ГРОТ');
 app.setAppUserModelId('ru.grot.vacation.desktop');
 
 app.whenReady().then(async () => {
