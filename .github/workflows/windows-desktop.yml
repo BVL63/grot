@@ -1,15 +1,6 @@
 name: ГРОТ — Windows Installer + Portable
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'desktop/**'
-      - 'scripts/copy-print-vendors.mjs'
-      - '.github/workflows/windows-desktop.yml'
-      - 'package.json'
-      - 'src/**'
-      - 'index.html'
-      - 'public/**'
 
 permissions:
   contents: read
