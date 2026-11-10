@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "build:desktop": "vite build --base=/grot/ && node scripts/copy-print-vendors.mjs",
     "desktop": "npm run build:desktop && electron .",
-    "dist:win": "npm run build:desktop && electron-builder --win nsis --x64"
+    "dist:win": "npm run build:desktop && electron-builder --win nsis --x64 --publish never"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
