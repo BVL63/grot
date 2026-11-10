@@ -803,7 +803,7 @@ function render() {
           <summary>Документ</summary>
           <div class="grot-menu-panel">
             <button type="button" id="vacation-charts-open">Графики отпусков</button>
-            <button type="button" id="seasonality-open">Анализ отпускной нагрузки · КОН / КСН / ИПО</button><button type="button" id="personnel-load-open">Кадровая нагрузка</button>
+            <button type="button" id="seasonality-open">Анализ отпускной нагрузки · КОН / КСН / ИПО</button>
           </div>
         </details>
         <details class="grot-menu">
@@ -813,6 +813,10 @@ function render() {
             <button type="button" id="staff-open">Сотрудники</button><button type="button" id="positions-open">Должности</button><button type="button" id="structure-open">Структура предприятия</button>
             <button type="button" id="calendar-open">Производственный календарь</button>
           </div>
+        </details>
+        <details class="grot-menu">
+          <summary>Отчёты</summary>
+          <div class="grot-menu-panel"><button type="button" id="personnel-load-open">Кадровая нагрузка</button></div>
         </details>
         <details class="grot-menu">
           <summary>Печать</summary>
