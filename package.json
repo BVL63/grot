@@ -1,1 +1,57 @@
-{"name":"grafik-otpuskov-2027","version":"0.1.0","private":true,"type":"module","scripts":{"dev":"vite --host 0.0.0.0","build": "vite build","preview":"vite preview"},"dependencies":{"@supabase/supabase-js":"^2.49.0","vite":"^6.2.0"}}
+{
+  "name": "grafik-otpuskov-2027",
+  "version": "0.3.97",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:desktop": "vite build --base=/grot/ && node scripts/copy-print-vendors.mjs",
+    "desktop": "npm run build:desktop && electron .",
+    "dist:win": "npm run build:desktop && electron-builder --win nsis --x64"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.0",
+    "vite": "^6.2.0",
+    "html2canvas": "1.4.1",
+    "jspdf": "2.5.2"
+  },
+  "main": "desktop/main.cjs",
+  "description": "ГРОТ — график отпусков (веб и Windows)",
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "ru.grot.vacation.desktop",
+    "productName": "ГРОТ",
+    "asar": true,
+    "files": [
+      "desktop/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ГРОТ",
+      "artifactName": "GROT-Setup-${version}-${arch}.${ext}"
+    }
+  }
+}
