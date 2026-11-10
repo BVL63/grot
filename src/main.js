@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.104';
+const APP_VERSION='0.3.105';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -46,7 +46,7 @@ function vacationChartEdit(id,membersOnly=false){
  const chosen=new Set(chart?.allStaff?drivers.map(d=>String(d.id)):(chart?.staffIds||[]).map(String));
  const dialog=document.querySelector('#vacation-chart-members-dialog');
  document.querySelector('#vacation-chart-name').textContent=name.trim();
- document.querySelector('#vacation-chart-members').innerHTML=drivers.slice().sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).map(d=>'<label style="display:block;padding:5px"><input type="checkbox" value="'+d.id+'" '+(chosen.has(String(d.id))?'checked':'')+'> '+escapeHtml(shortStaffName(d))+' — '+escapeHtml(d.department||'')+'</label>').join('');
+ document.querySelector('#vacation-chart-members').innerHTML=drivers.slice().sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).map(d=>'<label class="chart-member-option"><input type="checkbox" value="'+d.id+'" '+(chosen.has(String(d.id))?'checked':'')+'><span class="chart-member-details"><strong>'+escapeHtml(shortStaffName(d))+'</strong><small>'+escapeHtml(d.department||'Место работы не указано')+'</small></span></label>').join('');
  document.querySelector('#vacation-chart-save').onclick=()=>{
   const ids=[...dialog.querySelectorAll('#vacation-chart-members input:checked')].map(e=>Number(e.value));
   if(chart){chart.name=name.trim();chart.staffIds=ids;chart.allStaff=false}
