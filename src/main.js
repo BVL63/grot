@@ -1,7 +1,8 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
+import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.112';
+const APP_VERSION='0.3.113';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -802,7 +803,7 @@ function render() {
           <summary>Документ</summary>
           <div class="grot-menu-panel">
             <button type="button" id="vacation-charts-open">Графики отпусков</button>
-            <button type="button" id="seasonality-open">Анализ отпускной нагрузки · КОН / КСН / ИПО</button>
+            <button type="button" id="seasonality-open">Анализ отпускной нагрузки · КОН / КСН / ИПО</button><button type="button" id="personnel-load-open">Кадровая нагрузка</button>
           </div>
         </details>
         <details class="grot-menu">
@@ -1456,6 +1457,7 @@ function render() {
   });
   document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();scrollToCalendarMonth(m);});
   document.querySelector('#seasonality-open').onclick=()=>openSeasonality(2027);
+  document.querySelector('#personnel-load-open').onclick=()=>{const current=activeVacationChart();openPersonnelLoadReport({chart:current,members:drivers.filter(d=>chartContains(current,d)&&isEligibleForYear(d,2027)),vacations,dayType,onUpdateChart:saveVacationCharts})};
   document.querySelector('#priority-calculate').onclick=calculateChartPriority;
   const addChartMembers=document.querySelector('#chart-members-add');if(addChartMembers)addChartMembers.onclick=()=>vacationChartEdit(activeVacationChart().id,true);
   document.querySelectorAll('[data-conflict-id]').forEach(b=>b.onclick=()=>{
