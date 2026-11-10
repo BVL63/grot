@@ -1012,3 +1012,24 @@ main{padding-bottom:64px!important;}
 #personnel-load-dialog .load-violation{background:#fff0f0;color:#8d1a20}
 #personnel-load-dialog .load-bad-text{color:#b91c1c;font-weight:800}
 #personnel-load-dialog .load-note{color:#5f6e7b;font-size:12px;line-height:1.5;margin:12px 0 0}
+
+/* ГРОТ 0.3.114 — диаграмма кадровой нагрузки по 12 месяцам */
+#personnel-load-dialog .load-chart-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px;font-size:13px}
+#personnel-load-dialog .load-chart-controls select{max-width:100%;padding:7px 9px;font:inherit;border:1px solid #9fb7ce;border-radius:6px;background:#fff}
+#personnel-load-dialog .load-month-chart{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px;align-items:end;min-height:186px;padding:12px 10px 5px;border:1px solid #d8e3ed;border-radius:8px;background:linear-gradient(to top,#f8fbfe,#fff)}
+#personnel-load-dialog .load-chart-month{display:flex;flex-direction:column;justify-content:end;align-items:center;gap:4px;min-width:0;height:182px;margin:0;padding:4px 2px;border:1px solid transparent;border-radius:6px;background:transparent;color:#344d63;cursor:pointer;font:inherit}
+#personnel-load-dialog .load-chart-month:hover{background:#eef6fd}
+#personnel-load-dialog .load-chart-current{background:#edf5ff!important;border-color:#96b5d0}
+#personnel-load-dialog .load-chart-value{height:18px;flex:0 0 18px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+#personnel-load-dialog .load-chart-track{display:flex;align-items:flex-end;justify-content:center;width:100%;height:128px;min-height:0;flex:0 0 128px;border-bottom:1px solid #b7ccdd}
+#personnel-load-dialog .load-chart-bar{display:block;width:min(80%,44px);min-width:9px;background:#5c96c2;border-radius:4px 4px 0 0}
+#personnel-load-dialog .load-chart-current .load-chart-bar{background:#266c9f}
+#personnel-load-dialog .load-chart-warning .load-chart-bar{background:#be7b42}
+#personnel-load-dialog .load-chart-month-label{display:block;max-width:100%;font-size:11px;text-align:center}
+@media(max-width:620px){
+ #personnel-load-dialog .load-month-chart{gap:2px;padding:9px 3px 5px}
+ #personnel-load-dialog .load-chart-month{padding:2px 0;height:165px}
+ #personnel-load-dialog .load-chart-track{height:110px;flex-basis:110px}
+ #personnel-load-dialog .load-chart-value{font-size:10px}
+ #personnel-load-dialog .load-chart-month-label{font-size:9px}
+}
