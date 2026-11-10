@@ -44,6 +44,21 @@ export function openPersonnelLoadReport({chart,members,vacations,dayType,onUpdat
  dialog=document.createElement('dialog');
  dialog.id='personnel-load-dialog';
  dialog.className='personnel-load-dialog';
+ const chartStyle=document.createElement('style');
+ chartStyle.textContent=`
+ #personnel-load-dialog .load-chart-controls{display:flex!important;align-items:center!important;gap:10px!important;flex-wrap:wrap;margin:8px 0 12px}
+ #personnel-load-dialog .load-chart-controls select{display:inline-block!important;width:auto!important;max-width:100%!important;min-width:230px;padding:7px 9px}
+ #personnel-load-dialog #load-month-chart{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:6px!important;align-items:end!important;padding:12px 8px 8px!important;min-height:198px!important;background:#f8fbfe!important;border:1px solid #d8e3ed;border-radius:8px;box-sizing:border-box}
+ #personnel-load-dialog #load-month-chart button.load-chart-month{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;gap:3px!important;position:relative!important;float:none!important;min-width:0!important;width:100%!important;height:176px!important;min-height:176px!important;max-height:176px!important;margin:0!important;padding:3px 1px!important;box-sizing:border-box!important;border:1px solid transparent;border-radius:5px;cursor:pointer;background:transparent;white-space:normal!important;font:inherit}
+ #personnel-load-dialog #load-month-chart .load-chart-value{display:block!important;height:20px!important;line-height:20px!important;font-size:12px!important;font-weight:700!important;flex:none!important;color:#243247!important}
+ #personnel-load-dialog #load-month-chart .load-chart-track{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;width:100%!important;height:124px!important;min-height:124px!important;max-height:124px!important;flex:none!important;border-bottom:1px solid #9ebad0;position:relative}
+ #personnel-load-dialog #load-month-chart .load-chart-bar{display:block!important;width:65%!important;max-width:44px!important;min-width:4px!important;flex:none!important;align-self:center!important;background:#5b96c3!important;border-radius:4px 4px 0 0!important;min-height:0}
+ #personnel-load-dialog #load-month-chart .load-chart-month-label{display:block!important;text-align:center!important;font-size:11px!important;line-height:17px!important;height:17px!important;flex:none!important;color:#475b70!important}
+ #personnel-load-dialog #load-month-chart .load-chart-month.load-chart-current{background:#ebf4ff!important;border-color:#a8c5dd!important}
+ #personnel-load-dialog #load-month-chart .load-chart-month.load-chart-current .load-chart-bar{background:#286d9e!important}
+ #personnel-load-dialog #load-month-chart .load-chart-month.load-chart-warning .load-chart-bar{background:#bb7842!important}
+ @media(max-width:620px){#personnel-load-dialog #load-month-chart{gap:2px!important;padding:9px 3px!important}#personnel-load-dialog #load-month-chart .load-chart-value{font-size:10px!important}#personnel-load-dialog #load-month-chart .load-chart-month-label{font-size:9px!important}}
+ `;
  dialog.innerHTML='<div class="load-header"><h2>Кадровая нагрузка · 2027</h2><button type="button" id="load-close" aria-label="Закрыть" title="Закрыть">×</button></div>'+
  '<p class="load-description">Прогноз по отпускам графика «'+escape(chart.name)+'». Болезни, командировки и прочие отсутствия не учитываются. Контроль проводится по рабочим дням производственного календаря.</p>'+
  '<div class="load-controls"><label>Месяц<select id="load-month">'+months.map((m,i)=>'<option value="'+i+'">'+m+'</option>').join('')+'</select></label>'+
@@ -55,6 +70,7 @@ export function openPersonnelLoadReport({chart,members,vacations,dayType,onUpdat
  '<h3>Таблица по месяцам</h3><div class="load-scroll"><table class="load-table"><thead><tr><th>Месяц</th><th>Рабочих дней</th><th>Человеко-дней отпуска</th><th>Макс. в отпуске</th><th>Мин. остаются</th><th>Среднее остаются</th><th>Ниже минимума</th></tr></thead><tbody id="load-monthly"></tbody></table></div>'+
  '<h3 id="load-detail-title">По дням</h3><div class="load-scroll"><table class="load-table"><thead><tr><th>Дата</th><th>По графику</th><th>В отпуске</th><th>Остаются</th><th>Доступность</th><th>Фамилии отсутствующих</th></tr></thead><tbody id="load-daily"></tbody></table></div>'+
  '<p class="load-note">Выходные и праздничные дни показаны справочно и не участвуют в проверке минимальной численности. Показатель «остаются» — плановая доступность по отпускам, не фактическая явка.</p>';
+ dialog.appendChild(chartStyle);
  document.body.appendChild(dialog);
  const monthEl=dialog.querySelector('#load-month'),groupEl=dialog.querySelector('#load-group'),minEl=dialog.querySelector('#load-minimum'),chartMetricEl=dialog.querySelector('#load-chart-metric');
  monthEl.value=String(new Date().getFullYear()===2027?new Date().getMonth():0);
