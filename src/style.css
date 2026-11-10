@@ -866,3 +866,13 @@ main{padding-bottom:64px!important;}
 #app>main>.scroll .annual-table tbody .group-conflict-mark{color:#b91c1c!important;font-weight:900;font-size:15px;line-height:1;margin-left:3px;display:inline-block;vertical-align:middle;text-shadow:0 0 1px #fff}
 #app>main>.scroll .annual-table tbody td.day.vacation .group-conflict-mark{background:#fff;border-radius:2px;padding:0 2px}
 #app>main>.scroll .annual-table .group-conflict-indicator{background:transparent!important;color:#b91c1c!important;border:0!important;width:19px;height:22px;font-size:19px}
+
+/* ГРОТ 0.3.105: список состава графика — галочка слева, компактные строки */
+#vacation-chart-members-dialog{width:min(540px,calc(100vw - 24px));max-width:100%;box-sizing:border-box;overflow-x:hidden}
+#vacation-chart-members-dialog #vacation-chart-members{max-height:min(55vh,440px);overflow-y:auto!important;overflow-x:hidden!important;display:flex;flex-direction:column;gap:0;min-width:0}
+#vacation-chart-members-dialog #vacation-chart-members .chart-member-option{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:11px!important;padding:8px 6px!important;margin:0!important;min-height:42px;box-sizing:border-box;width:100%;max-width:100%;border-bottom:1px solid #e3eaf2;cursor:pointer;text-align:left}
+#vacation-chart-members-dialog #vacation-chart-members .chart-member-option input[type="checkbox"]{display:block!important;flex:0 0 19px!important;width:19px!important;height:19px!important;padding:0!important;margin:0!important;align-self:center}
+#vacation-chart-members-dialog #vacation-chart-members .chart-member-details{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;gap:2px;min-width:0;width:auto!important;line-height:1.2}
+#vacation-chart-members-dialog #vacation-chart-members .chart-member-details strong{font-size:14px;font-weight:600;color:#18334d;overflow-wrap:anywhere}
+#vacation-chart-members-dialog #vacation-chart-members .chart-member-details small{font-size:12px;color:#63758b;overflow-wrap:anywhere;display:block;margin:0}
+#vacation-chart-members-dialog .actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
