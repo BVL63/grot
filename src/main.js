@@ -2,7 +2,7 @@ import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.114';
+const APP_VERSION='0.3.115';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
