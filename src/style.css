@@ -821,3 +821,7 @@ main{padding-bottom:64px!important;}
 #staff-card .staff-legacy-notice:not([hidden]){display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:8px 0;padding:7px 9px;border:1px solid #d7b77c;background:#fff8e8;color:#664716;border-radius:6px;font-size:12px;line-height:1.4}
 #staff-card .staff-legacy-notice button:not([hidden]){margin-left:auto;white-space:nowrap;border:1px solid #bf8531;background:#fff;border-radius:5px;padding:5px 9px;color:#7c4a10;font-size:12px;cursor:pointer}
 #staff-card [hidden]{display:none!important}
+
+/* v0.3.95: быстрый доступ к составу отдельного графика */
+.chart-actionbar #chart-members-add{padding:7px 11px;border:1px solid #2d80bc;background:#eff7ff;color:#125180;border-radius:7px;font-weight:600;cursor:pointer;white-space:normal}
+@media(max-width:600px){.chart-actionbar #chart-members-add{font-size:13px;padding:6px 8px}}
