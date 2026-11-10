@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.111';
+const APP_VERSION='0.3.112';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -543,12 +543,19 @@ function splitRule(id) {
     : '<p class="rule-warning">⚠ Пока нет части отпуска продолжительностью не менее 14 календарных дней. Перед утверждением графика необходимо предусмотреть такую часть.</p>';
 }
 const defaultHolidays2027 = new Set(['2027-01-01','2027-01-02','2027-01-03','2027-01-04','2027-01-05','2027-01-06','2027-01-07','2027-01-08','2027-02-23','2027-03-08','2027-05-01','2027-05-09','2027-06-12','2027-11-04']);
+/* Постановление Правительства РФ от 17.09.2026 № 1187:
+   02.01 → 05.11, 03.01 → 31.12, 20.02 → 22.02.
+   Дополнительно учитываются выходные из-за совпадения праздников с выходными. */
+const transferredWeekends2027 = new Set(['2027-02-22','2027-05-03','2027-05-10','2027-06-14','2027-11-05','2027-12-31']);
+const transferredWorkdays2027 = new Set(['2027-02-20']);
 const calendarKey='productionCalendar2027';
 let calendarOverrides={};
 try { calendarOverrides=JSON.parse(localStorage.getItem(calendarKey)||'{}')||{}; } catch {}
 function dayType(date) {
   if (Object.prototype.hasOwnProperty.call(calendarOverrides,date)) return calendarOverrides[date];
   if(defaultHolidays2027.has(date)) return 'holiday';
+  if(transferredWeekends2027.has(date)) return 'weekend';
+  if(transferredWorkdays2027.has(date)) return 'workday';
   return [0,6].includes(new Date(date+'T12:00:00Z').getUTCDay())?'weekend':'workday';
 }
 function leaveDays(start,end) {
