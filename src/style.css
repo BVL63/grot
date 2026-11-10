@@ -980,3 +980,35 @@ main{padding-bottom:64px!important;}
 #vacation-chart-members-dialog .chart-composition-units .chart-structure-children{
  margin-left:19px!important;padding-left:5px!important;border-left:1px solid #ccddec!important
 }
+
+/* ГРОТ 0.3.113 — отчет кадровой нагрузки */
+#personnel-load-dialog{width:min(1120px,calc(100vw - 22px));max-width:none;max-height:91dvh;box-sizing:border-box;overflow:auto;padding:20px;border:1px solid #adc5da;border-radius:12px;color:#243247;background:#fff}
+#personnel-load-dialog .load-header{display:flex;align-items:center;justify-content:space-between;gap:15px}
+#personnel-load-dialog .load-header h2{margin:0;font-size:21px}
+#personnel-load-dialog #load-close{width:35px;height:35px;font-size:24px;border:1px solid #bdcbd9;border-radius:6px;background:#f2f6fa;cursor:pointer}
+#personnel-load-dialog .load-description{font-size:13px;line-height:1.5;color:#576a7c;margin:12px 0 16px}
+#personnel-load-dialog .load-controls{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+#personnel-load-dialog .load-controls label{display:flex;flex-direction:column;gap:5px;margin:0;min-width:155px;font-size:13px;font-weight:600}
+#personnel-load-dialog .load-controls select,#personnel-load-dialog .load-controls input{font:inherit;padding:8px 9px;min-height:36px;box-sizing:border-box;border:1px solid #9fb7ce;border-radius:6px;background:#fff}
+#personnel-load-dialog .load-controls input{width:190px}
+#personnel-load-dialog .load-controls small{font-size:11px;color:#5b6c80;font-weight:400}
+#personnel-load-dialog .load-rule{font-size:13px;color:#596e80;background:#f2f5f9;padding:9px 10px;border-radius:6px;margin:0}
+#personnel-load-dialog .load-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px;margin:16px 0}
+#personnel-load-dialog .load-summary>div{background:#edf4fa;border:1px solid #d7e4f0;border-radius:8px;padding:12px 10px;display:flex;flex-direction:column;gap:5px}
+#personnel-load-dialog .load-summary strong{font-size:23px;color:#1b4c70;font-variant-numeric:tabular-nums}
+#personnel-load-dialog .load-summary span{font-size:12px;color:#526b80}
+#personnel-load-dialog .load-summary .load-bad{background:#fff0f0;border-color:#fac4c4}
+#personnel-load-dialog .load-summary .load-bad strong{color:#a91f25}
+#personnel-load-dialog h3{margin:19px 0 9px;font-size:16px}
+#personnel-load-dialog .load-scroll{overflow-x:auto;max-width:100%;border:1px solid #d8e3ed;border-radius:7px}
+#personnel-load-dialog .load-table{border-collapse:collapse;width:100%;min-width:715px;font-size:12.5px;table-layout:auto}
+#personnel-load-dialog .load-table th,#personnel-load-dialog .load-table td{border-bottom:1px solid #e4ebf1;padding:9px 8px;text-align:center;vertical-align:middle}
+#personnel-load-dialog .load-table th{background:#eaf1f8;color:#30495e;font-size:12px;font-weight:700;position:sticky;top:0}
+#personnel-load-dialog .load-table td:first-child{text-align:left;white-space:nowrap}
+#personnel-load-dialog .load-table td:last-child{text-align:left;min-width:175px}
+#personnel-load-dialog .load-table button[data-load-month]{font:inherit;color:#115d95;text-decoration:underline;border:0;background:none;padding:0;cursor:pointer}
+#personnel-load-dialog .load-selected{background:#e7f3ff}
+#personnel-load-dialog .load-nonwork{background:#f7f8fa;color:#788392}
+#personnel-load-dialog .load-violation{background:#fff0f0;color:#8d1a20}
+#personnel-load-dialog .load-bad-text{color:#b91c1c;font-weight:800}
+#personnel-load-dialog .load-note{color:#5f6e7b;font-size:12px;line-height:1.5;margin:12px 0 0}
