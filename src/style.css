@@ -1035,3 +1035,15 @@ main{padding-bottom:64px!important;}
  #personnel-load-dialog .load-chart-value{font-size:10px}
  #personnel-load-dialog .load-chart-month-label{font-size:9px}
 }
+
+/* Заголовки сотрудников, приоритета и группы на уровне месяцев.
+   Кнопки фильтрации и сортировки во второй строке. */
+#app>main>.scroll .annual-table thead .header-caption{text-align:center;vertical-align:middle}
+#app>main>.scroll .annual-table thead .header-action{text-align:center;vertical-align:middle;padding:1px 4px}
+#app>main>.scroll .annual-table thead .header-action .filter-trigger{display:inline-flex;align-items:center;justify-content:center;width:28px;min-width:28px;height:26px;padding:0;margin:auto;border:1px solid #b8c8d7;border-radius:5px;background:#f5f8fc;color:#173c5c;font-size:17px;font-weight:700;cursor:pointer}
+#app>main>.scroll .annual-table thead tr.calendar-days-row>th.fixed{z-index:9}
+#app>main>.scroll .annual-table thead tr.calendar-days-row>th:nth-child(2){z-index:9}
+@media(max-width:600px){
+ #app>main>.scroll .annual-table thead tr.calendar-days-row>th:nth-child(2){position:sticky;top:38px;left:132px!important;width:56px!important;min-width:56px!important;max-width:56px!important;display:table-cell!important;z-index:9;background:#f3f7fb!important}
+ #app>main>.scroll .annual-table thead .header-action .filter-trigger{width:24px;min-width:24px;height:24px}
+}
