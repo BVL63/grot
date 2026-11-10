@@ -937,3 +937,21 @@ main{padding-bottom:64px!important;}
 
 /* ГРОТ 0.3.109 — все карандаши развернуты для правой руки */
 .grot-pencil-right{display:inline-block;transform:scaleX(-1);transform-origin:center;line-height:1;vertical-align:baseline;font-family:"Segoe UI Symbol","Arial Unicode MS",sans-serif}
+
+/* ГРОТ 0.3.110 — иерархия состава графика, раскрытие по стрелке */
+#vacation-chart-members-dialog .chart-composition-units{display:block!important;overflow-x:hidden!important}
+#vacation-chart-members-dialog .chart-structure-node{display:block;min-width:0}
+#vacation-chart-members-dialog .chart-structure-row{display:grid!important;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:3px;min-height:40px;border-bottom:1px solid #e7eef5}
+#vacation-chart-members-dialog .chart-structure-children{display:block;margin-left:19px;border-left:1px solid #d5e1ee;padding-left:5px}
+#vacation-chart-members-dialog .chart-structure-children[hidden]{display:none!important}
+#vacation-chart-members-dialog .chart-structure-toggle,
+#vacation-chart-members-dialog .chart-structure-toggle-placeholder{width:25px;height:29px;display:flex;align-items:center;justify-content:center}
+#vacation-chart-members-dialog .chart-structure-toggle{border:0;background:transparent;font:600 19px/1 Arial,sans-serif;color:#315c86;cursor:pointer;padding:0}
+#vacation-chart-members-dialog .chart-structure-toggle:hover{background:#e9f3ff;border-radius:4px}
+#vacation-chart-members-dialog .chart-composition-units .chart-structure-row .chart-structure-option{
+ display:grid!important;grid-template-columns:20px minmax(0,1fr) 66px 54px!important;
+ padding:7px 8px!important;border-bottom:0!important;gap:8px!important;margin:0!important;min-height:38px!important
+}
+@media(max-width:520px){
+ #vacation-chart-members-dialog .chart-composition-units .chart-structure-row .chart-structure-option{grid-template-columns:20px minmax(0,1fr) 54px!important;gap:6px!important}
+}
