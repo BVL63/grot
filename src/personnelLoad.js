@@ -51,11 +51,12 @@ export function openPersonnelLoadReport({chart,members,vacations,dayType,onUpdat
  (chart.allStaff?'<p class="load-rule">Общий график: норматив минимальной численности не устанавливается.</p>':
  '<label>Минимум работающих в графике<input id="load-minimum" type="number" min="0" max="9999" step="1" value="'+(Number(chart.minWorking)||0)+'"><small>0 — без контроля; норматив относится ко всему графику</small></label>')+'</div>'+
  '<div id="load-summary" class="load-summary"></div>'+
- '<h3>По месяцам</h3><div class="load-scroll"><table class="load-table"><thead><tr><th>Месяц</th><th>Рабочих дней</th><th>Человеко-дней отпуска</th><th>Макс. в отпуске</th><th>Мин. остаются</th><th>Среднее остаются</th><th>Ниже минимума</th></tr></thead><tbody id="load-monthly"></tbody></table></div>'+
+ '<h3>График по месяцам</h3><div class="load-chart-controls"><label for="load-chart-metric">Показатель</label><select id="load-chart-metric"><option value="peak">Максимум одновременно в отпуске, чел.</option><option value="absent">Человеко-дни отпуска</option></select></div><div id="load-month-chart" class="load-month-chart" role="group" aria-label="График кадровой нагрузки по 12 месяцам"></div>'+
+ '<h3>Таблица по месяцам</h3><div class="load-scroll"><table class="load-table"><thead><tr><th>Месяц</th><th>Рабочих дней</th><th>Человеко-дней отпуска</th><th>Макс. в отпуске</th><th>Мин. остаются</th><th>Среднее остаются</th><th>Ниже минимума</th></tr></thead><tbody id="load-monthly"></tbody></table></div>'+
  '<h3 id="load-detail-title">По дням</h3><div class="load-scroll"><table class="load-table"><thead><tr><th>Дата</th><th>По графику</th><th>В отпуске</th><th>Остаются</th><th>Доступность</th><th>Фамилии отсутствующих</th></tr></thead><tbody id="load-daily"></tbody></table></div>'+
  '<p class="load-note">Выходные и праздничные дни показаны справочно и не участвуют в проверке минимальной численности. Показатель «остаются» — плановая доступность по отпускам, не фактическая явка.</p>';
  document.body.appendChild(dialog);
- const monthEl=dialog.querySelector('#load-month'),groupEl=dialog.querySelector('#load-group'),minEl=dialog.querySelector('#load-minimum');
+ const monthEl=dialog.querySelector('#load-month'),groupEl=dialog.querySelector('#load-group'),minEl=dialog.querySelector('#load-minimum'),chartMetricEl=dialog.querySelector('#load-chart-metric');
  monthEl.value=String(new Date().getFullYear()===2027?new Date().getMonth():0);
  const render=()=>{
   const month=Number(monthEl.value),group=groupEl.value,min=chart.allStaff?0:Math.max(0,Number(chart.minWorking)||0);
@@ -65,6 +66,18 @@ export function openPersonnelLoadReport({chart,members,vacations,dayType,onUpdat
   const work=days.filter(d=>d.type==='workday');
   const people=group==='*'?members:members.filter(d=>groupValue(d)===group);
   dialog.querySelector('#load-summary').innerHTML='<div><strong>'+people.length+'</strong><span>Сотрудников в составе</span></div><div><strong>'+monthly.workdays+'</strong><span>Рабочих дней</span></div><div><strong>'+monthly.absent+'</strong><span>Человеко-дней отпуска</span></div><div><strong>'+monthly.peak+'</strong><span>Максимум в отпуске за день</span></div>'+(isChecking?'<div class="'+(monthly.critical?'load-bad':'')+'"><strong>'+monthly.critical+'</strong><span>Дней ниже минимума</span></div>':'');
+  // Высоты столбиков сравнимы в пределах выбранного показателя и группы.
+  const metric=chartMetricEl.value;
+  const maxValue=Math.max(1,...all.map(item=>metric==='peak'?item.peak:item.absent));
+  dialog.querySelector('#load-month-chart').innerHTML=all.map(item=>{
+   const value=metric==='peak'?item.peak:item.absent;
+   const height=Math.round(value/maxValue*1000)/10;
+   const selected=item.index===month;
+   const warning=isChecking&&item.critical>0;
+   return '<button type="button" class="load-chart-month '+(selected?'load-chart-current ':'')+(warning?'load-chart-warning':'')+'" data-chart-month="'+item.index+'" aria-label="'+escape(item.name)+': '+value+(metric==='peak'?' человек одновременно в отпуске':' человеко-дней отпуска')+'">'+
+    '<span class="load-chart-value">'+value+'</span><span class="load-chart-track"><span class="load-chart-bar" style="height:'+height+'%"></span></span><span class="load-chart-month-label">'+escape(item.name.slice(0,3))+'</span></button>';
+  }).join('');
+  dialog.querySelectorAll('[data-chart-month]').forEach(button=>button.onclick=()=>{monthEl.value=button.dataset.chartMonth;render()});
   dialog.querySelector('#load-monthly').innerHTML=all.map(r=>'<tr class="'+(r.index===month?'load-selected':'')+'"><td><button type="button" data-load-month="'+r.index+'">'+r.name+'</button></td><td>'+r.workdays+'</td><td>'+r.absent+'</td><td>'+r.peak+'</td><td>'+r.low+'</td><td>'+r.avg.toFixed(1).replace('.',',')+'</td><td class="'+(isChecking&&r.critical?'load-bad-text':'')+'">'+(isChecking?r.critical:'—')+'</td></tr>').join('');
   dialog.querySelector('#load-detail-title').textContent='По дням · '+months[month]+(group==='*'?'':' · группа '+(group||'Без группы'));
   dialog.querySelector('#load-daily').innerHTML=days.map(d=>{
@@ -74,7 +87,7 @@ export function openPersonnelLoadReport({chart,members,vacations,dayType,onUpdat
   }).join('');
   dialog.querySelectorAll('[data-load-month]').forEach(b=>b.onclick=()=>{monthEl.value=b.dataset.loadMonth;render()});
  };
- monthEl.onchange=render;groupEl.onchange=render;
+ monthEl.onchange=render;groupEl.onchange=render;chartMetricEl.onchange=render;
  if(minEl)minEl.onchange=()=>{
   const raw=Number(minEl.value);
   if(!Number.isInteger(raw)||raw<0||raw>9999){minEl.value=String(chart.minWorking||0);return}
