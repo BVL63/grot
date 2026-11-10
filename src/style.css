@@ -850,3 +850,10 @@ main{padding-bottom:64px!important;}
 #group-edit-dialog input{width:100%;box-sizing:border-box;font:inherit;min-height:40px;padding:8px;border:1px solid #9bb3ce;border-radius:6px}
 #group-edit-dialog .actions{display:flex;gap:9px;justify-content:flex-end;margin-top:12px}
 #group-edit-error{color:#b91c1c;margin:4px 0}
+
+/* ГРОТ 0.3.99: компактный список фильтра для всех графиков и Electron */
+#filter-dialog{width:min(430px,calc(100vw - 24px));box-sizing:border-box}
+#filter-dialog #filter-options{max-height:min(52vh,420px);display:flex!important;flex-direction:column!important;justify-content:flex-start!important;align-items:stretch!important;gap:0!important;overflow-y:auto}
+#filter-dialog #filter-options .filter-option{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:10px!important;min-height:36px;box-sizing:border-box;padding:7px 8px!important;margin:0!important;text-align:left!important;border-bottom:1px solid #edf1f6;cursor:pointer}
+#filter-dialog #filter-options .filter-option input[type="checkbox"]{display:inline-block!important;flex:0 0 19px!important;width:19px!important;height:19px!important;margin:0!important;padding:0!important;vertical-align:middle}
+#filter-dialog #filter-options .filter-option span{display:inline!important;flex:1;min-width:0;overflow-wrap:anywhere;font-size:14px;line-height:1.25}
