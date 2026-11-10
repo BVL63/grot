@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "build:desktop": "vite build --base=/grot/ && node scripts/copy-print-vendors.mjs",
     "desktop": "npm run build:desktop && electron .",
-    "dist:win": "npm run build:desktop && electron-builder --win nsis --x64 --publish never"
+    "dist:win": "npm run build:desktop && electron-builder --win nsis --x64 --publish never",
+    "dist:portable": "npm run build:desktop && electron-builder --win portable --x64 --publish never"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
@@ -52,6 +53,9 @@
       "createStartMenuShortcut": true,
       "shortcutName": "ГРОТ",
       "artifactName": "GROT-Setup-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "GROT-Portable-${version}-${arch}.${ext}"
     }
   }
 }
