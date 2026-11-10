@@ -934,3 +934,6 @@ main{padding-bottom:64px!important;}
  #vacation-chart-members-dialog .chart-composition-units .chart-structure-code{display:none!important}
  #vacation-chart-members-dialog .chart-composition-units .chart-structure-count{grid-column:3}
 }
+
+/* ГРОТ 0.3.109 — все карандаши развернуты для правой руки */
+.grot-pencil-right{display:inline-block;transform:scaleX(-1);transform-origin:center;line-height:1;vertical-align:baseline;font-family:"Segoe UI Symbol","Arial Unicode MS",sans-serif}
