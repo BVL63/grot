@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.94';
+const APP_VERSION='0.3.95';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -39,9 +39,10 @@ function vacationChartOpen(){
  });
  dlg.showModal();
 }
-function vacationChartEdit(id){
+function vacationChartEdit(id,membersOnly=false){
  const chart=vacationCharts.find(c=>c.id===id);
- const name=prompt('Название графика',chart?.name||'');if(name===null||!name.trim())return;
+ if(membersOnly&&(!chart||chart.allStaff)){alert('Для общего графика состав определяется общим справочником.');return;}
+ const name=membersOnly?chart.name:prompt('Название графика',chart?.name||'');if(name===null||!name.trim())return;
  const chosen=new Set(chart?.allStaff?drivers.map(d=>String(d.id)):(chart?.staffIds||[]).map(String));
  const dialog=document.querySelector('#vacation-chart-members-dialog');
  document.querySelector('#vacation-chart-name').textContent=name.trim();
@@ -643,7 +644,7 @@ function render() {
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="archive-import-file" accept=".json,application/json" hidden>
       </nav>
-      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
+      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong>${chart.allStaff?'':'<button type="button" id="chart-members-add" title="Выбрать сотрудников из общего справочника">＋ Добавить сотрудников</button>'}<button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name"><span class="header-filter"><span class="heading-full">${escapeHtml(activeVacationChart().name)}</span><span class="heading-phone" aria-hidden="true">Сотрудник</span> <button type="button" class="filter-trigger" data-filter-open="driver" aria-label="Фильтр водителей">▾</button></span></th>
       <th title="Приоритет"><span class="heading-full">Приоритет</span><span class="heading-phone" aria-hidden="true">Приор.</span></th><th class="fixed group"><span class="header-filter"><span class="heading-full">Группа</span><span class="heading-phone" aria-hidden="true">Гр.</span> <button type="button" class="filter-trigger" data-filter-open="group" aria-label="Фильтр групп">▾</button></span></th>${headings}<th class="annual-total-heading" title="Запланировано"><span class="heading-full">Запланировано</span><span class="heading-phone" aria-hidden="true">План.</span></th><th title="Доступно"><span class="heading-full">Доступно</span><span class="heading-phone" aria-hidden="true">Дост.</span></th><th title="Остаток"><span class="heading-full">Остаток</span><span class="heading-phone" aria-hidden="true">Ост.</span></th></tr></thead>
@@ -1266,6 +1267,7 @@ function render() {
   document.querySelectorAll('[data-month]').forEach(el=>el.onclick=()=>{const m=Number(el.dataset.month);if(expandedMonths.has(m))expandedMonths.delete(m);else expandedMonths.add(m);selectedMonth=m;render();});
   document.querySelector('#seasonality-open').onclick=()=>openSeasonality(2027);
   document.querySelector('#priority-calculate').onclick=calculateChartPriority;
+  const addChartMembers=document.querySelector('#chart-members-add');if(addChartMembers)addChartMembers.onclick=()=>vacationChartEdit(activeVacationChart().id,true);
   document.querySelectorAll('[data-conflict-id]').forEach(b=>b.onclick=()=>{
     const d=drivers.find(x=>String(x.id)===b.dataset.conflictId);
     const entries=groupConflicts.get(String(b.dataset.conflictId))||[];
