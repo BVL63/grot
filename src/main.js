@@ -1,7 +1,7 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 let displayYear = 2027;
-const APP_VERSION='0.3.110';
+const APP_VERSION='0.3.111';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -39,7 +39,7 @@ function staffIdsInStructure(nodeIds){
 function chartMemberIds(chart){
  if(!chart)return new Set();
  if(chart.allStaff)return new Set(drivers.map(d=>String(d.id)));
- if(!Array.isArray(chart.structureIds)||!chart.structureIds.length)return new Set((chart.staffIds||[]).map(String));
+ if(!Array.isArray(chart.structureIds))return new Set((chart.staffIds||[]).map(String));
  const result=staffIdsInStructure(chart.structureIds);
  for(const id of chart.includeStaffIds||[])if(drivers.some(d=>String(d.id)===String(id)))result.add(String(id));
  for(const id of chart.excludeStaffIds||[])result.delete(String(id));
@@ -81,37 +81,50 @@ function vacationChartEdit(id,membersOnly=false){
  if(originalManual)for(const d of drivers)if(oldIds.has(String(d.id))&&d.structureId&&structureNodes.some(n=>String(n.id)===String(d.structureId)))unitIds.add(String(d.structureId));
  const includes=new Set((chart?.includeStaffIds||[]).map(String));
  const excludes=new Set((chart?.excludeStaffIds||[]).map(String));
- if(originalManual&&unitIds.size){
+ if(originalManual){
   const fromStructure=staffIdsInStructure([...unitIds]);
   for(const id of oldIds)if(!fromStructure.has(id))includes.add(id);
   for(const id of fromStructure)if(!oldIds.has(id))excludes.add(id);
  }
  const unitsBox=document.querySelector('#chart-structure-units');
  const roots=structureNodes.filter(n=>n.type==='organization');
- const rootIds=new Set(roots.map(n=>String(n.id)));
  const openIds=new Set();
  for(const selected of unitIds)for(const ancestor of structureAncestors(selected))openIds.add(String(ancestor.id));
- const visited=new Set();
- const renderBranch=(parentId,level)=>{
+ for(const member of drivers)if(oldIds.has(String(member.id))&&member.structureId)
+  for(const ancestor of structureAncestors(member.structureId))openIds.add(String(ancestor.id));
+ const visited=new Set(),listedStaff=new Set();
+ const renderBranch=(parentId)=>{
   return structureNodes.filter(n=>String(n.parentId||'')===String(parentId||'')&&n.type!=='organization').map(n=>{
    if(visited.has(String(n.id)))return '';
    visited.add(String(n.id));
-   const children=renderBranch(n.id,level+1);
-   const currentCount=staffIdsInStructure([n.id]).size;
+   const nested=renderBranch(n.id);
+   const members=drivers.filter(d=>String(d.structureId||'')===String(n.id))
+     .sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru'));
+   const people=members.map(d=>{
+    listedStaff.add(String(d.id));
+    return '<label class="chart-tree-person"><input type="checkbox" data-chart-person="'+escapeHtml(String(d.id))+'"><span>'+escapeHtml(shortStaffName(d))+'</span></label>';
+   }).join('');
+   const children=nested+people;
+   const count=staffIdsInStructure([n.id]).size;
    const expanded=openIds.has(String(n.id));
-   return '<div class="chart-structure-node"><div class="chart-structure-row">'+
-     (children?'<button type="button" class="chart-structure-toggle" aria-expanded="'+expanded+'" title="Раскрыть или свернуть вложенные звенья">'+(expanded?'▾':'▸')+'</button>':'<span class="chart-structure-toggle-placeholder"></span>')+
-     '<label class="chart-structure-option"><input type="checkbox" value="'+escapeHtml(String(n.id))+'" '+(unitIds.has(String(n.id))?'checked':'')+'><span class="chart-structure-title">'+escapeHtml(n.name)+'</span><span class="chart-structure-code">'+escapeHtml(n.code||'—')+'</span><span class="chart-structure-count">'+currentCount+' чел.</span></label></div>'+
-     (children?'<div class="chart-structure-children" '+(expanded?'':'hidden')+'>'+children+'</div>':'')+'</div>';
+   return '<div class="chart-structure-node" data-chart-node="'+escapeHtml(String(n.id))+'"><div class="chart-structure-row">'+
+    (children?'<button type="button" class="chart-structure-toggle" aria-expanded="'+expanded+'" title="Показать отделы и сотрудников">'+(expanded?'▾':'▸')+'</button>':'<span class="chart-structure-toggle-placeholder"></span>')+
+    '<label class="chart-structure-option"><input type="checkbox" value="'+escapeHtml(String(n.id))+'" data-chart-unit="'+escapeHtml(String(n.id))+'"><span class="chart-structure-title">'+escapeHtml(n.name)+'</span><span class="chart-structure-code">'+escapeHtml(n.code||'—')+'</span><span class="chart-structure-count">'+count+' чел.</span></label></div>'+
+    (children?'<div class="chart-structure-children" '+(expanded?'':'hidden')+'>'+children+'</div>':'')+'</div>';
   }).join('');
  };
- let tree=roots.map(n=>renderBranch(n.id,0)).join('');
- // Preserve access to units with a missing parent in imported/legacy structures.
- tree+=structureNodes.filter(n=>n.type!=='organization'&&!visited.has(String(n.id))).map(n=>renderBranch(n.parentId,0)).join('');
- unitsBox.innerHTML=tree||'<p class="muted">Структура ещё не заполнена. Создайте подразделение в справочнике «Структура предприятия».</p>';
+ let tree=roots.map(n=>renderBranch(n.id)).join('');
+ // Данные с несвязанным родительским узлом не должны пропадать.
+ for(const n of structureNodes)if(n.type!=='organization'&&!visited.has(String(n.id)))tree+=renderBranch(n.parentId);
+ const unassigned=drivers.filter(d=>!listedStaff.has(String(d.id)));
+ if(unassigned.length){
+  const expanded=unassigned.some(d=>oldIds.has(String(d.id)));
+  tree+='<div class="chart-structure-node chart-unassigned"><div class="chart-structure-row"><button type="button" class="chart-structure-toggle" aria-expanded="'+expanded+'" title="Сотрудники без назначенного звена">'+(expanded?'▾':'▸')+'</button><span class="chart-structure-unassigned-label">Не закреплены в структуре · '+unassigned.length+' чел.</span></div><div class="chart-structure-children" '+(expanded?'':'hidden')+'>'+
+   unassigned.sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).map(d=>'<label class="chart-tree-person"><input type="checkbox" data-chart-person="'+escapeHtml(String(d.id))+'"><span>'+escapeHtml(shortStaffName(d))+'</span></label>').join('')+'</div></div>';
+ }
+ unitsBox.innerHTML=tree||'<p class="muted">Структура ещё не заполнена. Добавьте подразделения в справочнике «Структура предприятия».</p>';
  unitsBox.querySelectorAll('.chart-structure-toggle').forEach(button=>button.onclick=()=>{
-  const branch=button.closest('.chart-structure-node');
-  const children=branch?.querySelector(':scope > .chart-structure-children');
+  const children=button.closest('.chart-structure-node')?.querySelector(':scope > .chart-structure-children');
   if(!children)return;
   children.hidden=!children.hidden;
   button.textContent=children.hidden?'▸':'▾';
@@ -123,10 +136,10 @@ function vacationChartEdit(id,membersOnly=false){
  const matches=document.querySelector('#chart-composition-matches');
  const error=document.querySelector('#chart-composition-error');
  search.value='';error.textContent='';
- const selectedUnits=()=>[...unitsBox.querySelectorAll('input:checked')].map(x=>x.value);
+ const selectedUnits=()=>[...unitIds];
  const candidateIds=()=>{
   const unitSelection=selectedUnits();
-  const ids=unitSelection.length?staffIdsInStructure(unitSelection):new Set(originalManual?oldIds:[]);
+  const ids=staffIdsInStructure(unitSelection);
   for(const id of includes)ids.add(id);
   for(const id of excludes)ids.delete(id);
   return ids;
@@ -134,7 +147,19 @@ function vacationChartEdit(id,membersOnly=false){
  const refresh=()=>{
   const unitSelection=selectedUnits();
   const ids=candidateIds();
-  summary.textContent='Выбрано звеньев: '+unitSelection.length+' · Сотрудников: '+ids.size+(originalManual&&!unitSelection.length?' · Пока действует прежний ручной состав':'')+(unitSelection.length?' · '+unitSelection.map(id=>structureNodes.find(n=>String(n.id)===id)?.name||'').filter(Boolean).join(', '):'');
+  const fullPaths=unitSelection.map(id=>structureAncestors(id).filter(x=>x.type!=='organization').map(x=>x.name).join(' → ')).filter(Boolean);
+  summary.textContent='Выбрано звеньев: '+unitSelection.length+' · Сотрудников: '+ids.size+(fullPaths.length?' · '+fullPaths.join('; '):'');
+  // Отдельные галочки сотрудников показывают реальный состав,
+  // а галочки отделов — полный или частичный выбор внутри ветки.
+  unitsBox.querySelectorAll('[data-chart-person]').forEach(input=>{
+   input.checked=ids.has(String(input.dataset.chartPerson));
+  });
+  unitsBox.querySelectorAll('[data-chart-unit]').forEach(input=>{
+   const members=staffIdsInStructure([input.dataset.chartUnit]);
+   const selected=[...members].filter(id=>ids.has(id)).length;
+   input.checked=unitIds.has(String(input.dataset.chartUnit))||(members.size>0&&selected===members.size);
+   input.indeterminate=selected>0&&selected<members.size;
+  });
   const corrections=[...new Set([...includes,...excludes])].filter(id=>drivers.some(d=>String(d.id)===id));
   overrides.innerHTML=corrections.map(id=>{
    const d=drivers.find(x=>String(x.id)===id);
@@ -156,21 +181,40 @@ function vacationChartEdit(id,membersOnly=false){
    refresh();
   });
  };
- unitsBox.querySelectorAll('input[type=checkbox]').forEach(input=>input.onchange=refresh);
+ unitsBox.querySelectorAll('[data-chart-unit]').forEach(input=>input.onchange=()=>{
+  const id=String(input.dataset.chartUnit),members=staffIdsInStructure([id]);
+  if(input.checked){
+   unitIds.add(id);
+   for(const person of members){excludes.delete(person)}
+  }else{
+   unitIds.delete(id);
+   // При снятии галочки исключаем всю ветку, даже если она включена родительским звеном.
+   for(const person of members){includes.delete(person);if(staffIdsInStructure([...unitIds]).has(person))excludes.add(person);else excludes.delete(person)}
+  }
+  refresh();
+ });
+ unitsBox.querySelectorAll('[data-chart-person]').forEach(input=>input.onchange=()=>{
+  const person=String(input.dataset.chartPerson),base=staffIdsInStructure([...unitIds]).has(person);
+  includes.delete(person);excludes.delete(person);
+  if(input.checked&&!base)includes.add(person);
+  if(!input.checked&&base)excludes.add(person);
+  refresh();
+ });
  search.oninput=refresh;
  refresh();
  document.querySelector('#vacation-chart-save').onclick=()=>{
   const name=nameInput.value.trim();
   if(!name){error.textContent='Введите название графика.';nameInput.focus();return}
   const selected=selectedUnits();
-  if(!selected.length&&!originalManual){error.textContent='Выберите хотя бы одно структурное звено.';return}
+  if(!selected.length&&!candidateIds().size){error.textContent='Выберите отдел или хотя бы одного сотрудника.';return}
   const ids=[...candidateIds()].map(Number);
   if(chart){
    chart.name=name;
    chart.staffIds=ids;
    chart.allStaff=false;
-   if(selected.length){chart.structureIds=selected;chart.includeStaffIds=[...includes].map(Number);chart.excludeStaffIds=[...excludes].map(Number)}
-   else{delete chart.structureIds;delete chart.includeStaffIds;delete chart.excludeStaffIds}
+   chart.structureIds=selected;
+   chart.includeStaffIds=[...includes].map(Number);
+   chart.excludeStaffIds=[...excludes].map(Number);
   }else{
    const created={id:'chart-'+Date.now(),name,year:2027,staffIds:ids,allStaff:false,structureIds:selected,includeStaffIds:[...includes].map(Number),excludeStaffIds:[...excludes].map(Number)};
    vacationCharts.push(created);activeVacationChartId=created.id;
