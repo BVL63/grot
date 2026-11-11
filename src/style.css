@@ -1127,3 +1127,31 @@ main{padding-bottom:64px!important;}
 #structure-assign-dialog #structure-employees .structure-person-info small{font-size:12px;line-height:1.2;text-align:left;color:#66758a}
 #structure-assign-dialog #structure-employees .structure-person:has(input:checked){background:#eef7ff}
 @media(max-width:600px){#structure-assign-dialog #structure-employees .structure-person{padding:6px 8px!important}#structure-assign-dialog .structure-assign-search-row{flex-wrap:wrap}}
+
+/* v0.3.126: компактные поля кадровых дат, кода и группы */
+#staff-card .staff-card-right #staff-hired,
+#staff-card .staff-card-right #staff-dismissal{
+ width:100%!important;
+ max-width:190px;
+ min-width:0;
+ height:36px;
+}
+#staff-card .staff-card-right #staff-structure-code{width:100%!important;max-width:190px}
+#staff-card .staff-card-right #staff-group{width:100%!important;max-width:145px}
+#staff-card .staff-card-right .staff-info-field:has(#staff-structure-code),
+#staff-card .staff-card-right .staff-info-field:has(#staff-group){padding-right:0}
+#staff-card .staff-card-right .staff-dismiss-row{
+ grid-template-columns:134px minmax(0,190px) auto;
+ justify-content:start;
+}
+@media(max-width:850px){
+ #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:100px minmax(0,190px) auto}
+ #staff-card .staff-card-right #staff-hired,
+ #staff-card .staff-card-right #staff-dismissal{max-width:175px}
+}
+@media(max-width:680px){
+ #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:99px minmax(0,190px) auto}
+}
+@media(max-width:360px){
+ #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:84px minmax(0,1fr) auto}
+}
