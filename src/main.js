@@ -988,6 +988,7 @@ function render() {
           </section>
           <section id="staff-days-section" class="staff-card-operations">
             <div class="staff-card-section-heading staff-journal-heading"><strong>Журнал отпускных дней</strong><span id="staff-journal-totals">Корректировки: 0 · Остаток: 0</span></div>
+            <p id="staff-carryover-source" class="staff-carryover-source" role="status"></p>
             <div class="staff-table-wrap" id="staff-journal-wrap">
               <table class="staff-operations-table staff-journal-table">
                 <thead><tr><th>Год</th><th>Операция</th><th>Дней</th><th aria-label="Действия"></th></tr></thead>
@@ -1260,12 +1261,22 @@ function render() {
     const base=Number(document.querySelector('#staff-allowance').value)||0;
     const relevant=pendingDayOperations.map((x,index)=>({x,index})).filter(({x})=>x.scopeYear?String(x.scopeYear)===selectedLeaveYear:selectedLeaveYear==='2027');
     const correctionDays=relevant.filter(({x})=>x.type!=='balance').reduce((n,{x})=>n+(Number(x.days)||0),0);
-    const balanceDays=relevant.filter(({x})=>x.type==='balance').reduce((n,{x})=>n+(Number(x.days)||0),0);
-    document.querySelector('#staff-days-summary').textContent='Год '+selectedLeaveYear+' · Ежегодный отпуск: '+base+' дн. · Остаток прошлых лет: '+balanceDays+' дн. · Корректировки: '+(correctionDays>=0?'+':'')+correctionDays+' дн. · Доступно: '+(base+balanceDays+correctionDays)+' дн.';
+    const manualBalances=relevant.filter(({x})=>x.type==='balance');
+    const manualBalanceDays=manualBalances.reduce((n,{x})=>n+(Number(x.days)||0),0);
+    const source=effectiveCarryover(editingStaff,selectedLeaveYear,yearlyLeaveDraft,pendingDayOperations);
+    const autoDays=source.manual?0:source.days;
+    const balanceDays=manualBalanceDays+autoDays;
     const journalTotal=balanceDays+correctionDays;
+    const signed=n=>(n>0?'+':'')+n;
+    document.querySelector('#staff-days-summary').textContent='Ежегодный отпуск: '+base+' дн. · Перенос: '+balanceDays+' дн. · Корректировки: '+signed(correctionDays)+' дн. · Доступно: '+(base+journalTotal)+' дн.';
     document.querySelector('#staff-journal-totals').textContent='Доступно: '+(base+journalTotal)+' дн.';
-    document.querySelector('#staff-journal-total-days').textContent=(journalTotal>0?'+':'')+journalTotal;
-    document.querySelector('#staff-journal-rows').innerHTML=relevant.map(({x,index})=>operationRow(x,index)).join('')||'<tr><td colspan="4" class="staff-ops-empty">Записей нет</td></tr>';
+    document.querySelector('#staff-journal-total-days').textContent=signed(journalTotal);
+    const sourceLabel=source.manual?'Остаток внесён вручную. Автоматический расчёт не добавляется повторно.':
+      source.unavailable?'Нет достаточных сведений о норме и отпусках прошлого года. Внесите подтверждённый остаток вручную.':
+      'Предварительно по графику '+source.sourceYear+' г.: '+source.norm+' − '+source.used+(source.adjustments?' + ('+source.adjustments+')':'')+' = '+source.days+' дн. Проверьте фактическое использование отпуска.';
+    document.querySelector('#staff-carryover-source').textContent=sourceLabel;
+    const autoRow=!source.manual&&!source.unavailable?'<tr class="staff-carryover-row"><td>'+source.sourceYear+'</td><td>Перенос (расчёт)</td><td class="staff-op-days">'+signed(autoDays)+'</td><td title="Рассчитано по графику. Для подтверждения уточните фактически использованный отпуск.">◷</td></tr>':'';
+    document.querySelector('#staff-journal-rows').innerHTML=autoRow+relevant.map(({x,index})=>operationRow(x,index)).join('')||'<tr><td colspan="4" class="staff-ops-empty">Записей нет</td></tr>';
     document.querySelectorAll('#staff-journal-rows [data-op-remove]').forEach(b=>b.onclick=()=>{
       if(confirm('Удалить запись учёта отпускных дней?')){pendingDayOperations.splice(Number(b.dataset.opRemove),1);editingDayOperationIndex=null;redrawDayOperations()}
     });
@@ -1327,7 +1338,10 @@ function render() {
     if(!year||!Number.isInteger(count)||count<1||count>365){alert('Укажите рабочий год и количество дней.');return}
     const days=['reduction','compensation'].includes(type)?-count:count;
     const allowance=Number(document.querySelector('#staff-allowance').value)||0;
-    if(allowance+pendingDayOperations.filter((x,i)=>i!==editingDayOperationIndex&&(x.scopeYear?String(x.scopeYear)===selectedLeaveYear:selectedLeaveYear==='2027')).reduce((a,x)=>a+x.days,0)+days<0){alert('Нельзя получить отрицательный остаток дней.');return}
+    const otherOps=pendingDayOperations.filter((x,i)=>i!==editingDayOperationIndex&&(x.scopeYear?String(x.scopeYear)===selectedLeaveYear:selectedLeaveYear==='2027'));
+    const afterOps=otherOps.concat([{type,days,scopeYear:selectedLeaveYear,year}]);
+    const auto=effectiveCarryover(editingStaff,selectedLeaveYear,yearlyLeaveDraft,afterOps);
+    if(allowance+afterOps.reduce((a,x)=>a+(Number(x.days)||0),0)+(auto.manual?0:auto.days)<0){alert('Нельзя получить отрицательный остаток дней.');return}
     const record={date:new Date().toISOString().slice(0,10),year,type,days,scopeYear:selectedLeaveYear};
     // Сохраняем старое основание при редактировании, хотя поле больше не показывается.
     if(editingDayOperationIndex===null)pendingDayOperations.push(record);
