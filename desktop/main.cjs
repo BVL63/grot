@@ -95,6 +95,7 @@ app.whenReady().then(async () => {
     width: 1460, height: 940, minWidth: 960, minHeight: 630,
     show: false,
     title: 'ГРОТ — график отпусков · ПК',
+    icon: path.resolve(__dirname, '..', 'build', 'icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
