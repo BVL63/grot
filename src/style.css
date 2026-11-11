@@ -1383,3 +1383,10 @@ main{padding-bottom:64px!important;}
 #staff-card #staff-days-section .staff-journal-actions{margin-top:8px;padding-bottom:0}
 #staff-card #staff-days-section .staff-journal-heading{justify-content:flex-start}
 @media(max-width:680px){#staff-card .staff-card-lower{grid-template-columns:1fr!important}#staff-card #staff-days-section #staff-journal-wrap{flex:none}}
+
+/* ГРОТ 0.3.136: итог журнала — у нижней границы таблицы */
+#staff-card #staff-journal-wrap .staff-journal-table{height:100%!important;border-collapse:collapse}
+#staff-card #staff-journal-wrap .staff-journal-table tbody .staff-journal-fill{height:100%;pointer-events:none}
+#staff-card #staff-journal-wrap .staff-journal-table tbody .staff-journal-fill td{height:100%;border:0!important;background:transparent!important;padding:0!important}
+#staff-card #staff-journal-wrap .staff-journal-table tfoot{height:36px}
+#staff-card #staff-journal-wrap .staff-journal-table tfoot .staff-journal-total-row th{height:36px;box-sizing:border-box;vertical-align:middle}
