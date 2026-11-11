@@ -1212,3 +1212,79 @@ main{padding-bottom:64px!important;}
 @media(max-width:680px){
  #staff-card .staff-card-top .staff-info-field{height:36px!important}
 }
+
+/* v0.3.129: единое левое выравнивание кадровых полей, флажок рядом с подписью */
+#staff-card .staff-card-right .staff-info-field{
+ grid-template-columns:134px minmax(0,1fr)!important;
+ text-align:left!important;
+ justify-content:start!important;
+}
+#staff-card .staff-card-right .staff-info-field>span,
+#staff-card .staff-card-right .staff-info-field>label:first-child{
+ justify-content:flex-start!important;
+ text-align:left!important;
+}
+#staff-card .staff-card-right .staff-dismiss-row{
+ display:grid!important;
+ grid-template-columns:134px minmax(0,1fr)!important;
+ gap:9px!important;
+}
+#staff-card .staff-card-right .staff-dismiss-caption{
+ display:flex!important;
+ flex-direction:row!important;
+ align-items:center!important;
+ justify-content:flex-start!important;
+ gap:6px!important;
+ white-space:nowrap;
+ padding:4px 7px!important;
+}
+#staff-card .staff-dismiss-caption>label{display:inline!important;min-width:0;margin:0!important;padding:0!important;font:inherit;cursor:pointer}
+#staff-card .staff-dismiss-caption>input[type="checkbox"]{
+ flex:0 0 17px!important;
+ display:inline-block!important;
+ position:static!important;
+ width:17px!important;
+ height:17px!important;
+ min-width:17px!important;
+ margin:0!important;
+ padding:0!important;
+}
+#staff-card .staff-card-right #staff-dismissal{max-width:165px}
+#staff-card .staff-card-left .staff-work-field{
+ height:77px!important;
+ min-height:77px!important;
+ align-items:stretch!important;
+}
+#staff-card .staff-card-left .staff-work-field>span{
+ height:77px!important;
+ min-height:77px!important;
+ white-space:normal!important;
+ font-size:13px!important;
+}
+#staff-card .staff-card-left #staff-department{
+ display:block;
+ height:77px!important;
+ min-height:77px!important;
+ width:100%!important;
+ white-space:pre-wrap!important;
+ overflow-y:auto!important;
+ resize:none!important;
+ line-height:1.35;
+ padding:7px 9px!important;
+ box-sizing:border-box;
+}
+@media(max-width:850px){
+ #staff-card .staff-card-right .staff-info-field,
+ #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:120px minmax(0,1fr)!important;gap:5px!important}
+ #staff-card .staff-card-right .staff-dismiss-caption{font-size:12px!important;gap:4px!important;padding:4px 5px!important}
+}
+@media(max-width:680px){
+ #staff-card .staff-card-right .staff-info-field,
+ #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:99px minmax(0,1fr)!important}
+ #staff-card .staff-card-right .staff-dismiss-caption{font-size:11px!important;padding:3px!important;gap:3px!important}
+ #staff-card .staff-dismiss-caption>input[type="checkbox"]{width:15px!important;height:15px!important;min-width:15px!important;flex-basis:15px!important}
+}
+@media(max-width:360px){
+ #staff-card .staff-card-right .staff-info-field,
+ #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:84px minmax(0,1fr)!important}
+}
