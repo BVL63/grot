@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.136';
+const APP_VERSION='0.3.137';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -1285,6 +1285,15 @@ function render() {
     };
     document.querySelectorAll('#staff-journal-rows [data-op-index]').forEach(row=>row.onclick=()=>{selectedJournalIndex=Number(row.dataset.opIndex);updateSelection()});
     updateSelection();
+    // Совмещаем низ и высоту итоговых строк обеих таблиц при любом масштабе iPad.
+    requestAnimationFrame(()=>{
+      const annual=document.querySelector('#staff-card .staff-leave-table');
+      const annualTotal=annual?.querySelector('.staff-leave-total');
+      const journal=document.querySelector('#staff-journal-wrap');
+      if(!annual||!annualTotal||!journal)return;
+      journal.style.height=Math.ceil(annual.getBoundingClientRect().height)+'px';
+      journal.style.setProperty('--grot-journal-total-height',Math.ceil(annualTotal.getBoundingClientRect().height)+'px');
+    });
   }
   let selectedJournalIndex=null;
   const opDialog=document.querySelector('#staff-operation-dialog');
