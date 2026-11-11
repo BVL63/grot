@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.121';
+const APP_VERSION='0.3.122';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -414,7 +414,7 @@ function structureAssignOpen(){
  const n=structureSelected();if(!n){alert('Выберите подразделение, отдел или бригаду.');return}
  if(n.type==='organization'){alert('Выберите подразделение, отдел или бригаду.');return}
  const box=document.querySelector('#structure-employees');
- box.innerHTML=[...drivers].sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).map(d=>{const hierarchy=d.structureId?structureAncestors(d.structureId).filter(node=>node.type!=='organization').map(node=>node.name):[];const location=hierarchy.length?hierarchy.join(' → '):(d.department||'Не закреплён за структурным звеном');return '<label class="structure-person"><input type="checkbox" value="'+structureEscape(d.id)+'" '+(d.structureId===n.id?'checked':'')+'><span class="structure-person-info"><span class="structure-person-name">'+structureEscape(shortStaffName(d))+'</span><small>'+structureEscape(location)+'</small></span></label>';}).join('');
+ box.innerHTML=[...drivers].sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).map(d=>{const hierarchy=d.structureId?structureAncestors(d.structureId).filter(node=>node.type!=='organization').map(node=>node.name):[];const location=hierarchy.length?hierarchy.join(' → '):(d.department||'Не закреплён за структурным звеном');return '<label class="structure-person"><input type="checkbox" value="'+structureEscape(d.id)+'" '+(d.structureId===n.id?'checked':'')+'><span class="structure-person-info"><span class="structure-person-name">'+structureEscape(shortStaffName(d)+(d.position?' — '+d.position:''))+'</span><small>'+structureEscape(location)+'</small></span></label>';}).join('');
  const search=document.querySelector('#structure-assign-search');search.value='';
  document.querySelector('#structure-assign-count').textContent=drivers.length+' из '+drivers.length;
  document.querySelector('#structure-assignment-title').textContent='Сотрудники: '+n.name;
