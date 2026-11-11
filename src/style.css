@@ -1074,3 +1074,12 @@ main{padding-bottom:64px!important;}
 #structure-dialog .structure-dialog-top-close{position:absolute;top:12px;right:14px;display:flex;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;padding:0;border:1px solid #b9cbdc;border-radius:6px;background:#f5f8fc;color:#26476b;font:normal 26px/1 Arial,sans-serif;cursor:pointer;z-index:2}
 #structure-dialog .structure-dialog-top-close:hover{background:#e5eef8}
 #structure-dialog>h2{padding-right:48px}
+
+/* v0.3.117 — действия и крестик в карточке структурного звена */
+#structure-card-dialog{position:relative;padding-top:20px}
+#structure-card-dialog .structure-dialog-top-close{position:absolute;right:14px;top:12px;z-index:3;width:34px;height:34px;min-width:34px;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid #b9cbdc;border-radius:6px;background:#f5f8fc;color:#26476b;font:normal 26px/1 Arial,sans-serif;cursor:pointer}
+#structure-card-dialog .structure-dialog-top-close:hover{background:#e5eef8}
+#structure-card-dialog>h2{padding-right:48px}
+#structure-card-dialog #structure-card-edit{background:#edf6ff;border:1px solid #7ea9ca;color:#164c78}
+#structure-card-dialog #structure-card-delete{background:#fff3f2;border:1px solid #dba6a0;color:#9a3030}
+#structure-card-dialog .actions>[hidden]{display:none!important}
