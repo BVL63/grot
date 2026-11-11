@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.122';
+const APP_VERSION='0.3.123';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -399,6 +399,19 @@ function structureCardSave(e){
  if(structureNodes.some(x=>x.id!==n.id&&x.code===code)){alert('Код «'+code+'» уже используется.');return}
  n.name=name;n.code=code;n.leaderTitle=document.querySelector('#structure-card-title-position').value.trim();n.leaderId=document.querySelector('#structure-card-leader').value;
  if(mode==='new')structureNodes.push(n);
+ // Руководитель — существующий сотрудник. Должность и подразделение должны
+ // отображаться и в общем справочнике; не перемещаем сотрудника между группами
+ // и структурными звеньями, чтобы случайно не изменить состав других графиков.
+ if(n.leaderId){
+   const leader=drivers.find(d=>String(d.id)===String(n.leaderId));
+   if(leader){
+     const division=structureAncestors(n.id).find(x=>x.type==='division');
+     if(n.leaderTitle)leader.position=n.leaderTitle;
+     if(division)leader.department=division.name;
+     else if(n.type!=='organization')leader.department=n.name;
+     saveStaff();
+   }
+ }
  localStorage.setItem(structureKey,JSON.stringify(structureNodes));document.querySelector('#structure-card-dialog').close();structureDraw();
 }
 function structureAdd(){structureCard('new')}
