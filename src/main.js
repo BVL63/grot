@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.135';
+const APP_VERSION='0.3.136';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -1276,7 +1276,7 @@ function render() {
     document.querySelector('#staff-days-summary').innerHTML='<span>Норма: <strong>'+base+' дн.</strong></span><span class="staff-sum-operator">+</span><span>Корректировка: <strong>'+signed(journalTotal)+' дн.</strong></span><span class="staff-sum-operator">=</span><span>Доступно: <strong>'+(base+journalTotal)+' дн.</strong></span>';
     document.querySelector('#staff-journal-total-days').textContent=signed(journalTotal);
     const autoRow=!source.manual&&!source.unavailable?'<tr class="staff-carryover-row" title="Предварительный перенос по графику '+source.sourceYear+' года; уточните фактическое использование"><td>'+source.sourceYear+'</td><td>Остаток (расчёт)</td><td class="staff-op-days">'+signed(autoDays)+'</td></tr>':'';
-    document.querySelector('#staff-journal-rows').innerHTML=autoRow+(relevant.map(({x,index})=>operationRow(x,index)).join(''))||'<tr><td colspan="3" class="staff-ops-empty">Записей нет</td></tr>';
+    document.querySelector('#staff-journal-rows').innerHTML=(autoRow+relevant.map(({x,index})=>operationRow(x,index)).join('')||'<tr><td colspan="3" class="staff-ops-empty">Записей нет</td></tr>')+'<tr class="staff-journal-fill" aria-hidden="true"><td colspan="3"></td></tr>';
     if(!relevant.some(({index})=>index===selectedJournalIndex))selectedJournalIndex=null;
     const updateSelection=()=>{
       document.querySelectorAll('#staff-journal-rows [data-op-index]').forEach(row=>row.classList.toggle('is-selected',Number(row.dataset.opIndex)===selectedJournalIndex));
