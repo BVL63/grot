@@ -1288,3 +1288,21 @@ main{padding-bottom:64px!important;}
  #staff-card .staff-card-right .staff-info-field,
  #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:84px minmax(0,1fr)!important}
 }
+
+/* v0.3.130: сводный компактный блок отпускных корректировок */
+#staff-card #staff-days-section{display:flex;flex-direction:column;gap:7px;min-width:0}
+#staff-card #staff-days-section .staff-operation-list{margin:0;border:1px solid #c3d5e9;border-radius:7px;background:#fff;overflow:hidden}
+#staff-card #staff-days-section .staff-operation-list>summary{display:flex;align-items:center;gap:8px;min-height:40px;padding:8px 11px;box-sizing:border-box;background:#e1efff;color:#172f4c;font-size:15px;font-weight:700;cursor:pointer;list-style:none}
+#staff-card #staff-days-section .staff-operation-list>summary::-webkit-details-marker{display:none}
+#staff-card #staff-days-section .staff-operation-list>summary::before{content:"▸";color:#266193;font-size:15px}
+#staff-card #staff-days-section .staff-operation-list[open]>summary::before{content:"▾"}
+#staff-card #staff-days-section .staff-operation-amount{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+#staff-card #staff-days-section .staff-table-wrap{margin:7px 8px 3px;overflow-x:auto}
+#staff-card #staff-days-section [hidden]{display:none!important}
+#staff-card #staff-days-section .staff-ops-empty-note{padding:4px 11px;margin:8px 0;color:#63768c;font-size:13px}
+#staff-card #staff-days-section .staff-operation-small-add{margin:5px 9px 9px;padding:6px 9px;background:#fff;color:#23557b;border:1px solid #a5bfd9;border-radius:6px;font-size:13px;cursor:pointer}
+#staff-card #staff-days-section .staff-operation-editor{margin:0;border:1px solid #c3d5e9;border-radius:7px;padding:0;background:#fff;overflow:hidden}
+#staff-card #staff-days-section .staff-operation-editor>summary{list-style:none;padding:9px 11px;background:#f0f6fc;color:#1b5888;cursor:pointer;font-weight:700}
+#staff-card #staff-days-section .staff-operation-editor>summary::-webkit-details-marker{display:none}
+#staff-card #staff-days-section .staff-operation-fields{padding:8px;margin:0}
+#staff-card #staff-days-section #staff-days-summary{margin:2px 1px 0;font-size:12px;line-height:1.35;color:#53677e}
