@@ -1112,3 +1112,18 @@ main{padding-bottom:64px!important;}
  #structure-dialog .structure-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}
  #structure-dialog .structure-toolbar>button:last-child{grid-column:span 2}
 }
+
+/* v0.3.120: compact employee selection in structure */
+#structure-assign-dialog{width:min(800px,95vw)}
+#structure-assign-dialog .structure-assign-search-row{display:flex;align-items:center;gap:9px;margin:12px 0 6px}
+#structure-assign-dialog .structure-assign-search-row input{box-sizing:border-box;flex:1;min-width:0;min-height:37px;padding:6px 10px;border:1px solid #adbed0;border-radius:6px;font:inherit}
+#structure-assign-dialog #structure-assign-count{font-size:12px;color:#607187;white-space:nowrap}
+#structure-assign-dialog #structure-employees{display:block;max-height:52vh;overflow-y:auto;overflow-x:hidden;margin:8px 0 12px;border:1px solid #d9e3ee;border-radius:7px}
+#structure-assign-dialog #structure-employees .structure-person{box-sizing:border-box;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;width:100%!important;min-height:46px!important;margin:0!important;padding:6px 12px!important;border-bottom:1px solid #e5ebf1;text-align:left!important;cursor:pointer}
+#structure-assign-dialog #structure-employees .structure-person[hidden]{display:none!important}
+#structure-assign-dialog #structure-employees .structure-person input[type="checkbox"]{flex:0 0 auto!important;position:static!important;display:block!important;width:19px!important;height:19px!important;min-width:19px!important;max-width:19px!important;margin:0!important;padding:0!important;transform:none!important}
+#structure-assign-dialog #structure-employees .structure-person-info{display:flex;flex:1;min-width:0;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px}
+#structure-assign-dialog #structure-employees .structure-person-name{font-size:15px;line-height:1.25;text-align:left;font-weight:600}
+#structure-assign-dialog #structure-employees .structure-person-info small{font-size:12px;line-height:1.2;text-align:left;color:#66758a}
+#structure-assign-dialog #structure-employees .structure-person:has(input:checked){background:#eef7ff}
+@media(max-width:600px){#structure-assign-dialog #structure-employees .structure-person{padding:6px 8px!important}#structure-assign-dialog .structure-assign-search-row{flex-wrap:wrap}}
