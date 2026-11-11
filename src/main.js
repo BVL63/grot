@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.123';
+const APP_VERSION='0.3.124';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -436,8 +436,21 @@ function structureAssignOpen(){
 function structureAssignSave(){
  const n=structureSelected();if(!n)return;
  const ids=new Set([...document.querySelectorAll('#structure-employees input:checked')].map(x=>String(x.value)));
- const hierarchy=structureAncestors(n.id);const division=hierarchy.find(x=>x.type==='division');
- for(const d of drivers){if(ids.has(String(d.id))){d.structureId=n.id;if(division)d.department=division.name}else if(d.structureId===n.id){d.structureId=null}}
+ const hierarchy=structureAncestors(n.id);
+ const division=hierarchy.find(x=>x.type==='division');
+ const departmentName=division?.name||n.name;
+ for(const d of drivers){
+   if(ids.has(String(d.id))){
+     // One source of truth: structureId determines the code in the staff card.
+     // Department is copied to the employee directory on assignment.
+     d.structureId=n.id;
+     d.department=departmentName;
+   }else if(String(d.structureId||'')===String(n.id)){
+     // Removing an employee from this unit must not leave its old department.
+     d.structureId=null;
+     if(d.department===departmentName)d.department='';
+   }
+ }
  saveStaff();
  const selectedId=n.id;
  document.querySelector('#structure-assign-dialog').close();
@@ -1305,7 +1318,7 @@ function render() {
     if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-position').value=d.position||'';document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
     showDisplayedLeaveYear();
     const effectiveStructureId=structureId||d?.structureId;document.querySelector('#staff-structure-code').value=structureNodes.find(n=>n.id===effectiveStructureId)?.code||'';
-    if(structureId){const hierarchy=structureAncestors(structureId);const division=hierarchy.find(x=>x.type==='division');document.querySelector('#staff-department').value=division?.name||'';}
+    if(structureId){const hierarchy=structureAncestors(structureId);const division=hierarchy.find(x=>x.type==='division');const selected=structureNodes.find(x=>String(x.id)===String(structureId));document.querySelector('#staff-department').value=division?.name||selected?.name||'';}
     redrawDayOperations();
     document.querySelector('#staff-dialog').close();document.querySelector('#staff-card').showModal();
   }
