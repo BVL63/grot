@@ -1327,3 +1327,10 @@ main{padding-bottom:64px!important;}
  #staff-card #staff-journal-totals{font-size:11px}
  #staff-card #staff-journal-wrap .staff-journal-table{min-width:410px}
 }
+
+/* v0.3.133 — источник остатка предыдущего года */
+#staff-card .staff-carryover-source{margin:0;padding:6px 8px;border:1px solid #d5e1ed;border-radius:6px;background:#f5f9fd;color:#49627c;font-size:12px;line-height:1.35}
+#staff-card .staff-carryover-row td{background:#f3f8fd;color:#375674}
+#staff-card .staff-carryover-row td:last-child{text-align:center}
+#staff-card .staff-journal-total-row th,#staff-card .staff-journal-total-row td{background:#e3effb;font-weight:700;border-top:2px solid #9bb7d2}
+#staff-card #staff-journal-total-days{text-align:center;font-variant-numeric:tabular-nums}
