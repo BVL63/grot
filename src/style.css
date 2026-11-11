@@ -1428,3 +1428,12 @@ main{padding-bottom:64px!important;}
 #staff-card .staff-position-menu .staff-position-option:hover,
 #staff-card .staff-position-menu .staff-position-option:focus{background:#e5f0fc}
 #staff-card .staff-position-no-matches{display:block;padding:10px;font-size:13px;color:#5b7083}
+
+/* ГРОТ 0.3.139: Состав как единственный заголовок первого столбца */
+.annual-table thead th.header-caption .chart-members-heading-button{
+ display:inline-flex;align-items:center;justify-content:center;
+ margin:0 auto;padding:5px 12px;min-height:32px;
+ background:#f5faff;color:#164976;border:1px solid #8cb3d7;
+ border-radius:6px;font:inherit;font-weight:700;white-space:nowrap;cursor:pointer;
+}
+.annual-table thead th.header-caption .chart-members-heading-button:hover{background:#deecfc}
