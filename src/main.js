@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.125';
+const APP_VERSION='0.3.126';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -922,8 +922,8 @@ function render() {
           </div>
           <div class="staff-card-right">
             <label class="staff-info-field"><span>Должность</span><input id="staff-position" list="staff-position-options" maxlength="120" autocomplete="off"><datalist id="staff-position-options"></datalist></label>
-            <label class="staff-info-field"><span>Принят</span><input id="staff-hired" type="date"></label>
-            <div class="staff-info-field staff-dismiss-row"><label for="staff-dismissal">Уволен</label><input id="staff-dismissal" type="date"><label class="staff-dismiss-check"><input id="staff-dismissed" type="checkbox"> Уволен</label></div>
+            <label class="staff-info-field"><span>Принят(а)</span><input id="staff-hired" type="date"></label>
+            <div class="staff-info-field staff-dismiss-row"><label for="staff-dismissal">Уволен(а)</label><input id="staff-dismissal" type="date"><label class="staff-dismiss-check"><input id="staff-dismissed" type="checkbox"> Уволен(а)</label></div>
             <label class="staff-info-field"><span>Код</span><input id="staff-structure-code" readonly title="Код определяется структурой предприятия"></label>
             <label class="staff-info-field"><span>Группа</span><input id="staff-group" maxlength="30"></label>
           </div>
