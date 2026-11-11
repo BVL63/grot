@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.132';
+const APP_VERSION='0.3.133';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -231,7 +231,51 @@ const staffKey='vacationStaff2027';
 let drivers;
 try { const stored=JSON.parse(localStorage.getItem(staffKey)||'null'); drivers=Array.isArray(stored)&&stored.length?stored:defaultDrivers.map(d=>({...d,allowance:36,department:''})); } catch { drivers=defaultDrivers.map(d=>({...d,allowance:36,department:''})); }
 drivers=drivers.map(d=>({...d,allowance:Number.isFinite(Number(d.allowance))?Number(d.allowance):36}));
-function availableLeaveDays(d){return Math.max(0,(Number(d.leaveByYear?.['2027']?.allowance??d.allowance)||0)+(Array.isArray(d.dayOperations)?d.dayOperations.filter(x=>!x.scopeYear||Number(x.scopeYear)===2027).reduce((sum,x)=>sum+(Number(x.days)||0),0):0));}
+// Перенос неиспользованных дней: предварительная оценка по графику прошлого года.
+// График плановый, поэтому это не подтверждение фактически использованного отпуска.
+// Если нет нормы или периодов, нельзя считать все дни неиспользованными.
+function priorYearEstimatedRemainder(d,year,yearNorms=d?.leaveByYear,operations=d?.dayOperations){
+ const prev=Number(year)-1;
+ if(!d||!Number.isInteger(prev)||prev<2025)return null;
+ const norm=Number(yearNorms?.[String(prev)]?.allowance);
+ if(!Number.isFinite(norm)||norm<=0)return null;
+ const surname=staffParts(d).last.trim().toLocaleLowerCase('ru').replace(/ё/g,'е');
+ const personName=shortStaffName(d).trim().toLocaleLowerCase('ru').replace(/ё/g,'е');
+ let entries;
+ if(prev===2027){
+   entries=vacations.filter(p=>Number(p.driverId)===Number(d.id)).map(p=>({...p,year:2027}));
+ }else{
+   const yearEntries=loadHistory().filter(p=>Number(p.year)===prev);
+   const full=yearEntries.filter(p=>String(p.driver||'').trim().toLocaleLowerCase('ru').replace(/ё/g,'е')===personName);
+   if(full.length)entries=full;
+   else{
+     // Match only if surname is unambiguous in the archived year.
+     const names=[...new Set(yearEntries.filter(p=>String(p.driver||'').trim().split(/\s+/)[0].toLocaleLowerCase('ru').replace(/ё/g,'е')===surname).map(p=>String(p.driver||'').trim()))];
+     entries=names.length===1?yearEntries.filter(p=>String(p.driver||'').trim()===names[0]):[];
+   }
+ }
+ entries=entries.filter(p=>/^\d{4}-\d{2}-\d{2}$/.test(p.start||'')&&/^\d{4}-\d{2}-\d{2}$/.test(p.end||'')&&p.start<=p.end);
+ if(!entries.length)return null;
+ const holidays=new Set(
+   prev===2026?['01-01','01-02','01-03','01-04','01-05','01-06','01-07','01-08','02-23','03-08','05-01','05-09','06-12','11-04']:
+   prev===2025?['01-01','01-02','01-03','01-04','01-05','01-06','01-07','01-08','02-23','03-08','05-01','05-09','06-12','11-04']:
+   []);
+ const usedDates=new Set();
+ for(const p of entries){
+   for(let date=p.start,i=0;date<=p.end&&i<370;date=shift(date,1),i++){
+     if(date.slice(0,4)===String(prev)&&!holidays.has(date.slice(5)))usedDates.add(date);
+   }
+ }
+ const adjustments=Array.isArray(operations)?operations.filter(x=>String(x.scopeYear||'')===String(prev)).reduce((n,x)=>n+(Number(x.days)||0),0):0;
+ return {sourceYear:prev,days:Math.max(0,norm+adjustments-usedDates.size),norm,used:usedDates.size,adjustments,estimated:true};
+}
+function effectiveCarryover(d,year,yearNorms=d?.leaveByYear,operations=d?.dayOperations){
+ const manual=Array.isArray(operations)?operations.filter(x=>String(x.scopeYear||'')===String(year)&&x.type==='balance'):[];
+ if(manual.length)return {days:manual.reduce((sum,x)=>sum+(Number(x.days)||0),0),manual:true};
+ const derived=priorYearEstimatedRemainder(d,year,yearNorms,operations);
+ return derived?{...derived,manual:false}:{days:0,manual:false,unavailable:true};
+}
+function availableLeaveDays(d){const ops=Array.isArray(d.dayOperations)?d.dayOperations:[];const operationsTotal=ops.filter(x=>!x.scopeYear||Number(x.scopeYear)===2027).reduce((sum,x)=>sum+(Number(x.days)||0),0);const auto=effectiveCarryover(d,2027);return Math.max(0,(Number(d.leaveByYear?.['2027']?.allowance??d.allowance)||0)+operationsTotal+(auto.manual?0:auto.days));}
 function staffParts(d){if(d.lastName)return {last:d.lastName,first:d.firstName||'',middle:d.middleName||''};const v=String(d.name||'').trim();const m=v.match(/^(.+?)\s+([А-ЯЁA-Z])\.\s*([А-ЯЁA-Z])\.$/i);return m?{last:m[1],first:m[2]+'.',middle:m[3]+'.'}:{last:v,first:'',middle:''};}
 function shortStaffName(d){const p=staffParts(d);return p.last+((p.first&&p.middle)?' '+p.first[0].toUpperCase()+'.'+p.middle[0].toUpperCase()+'.':p.first?' '+p.first[0].toUpperCase()+'.':'');}
 function compareGroupAndName(a,b){const ga=String(a.group??''),gb=String(b.group??'');return ga.localeCompare(gb,'ru',{numeric:true})||shortStaffName(a).localeCompare(shortStaffName(b),'ru');}
