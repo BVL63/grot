@@ -1370,3 +1370,16 @@ main{padding-bottom:64px!important;}
 #staff-operation-dialog .staff-operation-modal-actions button{padding:8px 15px;border-radius:6px;border:1px solid #94b3d2;background:white}
 #staff-operation-dialog #staff-days-add{background:#1772bd;color:white;border-color:#1772bd}
 @media(max-width:640px){#staff-card .staff-card-lower{grid-template-columns:1fr!important}#staff-card .staff-days-summary-line{font-size:12px}}
+
+/* ГРОТ 0.3.135: равная высота шапок, одинаковая геометрия нижних блоков */
+#staff-card .staff-card-lower{align-items:stretch!important}
+#staff-card .staff-card-lower>.leave-breakdown,#staff-card .staff-card-lower>#staff-days-section{box-sizing:border-box;min-width:0}
+#staff-card .staff-card-lower .staff-card-section-heading{height:54px!important;min-height:54px!important;max-height:54px!important;padding:6px 12px!important;margin:0 0 6px!important;display:flex!important;align-items:center!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:6px!important}
+#staff-card .staff-card-lower .staff-card-section-heading strong{font-size:17px!important;white-space:nowrap;line-height:1.2!important}
+#staff-card .staff-card-lower .leave-breakdown .staff-card-section-heading>label{margin:0 0 0 auto!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;flex-direction:row!important;gap:5px!important;white-space:nowrap;font-size:13px!important}
+#staff-card .staff-card-lower .leave-breakdown #staff-leave-year{width:82px!important;min-width:82px!important;height:34px!important;margin:0!important}
+#staff-card #staff-days-section{display:flex!important;flex-direction:column!important;min-height:0;align-self:stretch}
+#staff-card #staff-days-section #staff-journal-wrap{flex:1 1 auto;min-height:0;box-sizing:border-box;overflow-x:auto}
+#staff-card #staff-days-section .staff-journal-actions{margin-top:8px;padding-bottom:0}
+#staff-card #staff-days-section .staff-journal-heading{justify-content:flex-start}
+@media(max-width:680px){#staff-card .staff-card-lower{grid-template-columns:1fr!important}#staff-card #staff-days-section #staff-journal-wrap{flex:none}}
