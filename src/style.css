@@ -1306,3 +1306,24 @@ main{padding-bottom:64px!important;}
 #staff-card #staff-days-section .staff-operation-editor>summary::-webkit-details-marker{display:none}
 #staff-card #staff-days-section .staff-operation-fields{padding:8px;margin:0}
 #staff-card #staff-days-section #staff-days-summary{margin:2px 1px 0;font-size:12px;line-height:1.35;color:#53677e}
+
+/* v0.3.131 — единый журнал отпускных дней */
+#staff-card #staff-days-section .staff-journal-heading{min-height:40px;margin:0;gap:6px}
+#staff-card #staff-days-section .staff-journal-heading strong{font-size:17px}
+#staff-card #staff-journal-totals{margin-left:auto;font-size:12px;font-weight:600;white-space:nowrap;color:#3c5770}
+#staff-card #staff-journal-wrap{margin:0;overflow-x:auto;border:1px solid #c3d5e9;border-radius:6px}
+#staff-card #staff-journal-wrap .staff-journal-table{table-layout:auto;font-size:13px}
+#staff-card #staff-journal-wrap .staff-journal-table th,
+#staff-card #staff-journal-wrap .staff-journal-table td{padding:6px 5px}
+#staff-card #staff-journal-wrap .staff-journal-table th:nth-child(1){width:48px}
+#staff-card #staff-journal-wrap .staff-journal-table th:nth-child(2){width:98px}
+#staff-card #staff-journal-wrap .staff-journal-table th:nth-child(3){width:48px}
+#staff-card #staff-journal-wrap .staff-journal-table th:nth-child(4){width:auto}
+#staff-card #staff-journal-wrap .staff-journal-table th:nth-child(5){width:60px}
+#staff-card #staff-journal-wrap .staff-journal-table td:nth-child(3){text-align:center;font-variant-numeric:tabular-nums}
+#staff-card #staff-days-section #staff-operation-editor{margin-top:1px}
+@media(max-width:680px){
+ #staff-card #staff-days-section .staff-journal-heading{flex-wrap:wrap}
+ #staff-card #staff-journal-totals{font-size:11px}
+ #staff-card #staff-journal-wrap .staff-journal-table{min-width:410px}
+}
