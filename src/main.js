@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.127';
+const APP_VERSION='0.3.128';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -918,7 +918,7 @@ function render() {
             <label class="staff-info-field"><span>Фамилия</span><input id="staff-last" required maxlength="100"></label>
             <label class="staff-info-field"><span>Имя</span><input id="staff-first" required maxlength="100"></label>
             <label class="staff-info-field"><span>Отчество</span><input id="staff-middle" maxlength="100"></label>
-            <label class="staff-info-field staff-work-field"><span>Место<br>работы</span><textarea id="staff-department" rows="2" maxlength="300"></textarea></label>
+            <label class="staff-info-field staff-work-field"><span>Место работы</span><input id="staff-department" type="text" maxlength="300" title="Полное место работы: подразделение, отдел, структурное звено"></label>
           </div>
           <div class="staff-card-right">
             <label class="staff-info-field"><span>Должность</span><input id="staff-position" list="staff-position-options" maxlength="120" autocomplete="off"><datalist id="staff-position-options"></datalist></label>
