@@ -1334,3 +1334,39 @@ main{padding-bottom:64px!important;}
 #staff-card .staff-carryover-row td:last-child{text-align:center}
 #staff-card .staff-journal-total-row th,#staff-card .staff-journal-total-row td{background:#e3effb;font-weight:700;border-top:2px solid #9bb7d2}
 #staff-card #staff-journal-total-days{text-align:center;font-variant-numeric:tabular-nums}
+
+/* v0.3.134: единая двухколоночная сетка и отдельное окно корректировок */
+#staff-card .staff-card-top,#staff-card .staff-card-lower{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;column-gap:14px!important}
+#staff-card .staff-card-lower{align-items:start}
+#staff-card .staff-card-lower>section{width:100%;min-width:0}
+#staff-card #staff-days-section{gap:0}
+#staff-card #staff-days-section .staff-journal-heading{min-height:42px;margin-bottom:6px}
+#staff-card #staff-days-section #staff-journal-wrap{width:100%;margin:0}
+#staff-card #staff-journal-wrap .staff-journal-table{width:100%;min-width:0;table-layout:fixed}
+#staff-card #staff-journal-wrap .staff-journal-table th:nth-child(1){width:20%}
+#staff-card #staff-journal-wrap .staff-journal-table th:nth-child(2){width:56%;text-align:left}
+#staff-card #staff-journal-wrap .staff-journal-table th:nth-child(3){width:24%;text-align:center}
+#staff-card #staff-journal-wrap .staff-journal-table td:nth-child(2){text-align:left}
+#staff-card #staff-journal-wrap .staff-journal-table td:nth-child(3){text-align:center}
+#staff-card #staff-journal-wrap .staff-journal-table tr.staff-journal-selectable{cursor:pointer}
+#staff-card #staff-journal-wrap .staff-journal-table tr.staff-journal-selectable:hover{background:#f0f7ff}
+#staff-card #staff-journal-wrap .staff-journal-table tr.is-selected td{background:#cce5ff;box-shadow:inset 0 1px #75a5cf,inset 0 -1px #75a5cf}
+#staff-card .staff-journal-actions{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px}
+#staff-card .staff-journal-actions button{font-size:13px;border:1px solid #a8c1df;background:#fff;border-radius:6px;padding:6px 9px;color:#1c5488;cursor:pointer}
+#staff-card .staff-journal-actions button:first-child{margin-right:auto}
+#staff-card .staff-journal-actions button:disabled{color:#8b9aa9;opacity:.55;cursor:default}
+#staff-card .staff-journal-actions button:last-child{color:#b32828}
+#staff-card .staff-days-summary-line{margin-top:10px;padding:9px 10px;background:#e1efff;border-radius:7px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;color:#173352;text-align:center;font-size:14px}
+#staff-card .staff-days-summary-line strong{font-weight:700}
+#staff-card .staff-days-summary-line .staff-sum-operator{font-size:18px;font-weight:700;color:#326d9f}
+#staff-operation-dialog{padding:0;border:1px solid #8eb5da;border-radius:10px;width:min(460px,calc(100vw - 28px));max-width:calc(100vw - 28px);box-sizing:border-box;box-shadow:0 18px 50px #071e3b66;overflow:hidden;color:#142b49}
+#staff-operation-dialog::backdrop{background:rgba(2,16,35,.37)}
+#staff-operation-dialog .staff-operation-modal-title{padding:12px 15px;display:flex;justify-content:space-between;align-items:center;background:#0b2c54;color:white;font-size:17px}
+#staff-operation-dialog .staff-operation-modal-title button{background:transparent;color:white;border:0;font-size:25px;cursor:pointer}
+#staff-operation-dialog .staff-operation-fields{padding:15px;display:grid;gap:9px}
+#staff-operation-dialog .staff-operation-fields label{display:grid;grid-template-columns:122px minmax(0,1fr);gap:10px;align-items:center;font-size:14px;font-weight:700}
+#staff-operation-dialog .staff-operation-fields select,#staff-operation-dialog .staff-operation-fields input{width:100%;height:36px;min-width:0;box-sizing:border-box;border:1px solid #a8bed9;border-radius:6px;background:#fff;padding:5px 8px;font-size:14px}
+#staff-operation-dialog .staff-operation-modal-actions{display:flex;justify-content:flex-end;gap:9px;padding:0 15px 16px}
+#staff-operation-dialog .staff-operation-modal-actions button{padding:8px 15px;border-radius:6px;border:1px solid #94b3d2;background:white}
+#staff-operation-dialog #staff-days-add{background:#1772bd;color:white;border-color:#1772bd}
+@media(max-width:640px){#staff-card .staff-card-lower{grid-template-columns:1fr!important}#staff-card .staff-days-summary-line{font-size:12px}}
