@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.137';
+const APP_VERSION='0.3.138';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -328,7 +328,7 @@ function showPriorityDetails(id){
 const positionsKey='grotPositions';
 function getPositions(){try{const saved=JSON.parse(localStorage.getItem(positionsKey)||'[]');return [...new Set([...(Array.isArray(saved)?saved:[]),...drivers.map(d=>d.position).filter(Boolean)].map(x=>String(x).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'))}catch{return [...new Set(drivers.map(d=>d.position).filter(Boolean))].sort()}}
 function savePositions(values){localStorage.setItem(positionsKey,JSON.stringify([...new Set(values.map(x=>x.trim()).filter(Boolean))]))}
-function updatePositionSuggestions(){const list=document.querySelector('#staff-position-options');if(list)list.innerHTML=getPositions().map(x=>'<option value="'+escapeHtml(x)+'"></option>').join('')}
+function updatePositionSuggestions(){const list=document.querySelector('#staff-position-menu');if(list&&!list.hidden)drawPositionPicker()}
 function openPositionsDirectory(){
  const dlg=document.querySelector('#positions-dialog'),list=document.querySelector('#positions-list');
  const draw=()=>{list.innerHTML=getPositions().map(x=>'<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><span style="flex:1">'+escapeHtml(x)+'</span><button type="button" data-position-remove="'+escapeHtml(x)+'" title="Удалить из справочника">×</button></div>').join('')||'<p>Должностей пока нет.</p>';
@@ -965,7 +965,7 @@ function render() {
             <label class="staff-info-field staff-work-field"><span>Место<br>работы</span><textarea id="staff-department" rows="2" maxlength="300" title="Полное место работы: подразделение, отдел, структурное звено"></textarea></label>
           </div>
           <div class="staff-card-right">
-            <label class="staff-info-field"><span>Должность</span><input id="staff-position" list="staff-position-options" maxlength="120" autocomplete="off"><datalist id="staff-position-options"></datalist></label>
+            <label class="staff-info-field"><span>Должность</span><span class="staff-position-picker"><input id="staff-position" maxlength="120" autocomplete="off" placeholder="Выбрать или ввести"><button type="button" id="staff-position-toggle" title="Выбрать из справочника" aria-label="Открыть список должностей" aria-expanded="false">▾</button><span id="staff-position-menu" class="staff-position-menu" hidden></span></span></label>
             <label class="staff-info-field"><span>Принят(а)</span><input id="staff-hired" type="date"></label>
             <div class="staff-info-field staff-dismiss-row"><span class="staff-dismiss-caption"><label for="staff-dismissal">Уволен(а)</label><input id="staff-dismissed" type="checkbox" aria-label="Отметить увольнение" title="Сотрудник уволен"></span><input id="staff-dismissal" type="date"></div>
             <label class="staff-info-field"><span>Код</span><input id="staff-structure-code" readonly title="Код определяется структурой предприятия"></label>
@@ -1380,7 +1380,7 @@ function render() {
   };
   document.querySelector('#staff-allowance').addEventListener('input',redrawDayOperations);
   function openStaffCard(d,structureId=null){
-    const form=document.querySelector('#staff-form');form.reset();updatePositionSuggestions();pendingDayOperations=(d?.dayOperations||[]).map(x=>({...x}));
+    const form=document.querySelector('#staff-form');form.reset();closePositionPicker();updatePositionSuggestions();pendingDayOperations=(d?.dayOperations||[]).map(x=>({...x}));
     closeStaffOperationDialog();selectedJournalIndex=null;
     editingStaff=d||null;
     yearlyLeaveDraft={};
@@ -1485,6 +1485,31 @@ function render() {
   document.querySelector('#vacation-chart-add').onclick=()=>vacationChartEdit(null);
   document.querySelector('#vacation-charts-close').onclick=()=>document.querySelector('#vacation-charts-dialog').close();
   document.querySelector('#vacation-chart-cancel').onclick=()=>document.querySelector('#vacation-chart-members-dialog').close();
+  const positionInput=document.querySelector('#staff-position');
+  const positionToggle=document.querySelector('#staff-position-toggle');
+  const positionMenu=document.querySelector('#staff-position-menu');
+  function drawPositionPicker(){
+    const query=positionInput.value.trim().toLocaleLowerCase('ru');
+    const options=getPositions().filter(v=>v.toLocaleLowerCase('ru').includes(query));
+    positionMenu.innerHTML=options.length?options.map(v=>'<button type="button" class="staff-position-option" data-position-option="'+escapeHtml(v)+'">'+escapeHtml(v)+'</button>').join(''):'<span class="staff-position-no-matches">Совпадений нет. Можно ввести новую должность вручную.</span>';
+    positionMenu.querySelectorAll('[data-position-option]').forEach(b=>b.onclick=()=>{
+      positionInput.value=b.dataset.positionOption;
+      positionInput.dispatchEvent(new Event('change',{bubbles:true}));
+      closePositionPicker();
+    });
+  }
+  function openPositionPicker(){
+    drawPositionPicker();
+    positionMenu.hidden=false;
+    positionToggle.setAttribute('aria-expanded','true');
+  }
+  function closePositionPicker(){positionMenu.hidden=true;positionToggle.setAttribute('aria-expanded','false')}
+  positionToggle.onclick=e=>{e.preventDefault();e.stopPropagation();if(positionMenu.hidden)openPositionPicker();else closePositionPicker()};
+  positionInput.addEventListener('input',()=>openPositionPicker());
+  positionInput.addEventListener('focus',()=>{if(positionInput.value.trim())openPositionPicker()});
+  positionInput.addEventListener('keydown',e=>{if(e.key==='Escape')closePositionPicker()});
+  document.addEventListener('pointerdown',e=>{if(!e.target.closest('.staff-position-picker'))closePositionPicker()});
+  document.querySelector('#staff-card').addEventListener('close',closePositionPicker);
   document.querySelector('#positions-open').onclick=openPositionsDirectory;
   updatePositionSuggestions();
   document.querySelector('#staff-open').onclick=()=>{drawStaff();document.querySelector('#staff-dialog').showModal();};
