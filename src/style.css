@@ -1186,3 +1186,29 @@ main{padding-bottom:64px!important;}
 @media(max-width:360px){
  #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:84px minmax(0,1fr) auto;gap:4px}
 }
+
+/* v0.3.128 — одинаковая высота строк верхней части карточки */
+#staff-card .staff-card-top .staff-info-field{
+  min-height:36px!important;
+  height:36px!important;
+  align-items:center!important;
+}
+#staff-card .staff-card-top .staff-info-field>span,
+#staff-card .staff-card-top .staff-info-field>label:first-child{
+  box-sizing:border-box;
+  height:36px!important;
+  min-height:36px!important;
+  padding:5px 9px!important;
+  white-space:nowrap;
+}
+#staff-card .staff-card-top .staff-info-field input:not([type="checkbox"]){
+  box-sizing:border-box;
+  height:36px!important;
+  min-height:36px!important;
+}
+#staff-card .staff-card-top .staff-work-field>span{font-size:12px}
+#staff-card .staff-card-top #staff-department{height:36px!important;white-space:nowrap;text-overflow:ellipsis}
+#staff-card .staff-card-right .staff-dismiss-row{height:36px!important;min-height:36px!important}
+@media(max-width:680px){
+ #staff-card .staff-card-top .staff-info-field{height:36px!important}
+}
