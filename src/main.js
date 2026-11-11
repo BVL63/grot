@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.138';
+const APP_VERSION='0.3.139';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -930,9 +930,9 @@ function render() {
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="archive-import-file" accept=".json,application/json" hidden>
       </nav>
-      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong>${chart.allStaff?'':'<button type="button" id="chart-members-add" title="Структурные звенья и исключения">Состав</button>'}<button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
+      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
-      <th class="fixed name header-caption"><span class="heading-full">${escapeHtml(activeVacationChart().name)}</span><span class="heading-phone" aria-hidden="true">Сотрудник</span></th>
+      <th class="fixed name header-caption">${chart.allStaff?'<span class="heading-full">'+escapeHtml(chart.name)+'</span>':'<button type="button" id="chart-members-add" class="chart-members-heading-button" title="Редактировать состав графика">Состав</button>'}<span class="heading-phone" aria-hidden="true">Сотрудник</span></th>
       <th class="header-caption" title="Приоритет"><span class="heading-full">Приоритет</span><span class="heading-phone" aria-hidden="true">Приор.</span></th>
       <th class="fixed group header-caption"><span class="heading-full">Группа</span><span class="heading-phone" aria-hidden="true">Гр.</span></th>
       ${monthHeadings}<th rowspan="2" class="annual-total-heading" title="Запланировано"><span class="heading-full">Запланировано</span><span class="heading-phone" aria-hidden="true">План.</span></th><th rowspan="2" title="Доступно"><span class="heading-full">Доступно</span><span class="heading-phone" aria-hidden="true">Дост.</span></th><th rowspan="2" title="Остаток"><span class="heading-full">Остаток</span><span class="heading-phone" aria-hidden="true">Ост.</span></th></tr>
