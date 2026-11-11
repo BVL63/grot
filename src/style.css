@@ -1390,3 +1390,10 @@ main{padding-bottom:64px!important;}
 #staff-card #staff-journal-wrap .staff-journal-table tbody .staff-journal-fill td{height:100%;border:0!important;background:transparent!important;padding:0!important}
 #staff-card #staff-journal-wrap .staff-journal-table tfoot{height:36px}
 #staff-card #staff-journal-wrap .staff-journal-table tfoot .staff-journal-total-row th{height:36px;box-sizing:border-box;vertical-align:middle}
+
+/* ГРОТ 0.3.137: обе итоговые строки на одной горизонтали */
+#staff-card #staff-days-section #staff-journal-wrap{flex:0 0 auto!important;box-sizing:border-box!important}
+#staff-card #staff-journal-wrap .staff-journal-table{height:100%!important}
+#staff-card #staff-journal-wrap .staff-journal-table tfoot{height:var(--grot-journal-total-height,46px)!important}
+#staff-card #staff-journal-wrap .staff-journal-table tfoot .staff-journal-total-row th{height:var(--grot-journal-total-height,46px)!important;vertical-align:middle!important}
+#staff-card #staff-journal-wrap .staff-journal-table tbody .staff-journal-fill{height:100%}
