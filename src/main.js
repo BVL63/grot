@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.124';
+const APP_VERSION='0.3.125';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -313,6 +313,10 @@ const structureTypes={organization:'Организация',division:'Подра
 const structureChildren={organization:['division'],division:['department','brigade'],department:['department','brigade'],brigade:[]};
 const structureEscape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function structureAncestors(id){const result=[];const seen=new Set();let node=structureNodes.find(n=>n.id===id);while(node&&!seen.has(node.id)){seen.add(node.id);result.unshift(node);node=structureNodes.find(n=>n.id===node.parentId)}return result}
+function structureWorkplace(id){
+ if(!id)return '';
+ return structureAncestors(id).filter(node=>node.type!=='organization').map(node=>node.name).join(' → ');
+}
 function structureEnsureOrganization(){
  const org=readOrganization();
  let roots=structureNodes.filter(n=>n.type==='organization');
@@ -407,8 +411,7 @@ function structureCardSave(e){
    if(leader){
      const division=structureAncestors(n.id).find(x=>x.type==='division');
      if(n.leaderTitle)leader.position=n.leaderTitle;
-     if(division)leader.department=division.name;
-     else if(n.type!=='organization')leader.department=n.name;
+     if(n.type!=='organization')leader.department=structureWorkplace(n.id)||division?.name||n.name;
      saveStaff();
    }
  }
@@ -438,7 +441,7 @@ function structureAssignSave(){
  const ids=new Set([...document.querySelectorAll('#structure-employees input:checked')].map(x=>String(x.value)));
  const hierarchy=structureAncestors(n.id);
  const division=hierarchy.find(x=>x.type==='division');
- const departmentName=division?.name||n.name;
+ const departmentName=structureWorkplace(n.id)||division?.name||n.name;
  for(const d of drivers){
    if(ids.has(String(d.id))){
      // One source of truth: structureId determines the code in the staff card.
@@ -1315,10 +1318,10 @@ function render() {
     form.dataset.fromStructure=structureId?'1':'0';
     document.querySelector('#staff-id').value=d?.id||'';
     document.querySelector('#staff-card-title').textContent=d?'Карточка сотрудника':'Новый сотрудник';
-    if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-position').value=d.position||'';document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
+    if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=structureWorkplace(d.structureId)||d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-position').value=d.position||'';document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
     showDisplayedLeaveYear();
     const effectiveStructureId=structureId||d?.structureId;document.querySelector('#staff-structure-code').value=structureNodes.find(n=>n.id===effectiveStructureId)?.code||'';
-    if(structureId){const hierarchy=structureAncestors(structureId);const division=hierarchy.find(x=>x.type==='division');const selected=structureNodes.find(x=>String(x.id)===String(structureId));document.querySelector('#staff-department').value=division?.name||selected?.name||'';}
+    if(structureId){document.querySelector('#staff-department').value=structureWorkplace(structureId)||'';}
     redrawDayOperations();
     document.querySelector('#staff-dialog').close();document.querySelector('#staff-card').showModal();
   }
