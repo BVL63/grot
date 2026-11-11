@@ -1,13 +1,13 @@
 {
   "name": "grafik-otpuskov-2027",
-  "version": "0.3.117",
+  "version": "0.3.118",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
-    "build:desktop": "vite build --base=/grot/ && node scripts/copy-print-vendors.mjs",
+    "build:desktop": "vite build --base=/grot/ && node scripts/copy-print-vendors.mjs && node scripts/generate-windows-icon.mjs",
     "desktop": "npm run build:desktop && electron .",
     "dist:win": "npm run build:desktop && electron-builder --win nsis --x64 --publish never",
     "dist:portable": "npm run build:desktop && electron-builder --win portable --x64 --publish never"
@@ -22,7 +22,8 @@
   "description": "ГРОТ — график отпусков (веб и Windows)",
   "devDependencies": {
     "electron": "^45.2.3",
-    "electron-builder": "^26.18.0"
+    "electron-builder": "^26.18.0",
+    "sharp": "^0.34.4"
   },
   "build": {
     "appId": "ru.grot.vacation.desktop",
@@ -31,7 +32,8 @@
     "files": [
       "desktop/**/*",
       "dist/**/*",
-      "package.json"
+      "package.json",
+      "build/icon.png"
     ],
     "directories": {
       "output": "release"
@@ -44,7 +46,8 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -52,7 +55,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "ГРОТ",
-      "artifactName": "GROT-Setup-${version}-${arch}.${ext}"
+      "artifactName": "GROT-Setup-${version}-${arch}.${ext}",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     },
     "portable": {
       "artifactName": "GROT-Portable-${version}-${arch}.${ext}"
