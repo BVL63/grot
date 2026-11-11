@@ -1083,3 +1083,32 @@ main{padding-bottom:64px!important;}
 #structure-card-dialog #structure-card-edit{background:#edf6ff;border:1px solid #7ea9ca;color:#164c78}
 #structure-card-dialog #structure-card-delete{background:#fff3f2;border:1px solid #dba6a0;color:#9a3030}
 #structure-card-dialog .actions>[hidden]{display:none!important}
+
+/* v0.3.119: пять равномерных команд в окне структуры предприятия */
+#structure-dialog .structure-toolbar{
+ display:grid;
+ grid-template-columns:repeat(5,minmax(0,1fr));
+ gap:8px;
+ width:100%;
+ box-sizing:border-box;
+ align-items:stretch;
+ margin:12px 0;
+}
+#structure-dialog .structure-toolbar>button{
+ box-sizing:border-box;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ min-width:0;
+ width:100%;
+ min-height:46px;
+ height:100%;
+ padding:8px 6px;
+ line-height:1.2;
+ text-align:center;
+ white-space:normal;
+}
+@media(max-width:700px){
+ #structure-dialog .structure-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #structure-dialog .structure-toolbar>button:last-child{grid-column:span 2}
+}
