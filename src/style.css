@@ -1068,3 +1068,9 @@ main{padding-bottom:64px!important;}
 .structure-leader-list{display:flex;flex-direction:column;gap:3px;max-height:48vh;overflow:auto;overscroll-behavior:contain}
 .structure-leader-choice{display:block;width:100%;text-align:left;padding:10px 12px;border:1px solid transparent;border-radius:6px;background:#f4f7fa;color:#17304c;font:inherit;cursor:pointer}
 .structure-leader-choice:focus-visible,.structure-leader-choice:hover{border-color:#72a8d0;background:#e6f2fb}
+
+/* v0.3.116 — крестик в правом верхнем углу структуры предприятия */
+#structure-dialog{position:relative;padding-top:20px}
+#structure-dialog .structure-dialog-top-close{position:absolute;top:12px;right:14px;display:flex;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;padding:0;border:1px solid #b9cbdc;border-radius:6px;background:#f5f8fc;color:#26476b;font:normal 26px/1 Arial,sans-serif;cursor:pointer;z-index:2}
+#structure-dialog .structure-dialog-top-close:hover{background:#e5eef8}
+#structure-dialog>h2{padding-right:48px}
