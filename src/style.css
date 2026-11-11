@@ -1155,3 +1155,34 @@ main{padding-bottom:64px!important;}
 @media(max-width:360px){
  #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:84px minmax(0,1fr) auto}
 }
+
+/* v0.3.127 — более компактная верхняя часть карточки сотрудника */
+#staff-card .staff-card-left,#staff-card .staff-card-right{gap:5px}
+#staff-card .staff-card-top{padding-bottom:10px}
+#staff-card .staff-info-field>span,
+#staff-card .staff-info-field>label:first-child{min-height:32px;padding:5px 9px}
+#staff-card .staff-info-field input:not([type="checkbox"]){height:32px!important;padding:4px 9px}
+#staff-card .staff-work-field>span{min-height:65px}
+#staff-card .staff-work-field textarea{height:65px;min-height:65px;padding:6px 9px}
+#staff-card .staff-card-right .staff-dismiss-row{
+ grid-template-columns:134px minmax(0,165px) auto;
+ gap:9px;
+ align-items:center;
+ justify-content:start;
+}
+#staff-card .staff-card-right #staff-hired,
+#staff-card .staff-card-right #staff-dismissal{height:32px!important;max-width:165px}
+#staff-card .staff-card-right #staff-structure-code{max-width:165px}
+#staff-card .staff-card-right #staff-group{max-width:125px}
+#staff-card .staff-dismiss-check{gap:4px!important;font-size:13px!important;min-width:0;white-space:nowrap}
+#staff-card .staff-dismiss-check input{width:17px!important;height:17px!important}
+@media(max-width:850px){
+ #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:120px minmax(0,165px) auto;gap:7px}
+ #staff-card .staff-card-right #staff-hired,#staff-card .staff-card-right #staff-dismissal{max-width:165px}
+}
+@media(max-width:680px){
+ #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:99px minmax(0,165px) auto;gap:5px}
+}
+@media(max-width:360px){
+ #staff-card .staff-card-right .staff-dismiss-row{grid-template-columns:84px minmax(0,1fr) auto;gap:4px}
+}
