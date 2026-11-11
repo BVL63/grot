@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.133';
+const APP_VERSION='0.3.134';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -987,30 +987,36 @@ function render() {
             <p id="staff-leave-year-hint" class="muted"></p>
           </section>
           <section id="staff-days-section" class="staff-card-operations">
-            <div class="staff-card-section-heading staff-journal-heading"><strong>Журнал отпускных дней</strong><span id="staff-journal-totals">Корректировки: 0 · Остаток: 0</span></div>
-            <p id="staff-carryover-source" class="staff-carryover-source" role="status"></p>
+            <div class="staff-card-section-heading staff-journal-heading"><strong>Журнал корректировок</strong></div>
+            
             <div class="staff-table-wrap" id="staff-journal-wrap">
               <table class="staff-operations-table staff-journal-table">
-                <thead><tr><th>Год</th><th>Операция</th><th>Дней</th><th aria-label="Действия"></th></tr></thead>
+                <thead><tr><th>Год</th><th>Операция</th><th>Дней</th></tr></thead>
                 <tbody id="staff-journal-rows"></tbody>
-                <tfoot><tr class="staff-journal-total-row"><th colspan="2">Итого</th><th id="staff-journal-total-days">0</th><td></td></tr></tfoot>
+                <tfoot><tr class="staff-journal-total-row"><th colspan="2">Итого</th><th id="staff-journal-total-days">0</th></tr></tfoot>
               </table>
             </div>
-            <details class="staff-operation-editor" id="staff-operation-editor"><summary>＋ Добавить запись</summary>
-              <div class="staff-operation-fields">
-                <label>Операция<select id="staff-days-type"><option value="balance">Остаток прошлых лет</option><option value="addition">Добавить дни</option><option value="reduction">Уменьшить дни</option><option value="compensation">Компенсация</option></select></label>
-                <label>Рабочий год<input id="staff-days-year" type="text" placeholder="2026" maxlength="30"></label>
-                <label>Дней<input id="staff-days-count" type="number" min="1" max="365" placeholder="Дней"></label>
-                <button type="button" id="staff-days-add">Записать</button>
-              </div>
-            </details>
-            <p id="staff-days-summary" class="muted"></p>
+            <div class="staff-journal-actions">
+              <button type="button" id="staff-journal-add">＋ Добавить</button>
+              <button type="button" id="staff-journal-edit" disabled><span class="grot-pencil-right" aria-hidden="true">✎</span> Изменить</button>
+              <button type="button" id="staff-journal-remove" disabled>× Удалить</button>
+            </div>
             <div id="staff-days-history" hidden></div>
           </section>
         </div>
         <p id="staff-error" role="alert"></p>
         <div class="staff-card-actions"><button type="button" id="staff-history-open">◷ История отпусков по годам</button><span class="staff-card-action-spacer"></span><button type="submit" class="staff-card-save">Сохранить</button><button type="button" id="staff-card-close">Закрыть</button></div>
+        <div id="staff-days-summary" class="staff-days-summary-line" role="status"></div>
       </form>
+    </dialog>
+    <dialog id="staff-operation-dialog" class="staff-operation-dialog">
+      <div class="staff-operation-modal-title"><strong id="staff-operation-modal-heading">Запись журнала корректировок</strong><button type="button" id="staff-operation-close" aria-label="Закрыть">×</button></div>
+      <div class="staff-operation-fields">
+        <label>Год<select id="staff-days-year"></select></label>
+        <label>Операция<select id="staff-days-type"><option value="balance">Остаток прошлых лет</option><option value="addition">Добавить дни</option><option value="reduction">Уменьшить дни</option><option value="compensation">Компенсация</option></select></label>
+        <label>Дней<input id="staff-days-count" type="number" min="1" max="365" step="1"></label>
+      </div>
+      <div class="staff-operation-modal-actions"><button type="button" id="staff-days-add">Сохранить</button><button type="button" id="staff-operation-cancel">Отмена</button></div>
     </dialog>
     <dialog id="editor"><form id="vacation-form">
       <div class="editor-header"><h2 id="editor-title">Отпуска 2027</h2><button type="button" id="editor-close-x" class="dialog-close-x" aria-label="Закрыть календарь" title="Закрыть">×</button></div>
@@ -1246,8 +1252,7 @@ function render() {
     document.querySelector('#staff-allowance').value=data?.allowance??0;
     updateLegacyNotice();
     editingDayOperationIndex=null;
-    document.querySelector('#staff-operation-editor').open=false;
-    document.querySelector('#staff-days-add').textContent='Записать';
+    closeStaffOperationDialog();
     redrawDayOperations();
   }
   document.querySelector('#staff-leave-year').onchange=e=>{saveDisplayedLeaveYear();selectedLeaveYear=e.target.value;showDisplayedLeaveYear()};
@@ -1255,7 +1260,7 @@ function render() {
   const operationLabels={balance:'Остаток',addition:'Добавление',reduction:'Уменьшение',compensation:'Компенсация'};
   const operationRow=(x,index)=>{
     const delta=Number(x.days)||0;
-    return '<tr><td>'+escapeHtml(String(x.year||x.scopeYear||'—'))+'</td><td>'+escapeHtml(operationLabels[x.type]||x.type||'Корректировка')+'</td><td class="staff-op-days">'+(delta>0?'+':'')+delta+'</td><td class="staff-op-actions"><button type="button" data-op-edit="'+index+'" title="Изменить"><span class="grot-pencil-right" aria-hidden="true">✎</span></button><button type="button" data-op-remove="'+index+'" title="Удалить">×</button></td></tr>';
+    return '<tr class="staff-journal-selectable" data-op-index="'+index+'"><td>'+escapeHtml(String(x.year||x.scopeYear||'—'))+'</td><td>'+escapeHtml(operationLabels[x.type]||x.type||'Корректировка')+'</td><td class="staff-op-days">'+(delta>0?'+':'')+delta+'</td></tr>';
   };
   function redrawDayOperations(){
     const base=Number(document.querySelector('#staff-allowance').value)||0;
@@ -1268,31 +1273,45 @@ function render() {
     const balanceDays=manualBalanceDays+autoDays;
     const journalTotal=balanceDays+correctionDays;
     const signed=n=>(n>0?'+':'')+n;
-    document.querySelector('#staff-days-summary').textContent='Ежегодный отпуск: '+base+' дн. · Перенос: '+balanceDays+' дн. · Корректировки: '+signed(correctionDays)+' дн. · Доступно: '+(base+journalTotal)+' дн.';
-    document.querySelector('#staff-journal-totals').textContent='Доступно: '+(base+journalTotal)+' дн.';
+    document.querySelector('#staff-days-summary').innerHTML='<span>Норма: <strong>'+base+' дн.</strong></span><span class="staff-sum-operator">+</span><span>Корректировка: <strong>'+signed(journalTotal)+' дн.</strong></span><span class="staff-sum-operator">=</span><span>Доступно: <strong>'+(base+journalTotal)+' дн.</strong></span>';
     document.querySelector('#staff-journal-total-days').textContent=signed(journalTotal);
-    const sourceLabel=source.manual?'Остаток внесён вручную. Автоматический расчёт не добавляется повторно.':
-      source.unavailable?'Нет достаточных сведений о норме и отпусках прошлого года. Внесите подтверждённый остаток вручную.':
-      'Предварительно по графику '+source.sourceYear+' г.: '+source.norm+' − '+source.used+(source.adjustments?' + ('+source.adjustments+')':'')+' = '+source.days+' дн. Проверьте фактическое использование отпуска.';
-    document.querySelector('#staff-carryover-source').textContent=sourceLabel;
-    const autoRow=!source.manual&&!source.unavailable?'<tr class="staff-carryover-row"><td>'+source.sourceYear+'</td><td>Перенос (расчёт)</td><td class="staff-op-days">'+signed(autoDays)+'</td><td title="Рассчитано по графику. Для подтверждения уточните фактически использованный отпуск.">◷</td></tr>':'';
-    document.querySelector('#staff-journal-rows').innerHTML=autoRow+relevant.map(({x,index})=>operationRow(x,index)).join('')||'<tr><td colspan="4" class="staff-ops-empty">Записей нет</td></tr>';
-    document.querySelectorAll('#staff-journal-rows [data-op-remove]').forEach(b=>b.onclick=()=>{
-      if(confirm('Удалить запись учёта отпускных дней?')){pendingDayOperations.splice(Number(b.dataset.opRemove),1);editingDayOperationIndex=null;redrawDayOperations()}
-    });
-    document.querySelectorAll('#staff-journal-rows [data-op-edit]').forEach(b=>b.onclick=()=>{
-      const i=Number(b.dataset.opEdit),x=pendingDayOperations[i];if(!x)return;
-      editingDayOperationIndex=i;
-      document.querySelector('#staff-days-type').value=x.type||'addition';
-      document.querySelector('#staff-days-year').value=x.year||'';
-      document.querySelector('#staff-days-count').value=Math.abs(Number(x.days)||0);
-      document.querySelector('#staff-days-add').textContent='Сохранить правку';
-      document.querySelector('#staff-operation-editor').open=true;
-    });
+    const autoRow=!source.manual&&!source.unavailable?'<tr class="staff-carryover-row" title="Предварительный перенос по графику '+source.sourceYear+' года; уточните фактическое использование"><td>'+source.sourceYear+'</td><td>Остаток (расчёт)</td><td class="staff-op-days">'+signed(autoDays)+'</td></tr>':'';
+    document.querySelector('#staff-journal-rows').innerHTML=autoRow+(relevant.map(({x,index})=>operationRow(x,index)).join(''))||'<tr><td colspan="3" class="staff-ops-empty">Записей нет</td></tr>';
+    if(!relevant.some(({index})=>index===selectedJournalIndex))selectedJournalIndex=null;
+    const updateSelection=()=>{
+      document.querySelectorAll('#staff-journal-rows [data-op-index]').forEach(row=>row.classList.toggle('is-selected',Number(row.dataset.opIndex)===selectedJournalIndex));
+      document.querySelector('#staff-journal-edit').disabled=selectedJournalIndex===null;
+      document.querySelector('#staff-journal-remove').disabled=selectedJournalIndex===null;
+    };
+    document.querySelectorAll('#staff-journal-rows [data-op-index]').forEach(row=>row.onclick=()=>{selectedJournalIndex=Number(row.dataset.opIndex);updateSelection()});
+    updateSelection();
   }
-  document.querySelector('#staff-operation-editor').addEventListener('toggle',e=>{
-    if(!e.target.open&&editingDayOperationIndex!==null){editingDayOperationIndex=null;document.querySelector('#staff-days-add').textContent='Записать'}
-  });
+  let selectedJournalIndex=null;
+  const opDialog=document.querySelector('#staff-operation-dialog');
+  function closeStaffOperationDialog(){if(opDialog.open)opDialog.close();editingDayOperationIndex=null;}
+  function openStaffOperationDialog(index=null){
+    editingDayOperationIndex=index;
+    const operation=index===null?null:pendingDayOperations[index];
+    const years=new Set([String(Number(selectedLeaveYear)-1),selectedLeaveYear,...Object.keys(yearlyLeaveDraft),...pendingDayOperations.map(x=>String(x.year||''))]);
+    document.querySelector('#staff-days-year').innerHTML=[...years].filter(x=>/^\d{4}$/.test(x)).sort().map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+    document.querySelector('#staff-days-type').value=operation?.type||'balance';
+    document.querySelector('#staff-days-year').value=String(operation?.year||Number(selectedLeaveYear)-1);
+    document.querySelector('#staff-days-count').value=operation?Math.abs(Number(operation.days)||0):'';
+    document.querySelector('#staff-operation-modal-heading').textContent=index===null?'Добавить корректировку':'Изменить корректировку';
+    opDialog.showModal();
+  }
+  document.querySelector('#staff-journal-add').onclick=()=>openStaffOperationDialog();
+  document.querySelector('#staff-journal-edit').onclick=()=>{if(selectedJournalIndex!==null)openStaffOperationDialog(selectedJournalIndex)};
+  document.querySelector('#staff-journal-remove').onclick=()=>{
+    if(selectedJournalIndex===null)return;
+    if(confirm('Удалить выбранную запись журнала корректировок?')){
+      pendingDayOperations.splice(selectedJournalIndex,1);
+      selectedJournalIndex=null;redrawDayOperations();
+    }
+  };
+  document.querySelector('#staff-operation-close').onclick=closeStaffOperationDialog;
+  document.querySelector('#staff-operation-cancel').onclick=closeStaffOperationDialog;
+  opDialog.addEventListener('close',()=>{editingDayOperationIndex=null});
   const leaveFieldIds=Object.values(yearlyFields);
   const explicitLeaveIds=leaveFieldIds.filter(id=>id!=='staff-leave-legacy');
   const leaveNumber=id=>Math.max(0,Number(document.querySelector('#'+id).value)||0);
@@ -1347,14 +1366,13 @@ function render() {
     if(editingDayOperationIndex===null)pendingDayOperations.push(record);
     else pendingDayOperations[editingDayOperationIndex]={...pendingDayOperations[editingDayOperationIndex],...record};
     editingDayOperationIndex=null;
-    document.querySelector('#staff-days-add').textContent='Записать';
     document.querySelector('#staff-days-count').value='';
-    document.querySelector('#staff-operation-editor').open=false;redrawDayOperations();
+    selectedJournalIndex=null;closeStaffOperationDialog();redrawDayOperations();
   };
   document.querySelector('#staff-allowance').addEventListener('input',redrawDayOperations);
   function openStaffCard(d,structureId=null){
     const form=document.querySelector('#staff-form');form.reset();updatePositionSuggestions();pendingDayOperations=(d?.dayOperations||[]).map(x=>({...x}));
-    editingDayOperationIndex=null;document.querySelector('#staff-operation-editor').open=false;document.querySelector('#staff-days-add').textContent='Записать';
+    closeStaffOperationDialog();selectedJournalIndex=null;
     editingStaff=d||null;
     yearlyLeaveDraft={};
     if(d?.leaveByYear&&typeof d.leaveByYear==='object'&&!Array.isArray(d.leaveByYear)){
