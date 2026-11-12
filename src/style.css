@@ -2415,3 +2415,13 @@ html,body{height:100%;overflow:hidden}
 @media(max-width:600px){
  #app>main>.scroll .annual-table.archive-table{--archive-name-width:132px}
 }
+
+/* Anchor dropdowns to the toolbar so every panel stays inside the screen. */
+#app>main>.grot-toolbar .grot-menu{position:static}
+#app>main>.grot-toolbar .grot-menu-panel{
+ top:calc(100% + 6px);
+ left:0!important;
+ right:auto!important;
+ width:min(340px,calc(100vw - 24px))!important;
+ max-width:calc(100vw - 24px)!important;
+}
