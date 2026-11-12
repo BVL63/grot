@@ -73,12 +73,20 @@ function openGroupJournal(preferredCode=''){
  const tbody=document.querySelector('#chart-groups-body');
  const panel=document.querySelector('#chart-group-assign-dialog');
  const positionSelection=()=>{
-  const journal=dialog.getBoundingClientRect();
-  const spaceRight=window.innerWidth-journal.right;
-  const spaceLeft=journal.left;
-  const width=Math.min(470,window.innerWidth-24);
-  let left=spaceRight>=width+12?journal.right+12:spaceLeft>=width+12?journal.left-width-12:Math.max(12,(window.innerWidth-width)/2);
-  const top=Math.max(12,Math.min(journal.top,window.innerHeight-panel.offsetHeight-12));
+  const viewportWidth=window.innerWidth, gap=12, edge=12;
+  const groupWidth=dialog.offsetWidth, selectionWidth=panel.offsetWidth;
+  let left,top;
+  if(viewportWidth>=groupWidth+selectionWidth+gap+edge*2){
+   // Place two independent dialogs beside one another; journal remains on the left.
+   const start=Math.max(edge,(viewportWidth-groupWidth-selectionWidth-gap)/2);
+   const journalTop=Math.max(edge,Math.min(dialog.getBoundingClientRect().top,window.innerHeight-dialog.offsetHeight-edge));
+   dialog.style.margin='0';dialog.style.position='fixed';dialog.style.left=start+'px';dialog.style.top=journalTop+'px';
+   left=start+groupWidth+gap;top=journalTop;
+  }else{
+   // Narrow screens cannot fit both: center the selection window above the journal.
+   left=Math.max(edge,(viewportWidth-selectionWidth)/2);
+   top=Math.max(edge,Math.min(dialog.getBoundingClientRect().top,window.innerHeight-panel.offsetHeight-edge));
+  }
   panel.style.margin='0';panel.style.position='fixed';panel.style.left=left+'px';panel.style.top=top+'px';
  };
  const showSelection=()=>{form.hidden=true;drawMembers();if(!panel.open)panel.showModal();positionSelection()};
@@ -127,6 +135,9 @@ function openGroupJournal(preferredCode=''){
   refreshTotals();
  };
  document.querySelector('#chart-group-assign-close').onclick=()=>panel.close();
+ panel.addEventListener('close',()=>{
+  for(const prop of ['left','top','margin','position'])panel.style.removeProperty(prop);
+ });
  const list=document.querySelector('#chart-group-assign-list');
  const refreshChecked=()=>{document.querySelector('#chart-group-assign-status').textContent='Выбрано: '+list.querySelectorAll('.group-assign-check:checked').length};
  const drawMembers=()=>{
