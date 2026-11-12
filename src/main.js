@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.152';
+const APP_VERSION='0.3.153';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -965,7 +965,7 @@ function render() {
      if(!conflictDates.has(id))conflictDates.set(id,new Set());
      conflictDates.get(id).add(date);
      if(!groupConflicts.has(id))groupConflicts.set(id,new Set());
-     groupConflicts.get(id).add('Группа '+group+', '+displayDate(date)+': в отпуске '+absent.length+' из '+members.length+', минимум работают '+min);
+     groupConflicts.get(id).add('Группа '+group+', '+displayDate(date)+': в отпуске '+absent.length+' из '+members.length+', должно работать '+min);
     }
    }
   }
@@ -1908,7 +1908,7 @@ function render() {
       else periods.push({start:date,end:date,absent});
     }
     document.querySelector('#group-conflict-heading').textContent='Группа '+group+' · '+shortStaffName(d);
-    document.querySelector('#group-conflict-summary').textContent='Всего: '+members.length+' · Минимум работают: '+minimum;
+    document.querySelector('#group-conflict-summary').textContent='Всего: '+members.length+' · Должно работать: '+minimum;
     document.querySelector('#group-conflict-rows').innerHTML=periods.map(p=>
       '<tr><td>'+displayDate(p.start)+(p.end!==p.start?' — '+displayDate(p.end):'')+'</td><td>'+p.absent+'</td><td>'+(members.length-p.absent)+'</td></tr>'
     ).join('');
