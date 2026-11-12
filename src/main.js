@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.164';
+const APP_VERSION='0.3.165';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -1202,7 +1202,7 @@ function render() {
       <div class="editor-top"><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
       <p id="range-hint">Выберите начало отпуска, затем окончание.</p></div>
       <div class="editor-calendar-scroll"><div id="range-calendar" class="range-calendar"></div></div>
-      <div class="editor-bottom"><div id="range-selected"></div><div class="periods-toolbar"><div id="range-periods" class="period-scroll" tabindex="0"></div><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить период</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button></div></div>
+      <div class="editor-bottom"><div id="range-selected"></div><div class="periods-toolbar"><div id="range-periods" class="period-scroll" tabindex="0"></div><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить период</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button><button type="button" id="period-save">Сохранить период</button></div></div>
       <input id="start" type="hidden"><input id="end" type="hidden">
       <div id="day-count" class="day-count" aria-live="polite"></div><p id="editor-split-warning" class="rule-warning" role="status"></p><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
       <p id="form-error" role="alert"></p>
@@ -2118,6 +2118,7 @@ function render() {
     document.querySelector('#mode-edit').disabled=editorMode==='edit';
     document.querySelector('#mode-delete').disabled=editorMode==='delete';
     document.querySelector('#vacation-form button[type="submit"]').hidden=editorMode==='view';
+    document.querySelector('#period-save').disabled=editorMode==='view'||!!pendingDraft||rangeStep===1;
     document.querySelector('#range-hint').textContent=editorMode==='view'?'':editorMode==='add'?'Выберите начало в календаре или введите дату в таблице. Затем укажите дни или конец.':editorMode==='edit'?'Выберите строку и измените даты или дни.':'Выберите строку для удаления.';
   }
   function setEditorMode(mode){
@@ -2280,25 +2281,37 @@ function render() {
   };
   document.querySelector('#cancel').onclick=closeVacationEditor;
   document.querySelector('#editor-close-x').onclick=closeVacationEditor;
-  document.querySelector('#vacation-form').onsubmit=e=>{
-    e.preventDefault();
+  function saveEditorPeriods(closeAfter=false){
     const id=Number(document.querySelector('#person').value);
-    if(editorMode==='view')return;
-    if(pendingDraft||rangeStep===1){document.querySelector('#form-error').textContent='Завершите ввод периода или отмените добавление.';return;}
-    if(draftPeriods.some(p=>!p.start||!p.end)){editorError('Заполните даты всех периодов.');return;}
+    if(editorMode==='view'){editorError('Выберите период для добавления или изменения.');return false;}
+    if(pendingDraft||rangeStep===1){editorError('Завершите ввод периода перед сохранением.');return false;}
+    if(draftPeriods.some(p=>!p.start||!p.end)){editorError('Заполните даты всех периодов.');return false;}
     const original=periodsFor(id);
     const proposed=editingPeriod?original.filter(p=>p!==editingPeriod).concat(draftPeriods):draftPeriods;
     const sorted=[...proposed].sort((x,y)=>x.start.localeCompare(y.start));
-    if(sorted.some((p,i)=>i>0&&p.start<=sorted[i-1].end)){document.querySelector('#form-error').textContent='Периоды пересекаются.';return;}
+    if(sorted.some((p,i)=>i>0&&p.start<=sorted[i-1].end)){editorError('Периоды пересекаются.');return false;}
     const driver=drivers.find(d=>d.id===id);
     const excess=sorted.reduce((n,p)=>n+leaveDays(p.start,p.end),0)-availableLeaveDays(driver);
-    if(excess>0&&!confirm('Запланировано сверх доступного на '+excess+' дн. Сохранить с предупреждением?'))return;
+    if(excess>0&&!confirm('Запланировано сверх доступного на '+excess+' дн. Сохранить с предупреждением?'))return false;
     vacations=vacations.filter(v=>Number(v.driverId)!==id).concat(sorted.map(p=>({driverId:id,start:p.start,end:p.end})));
     store();
-    notice='Период отпуска сохранён.';
-    dialog.close();
-    render();
-  };
+    editingPeriod=null;
+    draftPeriods=periodsFor(id).map(p=>({start:p.start,end:p.end}));
+    pendingDraft=null;rangeStep=0;changingDraft=-1;selectedDraft=-1;editorMode='view';
+    document.querySelector('#start').value='';document.querySelector('#end').value='';
+    drawRangeCalendar();updateCount();updateEditorMode();
+    editorError('');
+    notice='Периоды отпуска сохранены.';
+    if(closeAfter){dialog.close();render();}
+    else{
+      const status=document.querySelector('#form-error');
+      status.textContent='Период сохранён.';
+      status.classList.add('period-save-success');
+    }
+    return true;
+  }
+  document.querySelector('#period-save').onclick=()=>saveEditorPeriods(false);
+  document.querySelector('#vacation-form').onsubmit=e=>{e.preventDefault();saveEditorPeriods(true);};
   document.querySelectorAll('[data-date]').forEach(cell=>cell.onclick=()=>openEditor(Number(cell.dataset.id),null,true));
 }
 render();
