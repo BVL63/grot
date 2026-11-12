@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.155';
+const APP_VERSION='0.3.156';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -159,7 +159,9 @@ function openGroupJournal(preferredCode=''){
   }
   if(!codes.includes(code))codes.push(code);
   codes.sort((a,b)=>a.localeCompare(b,'ru',{numeric:true}));
+  const newlyAdded=!editingCode;
   selected=code;form.hidden=true;renderJournal();
+  if(newlyAdded){panel.hidden=false;drawMembers();}
  };
  document.querySelector('#chart-group-assign-open').onclick=()=>{
   if(!selected)return;
@@ -1036,7 +1038,7 @@ function render() {
   const priorityCurrent=priorityData&&JSON.stringify(priorityData.staffIds)===JSON.stringify(drivers.filter(d=>chartContains(chart,d)).map(d=>String(d.id)).sort());
   const priorityEntries=new Map((priorityCurrent?priorityData.entries:[]).map(x=>[x.id,x]));
   const annualCount=id=>periodsFor(id).reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
-  const rows=visibleDrivers.map(d=>'<tr><th class="fixed name '+(groupConflicts.has(String(d.id))?'group-conflict-name':'')+'"><button class="driver '+(annualCount(d.id)>availableLeaveDays(d)?'leave-overlimit':'')+'" title="'+(annualCount(d.id)>availableLeaveDays(d)?'Превышение на '+(annualCount(d.id)-availableLeaveDays(d))+' дн.':'Отпуска сотрудника')+'" data-driver="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button>'+(groupConflicts.has(String(d.id))?'<button type="button" class="group-conflict-indicator" data-conflict-id="'+d.id+'" title="Пересечение отпусков в группе" aria-label="Показать пересечения отпусков">!</button>':'')+'</th><td><button type="button" class="priority-detail" data-priority-id="'+d.id+'" '+(priorityEntries.has(String(d.id))?'':'disabled')+' title="Расшифровка приоритета">'+(priorityEntries.get(String(d.id))?.rank??'—')+'</button></td><td class="fixed group"><button type="button" data-edit-group="'+d.id+'" title="Изменить группу отпусков" style="width:100%;min-height:28px;border:1px dashed #a3a3a3;border-radius:4px;background:transparent;cursor:pointer;font:inherit;color:inherit">'+escapeHtml(chartGroup(chart,d)||'—')+'</button></td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m),hasConflict=[...(conflictDates.get(String(d.id))||[])].some(date=>Number(date.slice(5,7))===c.m+1);return '<td class="month-cell '+(n?'has-vacation ':'')+(hasConflict?'group-conflict-cell':'')+'" title="'+(hasConflict?'Есть пересечение отпусков в группе':'')+'" data-month="'+c.m+'">'+(n||'')+(hasConflict?' <span class="group-conflict-mark" aria-label="Пересечение отпусков">!</span>':'')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date),hasConflict=conflictDates.get(String(d.id))?.has(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday ':'')+(hasConflict?'group-conflict-cell':'')+'" title="'+(hasConflict?'Пересечение отпуска в группе '+escapeHtml(chartGroup(chart,d)):'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+(hasConflict?'<span class="group-conflict-mark" aria-label="Пересечение отпусков">!</span>':'')+'</td>';}).join('')+'<td class="annual-total">'+(annualCount(d.id)||'')+'</td><td class="leave-available" title="Всего доступно с учётом корректировок">'+availableLeaveDays(d)+'</td><td class="leave-remaining">'+(availableLeaveDays(d)-annualCount(d.id))+'</td></tr>').join('');
+  const rows=visibleDrivers.map(d=>'<tr><th class="fixed name '+(groupConflicts.has(String(d.id))?'group-conflict-name':'')+'"><button class="driver '+(annualCount(d.id)>availableLeaveDays(d)?'leave-overlimit':'')+'" title="'+(annualCount(d.id)>availableLeaveDays(d)?'Превышение на '+(annualCount(d.id)-availableLeaveDays(d))+' дн.':'Отпуска сотрудника')+'" data-driver="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button>'+(groupConflicts.has(String(d.id))?'<button type="button" class="group-conflict-indicator" data-conflict-id="'+d.id+'" title="Пересечение отпусков в группе" aria-label="Показать пересечения отпусков">!</button>':'')+'</th><td><button type="button" class="priority-detail" data-priority-id="'+d.id+'" '+(priorityEntries.has(String(d.id))?'':'disabled')+' title="Расшифровка приоритета">'+(priorityEntries.get(String(d.id))?.rank??'—')+'</button></td><td class="fixed group"><button type="button" data-edit-group="'+d.id+'" title="Открыть журнал групп" style="width:100%;min-height:28px;border:1px dashed #a3a3a3;border-radius:4px;background:transparent;cursor:pointer;font:inherit;color:inherit">'+escapeHtml(chartGroup(chart,d)||'—')+'</button></td>'+columns.map(c=>{const set=sets.get(d.id);if(!c.day){const n=monthlyCount(set,c.m),hasConflict=[...(conflictDates.get(String(d.id))||[])].some(date=>Number(date.slice(5,7))===c.m+1);return '<td class="month-cell '+(n?'has-vacation ':'')+(hasConflict?'group-conflict-cell':'')+'" title="'+(hasConflict?'Есть пересечение отпусков в группе':'')+'" data-month="'+c.m+'">'+(n||'')+(hasConflict?' <span class="group-conflict-mark" aria-label="Пересечение отпусков">!</span>':'')+'</td>';}const date=dateOf(c.m,c.day),active=set.has(date),type=dayType(date),hasConflict=conflictDates.get(String(d.id))?.has(date);return '<td class="day '+(active?'vacation ':'')+(type==='weekend'?'weekend ':'')+(type==='holiday'?'holiday ':'')+(hasConflict?'group-conflict-cell':'')+'" title="'+(hasConflict?'Пересечение отпуска в группе '+escapeHtml(chartGroup(chart,d)):'')+'" data-id="'+d.id+'" data-date="'+date+'">'+(active?'●':'')+(hasConflict?'<span class="group-conflict-mark" aria-label="Пересечение отпусков">!</span>':'')+'</td>';}).join('')+'<td class="annual-total">'+(annualCount(d.id)||'')+'</td><td class="leave-available" title="Всего доступно с учётом корректировок">'+availableLeaveDays(d)+'</td><td class="leave-remaining">'+(availableLeaveDays(d)-annualCount(d.id))+'</td></tr>').join('');
   const totals=columns.map(c=>{const n=c.day?visibleDrivers.filter(d=>sets.get(d.id).has(dateOf(c.m,c.day))).length:visibleDrivers.filter(d=>monthlyCount(sets.get(d.id),c.m)>0).length;return '<td>'+(n||'')+'</td>';}).join('');
   app.innerHTML = `
     <header class="grot-header"><img class="grot-header-logo" src="${grotLogo}" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">${escapeHtml(readOrganization().shortName||readOrganization().fullName)}</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2025">2025</option><option value="2026">2026</option><option value="2027" selected>2027</option></select></div></header>
@@ -1978,34 +1980,10 @@ function render() {
   });
   document.querySelector('#group-conflict-close').onclick=()=>document.querySelector('#group-conflict-dialog').close();
   document.querySelectorAll('[data-priority-id]').forEach(b=>b.onclick=()=>showPriorityDetails(b.dataset.priorityId));
-  const groupEditDialog=document.querySelector('#group-edit-dialog');
-  const groupEditForm=document.querySelector('#group-edit-form');
-  document.querySelector('#group-edit-cancel').onclick=()=>groupEditDialog.close();
-  document.querySelectorAll('[data-edit-group]').forEach(b=>b.onclick=()=>{
-    const d=drivers.find(x=>String(x.id)===b.dataset.editGroup);if(!d)return;
-    groupEditForm.dataset.staffId=String(d.id);
-    document.querySelector('#group-edit-person').textContent='Сотрудник: '+shortStaffName(d);
-    document.querySelector('#group-edit-input').value=chartGroup(chart,d);
-    document.querySelector('#group-edit-error').textContent='';
-    groupEditDialog.showModal();
-    document.querySelector('#group-edit-input').focus();
-    document.querySelector('#group-edit-input').select();
+  document.querySelectorAll('[data-edit-group]').forEach(button=>button.onclick=()=>{
+    const d=drivers.find(x=>String(x.id)===button.dataset.editGroup);
+    if(d&&!chart.allStaff)openGroupJournal(chartGroup(chart,d));
   });
-  groupEditForm.onsubmit=e=>{
-    e.preventDefault();
-    const d=drivers.find(x=>String(x.id)===groupEditForm.dataset.staffId);
-    if(!d)return;
-    const group=document.querySelector('#group-edit-input').value.trim();
-    if(group.length>30){document.querySelector('#group-edit-error').textContent='Не более 30 символов.';return;}
-    if(chart.allStaff){document.querySelector('#group-edit-error').textContent='Группа назначается только в отдельном графике.';return;}
-    if(group!==chartGroup(chart,d)){
-      chart.groupAssignments={...(chart.groupAssignments||{}),[String(d.id)]:group};
-      saveVacationCharts();
-      notice='Группа '+(group||'«без группы»')+' назначена сотруднику '+shortStaffName(d)+' в графике «'+chart.name+'».';
-    }
-    groupEditDialog.close();
-    render();
-  };
   document.querySelector('#app-refresh').onclick=()=>location.reload();
   document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
   const dialog = document.querySelector('#editor');
