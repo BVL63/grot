@@ -2320,7 +2320,7 @@ main{padding-bottom:64px!important;}
 }
 
 /* Main menu controls share the same height at every screen width. */
-#app>main>.grot-toolbar{--menu-control-height:44px}
+#app>main>.grot-toolbar{--menu-control-height:44px;flex:0 0 auto!important}
 #app>main>.grot-toolbar .grot-menu>summary{
  height:var(--menu-control-height)!important;
  justify-content:center;
