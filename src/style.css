@@ -2205,3 +2205,45 @@ main{padding-bottom:64px!important;}
 }
 #app>main>.grot-toolbar .grot-menu>summary::-webkit-details-marker{display:none!important}
 #app>main>.grot-toolbar .grot-menu>summary::marker{content:''!important}
+
+/* GROT 0.3.175 — prevent sticky annual table headers from overlapping */
+#app>main>.scroll .annual-table thead .name,
+#app>main>.scroll .annual-table tbody .name,
+#app>main>.scroll .annual-table tfoot .name{
+ box-sizing:border-box!important;
+ width:170px!important;min-width:170px!important;max-width:170px!important;
+ left:0!important;overflow:hidden!important;
+}
+#app>main>.scroll .annual-table thead tr:first-child>th:nth-child(2),
+#app>main>.scroll .annual-table thead tr.calendar-days-row>th:nth-child(2),
+#app>main>.scroll .annual-table tbody tr>td:nth-child(2),
+#app>main>.scroll .annual-table tfoot tr>td:nth-child(2){
+ box-sizing:border-box!important;
+ width:100px!important;min-width:100px!important;max-width:100px!important;
+ overflow:hidden!important;text-overflow:ellipsis!important;
+}
+#app>main>.scroll .annual-table .group{
+ box-sizing:border-box!important;
+ left:270px!important;
+ width:76px!important;min-width:76px!important;max-width:76px!important;
+ overflow:hidden!important;background:#e7eef5!important;
+}
+#app>main>.scroll .annual-table tbody .group{background:#f5f7fa!important}
+#app>main>.scroll .annual-table thead .chart-members-heading-button{
+ box-sizing:border-box!important;max-width:100%!important;
+ margin:0 auto!important;overflow:hidden!important;
+}
+@media(max-width:600px){
+ #app>main>.scroll .annual-table .name{
+  width:132px!important;min-width:132px!important;max-width:132px!important;left:0!important;
+ }
+ #app>main>.scroll .annual-table thead tr:first-child>th:nth-child(2),
+ #app>main>.scroll .annual-table thead tr.calendar-days-row>th:nth-child(2),
+ #app>main>.scroll .annual-table tbody tr>td:nth-child(2),
+ #app>main>.scroll .annual-table tfoot tr>td:nth-child(2){
+  width:56px!important;min-width:56px!important;max-width:56px!important;
+ }
+ #app>main>.scroll .annual-table .group{
+  left:188px!important;width:58px!important;min-width:58px!important;max-width:58px!important;
+ }
+}
