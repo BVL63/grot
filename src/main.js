@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.163';
+const APP_VERSION='0.3.164';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -2049,7 +2049,7 @@ function render() {
     document.querySelector('#person').closest('label').hidden=Boolean(period) || fromCard;
     document.querySelector('#start').value=period?period.start:'';
     document.querySelector('#end').value=period?period.end:'';
-    rangeStep=0;selectedDraft=-1;changingDraft=-1;editorMode="view";
+    rangeStep=0;selectedDraft=-1;changingDraft=-1;editorMode="view";pendingDraft=null;
     draftPeriods=period?[{start:period.start,end:period.end}]:periodsFor(id).map(p=>({start:p.start,end:p.end}));
     document.querySelector('#start').value='';document.querySelector('#end').value='';
     drawRangeCalendar();
@@ -2081,23 +2081,55 @@ function render() {
     });
     driverCard.showModal();
   }
-  document.querySelector('#person').onchange=()=>{draftPeriods=periodsFor(Number(document.querySelector('#person').value)).map(p=>({start:p.start,end:p.end}));rangeStep=0;drawRangeCalendar();updateCount();};
+  document.querySelector('#person').onchange=()=>{pendingDraft=null;draftPeriods=periodsFor(Number(document.querySelector('#person').value)).map(p=>({start:p.start,end:p.end}));rangeStep=0;drawRangeCalendar();updateCount();};
   document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>openEditor(Number(el.dataset.driver),null,true));
   document.querySelector('#driver-history').onclick=()=>showDriverHistory(shortStaffName(drivers.find(d=>Number(d.id)===Number(currentDriver))||{}));
   document.querySelector('#editor-history').onclick=()=>{const id=Number(document.querySelector('#person').value);const driver=drivers.find(d=>Number(d.id)===id);if(driver)showDriverHistory(shortStaffName(driver));};
   document.querySelector('#driver-close').onclick=()=>driverCard.close();
   document.querySelector('#driver-add').onclick=()=>{driverCard.close();openEditor(currentDriver,null,true);};
+
+  let pendingDraft=null;
+  const isoFromInput=value=>{
+    const match=String(value||'').trim().match(/^(\\d{2})\\.(\\d{2})\\.(\\d{2,4})$/);
+    if(!match)return null;
+    const year=match[3].length===2?2000+Number(match[3]):Number(match[3]);
+    const iso=year+'-'+match[2]+'-'+match[1];
+    const date=new Date(iso+'T12:00:00Z');
+    return year===2027&&date.getUTCFullYear()===year&&date.getUTCMonth()+1===Number(match[2])&&date.getUTCDate()===Number(match[1])?iso:null;
+  };
+  const addLeaveDays=(start,count)=>{
+    if(!start||!Number.isInteger(count)||count<1||count>366)return null;
+    let d=start,seen=0;
+    for(let n=0;n<370;n++,d=shift(d,1)){
+      if(d.slice(0,4)!=='2027')return null;
+      if(dayType(d)!=='holiday')seen++;
+      if(seen===count)return d;
+    }
+    return null;
+  };
+  const hasOverlap=(p,ignore=-1)=>draftPeriods.some((other,i)=>i!==ignore&&other.start&&other.end&&p.start<=other.end&&p.end>=other.start);
+  const editorError=message=>{document.querySelector('#form-error').textContent=message||''};
+  const remainingDays=()=>{
+    const driver=drivers.find(d=>Number(d.id)===Number(document.querySelector('#person').value));
+    return (driver?availableLeaveDays(driver):36)-draftPeriods.reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
+  };
   function updateEditorMode(){
-    document.querySelector('#mode-add').disabled=editorMode==='add';
+    document.querySelector('#mode-add').disabled=editorMode==='add'||(remainingDays()<=0&&editorMode!=='add');
     document.querySelector('#mode-edit').disabled=editorMode==='edit';
     document.querySelector('#mode-delete').disabled=editorMode==='delete';
     document.querySelector('#vacation-form button[type="submit"]').hidden=editorMode==='view';
-    document.querySelector('#range-hint').textContent=editorMode==='view'?'':editorMode==='add'?'Выберите начало и окончание нового периода.':editorMode==='edit'?'Нажмите на существующий отпуск для изменения дат.':'Нажмите на период, который нужно удалить.';
+    document.querySelector('#range-hint').textContent=editorMode==='view'?'':editorMode==='add'?'Выберите начало в календаре или введите дату в таблице. Затем укажите дни или конец.':editorMode==='edit'?'Выберите строку и измените даты или дни.':'Выберите строку для удаления.';
   }
   function setEditorMode(mode){
-    editorMode=mode;rangeStep=0;changingDraft=-1;selectedDraft=-1;
+    if(pendingDraft&&(!pendingDraft.start||!pendingDraft.end)){
+      pendingDraft=null;rangeStep=0;
+    }
+    if(mode==='add'&&remainingDays()<=0){editorError('Свободных дней нет. Измените существующий период.');return;}
+    editorMode=mode;rangeStep=0;changingDraft=-1;
     document.querySelector('#start').value='';document.querySelector('#end').value='';
-    drawRangeCalendar();updateEditorMode();updateCount();
+    if(mode==='add'){pendingDraft={start:'',end:'',days:''};selectedDraft=draftPeriods.length;}
+    else {pendingDraft=null;if(mode!=='view')selectedDraft=-1;}
+    editorError('');drawRangeCalendar();updateEditorMode();updateCount();
   }
   document.querySelector('#mode-add').onclick=()=>setEditorMode('add');
   document.querySelector('#mode-edit').onclick=()=>setEditorMode('edit');
@@ -2114,6 +2146,7 @@ function render() {
     document.querySelector('#form-error').textContent=remain<0?'Предупреждение: превышение на '+(-remain)+' дн. Периоды можно сохранить, фамилия будет выделена красным.':'';
     document.querySelector('#vacation-form button[type="submit"]').disabled=editorMode==='view';
   }
+
   function drawRangeCalendar() {
     const start=document.querySelector('#start').value,end=document.querySelector('#end').value;
     let html='';
@@ -2122,59 +2155,137 @@ function render() {
       const offset=(first+6)%7;
       const count=new Date(Date.UTC(2027,month+1,0)).getUTCDate();
       let cells=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(x=>'<span class="range-weekday">'+x+'</span>').join('');
-      for(let i=0;i<offset;i++) cells+='<span></span>';
+      for(let i=0;i<offset;i++)cells+='<span></span>';
       for(let i=1;i<=count;i++){
         const date='2027-'+String(month+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
-        const selected=draftPeriods.some(p=>date>=p.start&&date<=p.end)||(start&&end?date>=start&&date<=end:date===start);
-        cells+='<button type="button" data-range-date="'+date+'" class="'+(selected?'range-active ':'')+(dayType(date)==='holiday'?'range-holiday':dayType(date)==='weekend'?'range-weekend':'')+'">'+i+'</button>';
+        const saved=draftPeriods.some((p,index)=>index!==changingDraft&&date>=p.start&&date<=p.end);
+        const pale=changingDraft>=0&&draftPeriods[changingDraft]&&date>=draftPeriods[changingDraft].start&&date<=draftPeriods[changingDraft].end;
+        const current=(pendingDraft&&date>=pendingDraft.start&&(!pendingDraft.end||date<=pendingDraft.end))||(start&&end?date>=start&&date<=end:date===start);
+        const kind=dayType(date);
+        const cls=current?'range-pending':pale?'range-editing':saved?'range-active':kind==='holiday'?'range-holiday':kind==='weekend'?'range-weekend':'';
+        cells+='<button type="button" data-range-date="'+date+'" class="'+cls+'">'+i+'</button>';
       }
       html+='<section class="range-month"><h3>'+months[month]+'</h3><div class="range-month-days">'+cells+'</div></section>';
     }
     document.querySelector('#range-calendar').innerHTML=html;
-    document.querySelector('#range-selected').textContent=editorMode==='view'?'Периоды отпуска':editorMode==='add'?'Добавление периода':editorMode==='edit'?'Выберите период для изменения':'Выберите период для удаления';
-    document.querySelector('#range-periods').innerHTML='<table class="editor-period-table"><thead><tr><th scope="col">№</th><th scope="col">Начало</th><th scope="col">Конец</th><th scope="col">Дней</th></tr></thead><tbody>'+draftPeriods.map((p,i)=>'<tr class="'+(selectedDraft===i?'draft-selected':'')+'"><td>'+(i+1)+'</td><td><button type="button" class="period-choice" data-period-choice="'+i+'" '+(editorMode==='edit'||editorMode==='delete'?'':'disabled')+'>'+displayDate(p.start)+'</button></td><td>'+displayDate(p.end)+'</td><td>'+leaveDays(p.start,p.end)+'</td></tr>').join('')+'</tbody></table>';
-    document.querySelector('#range-hint').textContent=editorMode==='view'?'Просмотр отпусков. Для изменений нажмите кнопку выше.':rangeStep===1?'Выберите окончание периода.':changingDraft>=0?'Выберите новые начало и окончание.':editorMode==='add'?'Выберите начало нового периода.':editorMode==='edit'?'Нажмите на существующий период для изменения.':'Нажмите на период для удаления.';
+    document.querySelector('#range-selected').textContent='';
+    const rows=draftPeriods.map((p,i)=>({p,i})).concat(pendingDraft?[{p:pendingDraft,i:draftPeriods.length}]:[]);
+    document.querySelector('#range-periods').innerHTML='<table class="editor-period-table"><thead><tr><th scope="col">№</th><th scope="col">Начало</th><th scope="col">Конец</th><th scope="col">Дней</th></tr></thead><tbody>'+rows.map(({p,i})=>{
+      const active=(selectedDraft===i&&(editorMode==='edit'||editorMode==='add'));
+      const editable=active;
+      const pick='<button type="button" class="period-row-select" data-period-choice="'+i+'">'+(i+1)+'</button>';
+      const cell=(field,value)=>editable?'<input class="period-cell-input" data-field="'+field+'" data-index="'+i+'" aria-label="'+(field==='start'?'Начало':field==='end'?'Конец':'Дней')+' периода '+(i+1)+'" value="'+(value??'')+'" '+(field==='days'?'type="number" inputmode="numeric" min="1" max="366"':'type="text" inputmode="numeric" placeholder="дд.мм.гг"')+'>':(value||'—');
+      return '<tr class="'+(selectedDraft===i?'draft-selected':'')+'"><td>'+pick+'</td><td>'+cell('start',p.start?displayDate(p.start):'')+'</td><td>'+cell('end',p.end?displayDate(p.end):'')+'</td><td>'+cell('days',p.end?leaveDays(p.start,p.end):p.days||'')+'</td></tr>';
+    }).join('')+'</tbody></table>';
     document.querySelectorAll('[data-period-choice]').forEach(b=>b.onclick=()=>{
-      const i=Number(b.dataset.periodChoice),p=draftPeriods[i];
-      if(!p)return;
-      if(editorMode==='edit'){
-        selectedDraft=i;changingDraft=i;rangeStep=0;
-        document.querySelector('#start').value='';document.querySelector('#end').value='';
-        drawRangeCalendar();updateCount();
-      }else if(editorMode==='delete'){
-        if(!confirm('Удалить период '+displayDate(p.start)+' — '+displayDate(p.end)+'?'))return;
-        draftPeriods.splice(i,1);selectedDraft=-1;changingDraft=-1;rangeStep=0;
-        drawRangeCalendar();updateCount();
+      const i=Number(b.dataset.periodChoice);
+      if(pendingDraft){if(i!==draftPeriods.length)return;selectedDraft=i;drawRangeCalendar();return;}
+      if(editorMode==='delete'){
+        const p=draftPeriods[i];
+        if(!p||!confirm('Удалить период '+displayDate(p.start)+' — '+displayDate(p.end)+'?'))return;
+        draftPeriods.splice(i,1);selectedDraft=-1;changingDraft=-1;rangeStep=0;editorError('');
+      }else {
+        selectedDraft=i;
+        if(editorMode==='edit'){changingDraft=i;rangeStep=0;}
       }
+      drawRangeCalendar();updateCount();updateEditorMode();
+    });
+    document.querySelectorAll('.period-cell-input').forEach(input=>input.onchange=()=>{
+      const index=Number(input.dataset.index),field=input.dataset.field;
+      const p=pendingDraft&&index===draftPeriods.length?pendingDraft:draftPeriods[index];
+      if(!p)return;
+      const value=String(input.value).trim();
+      let next={...p};
+      if(field==='days'){
+        const days=Number(value);
+        if(!Number.isInteger(days)||days<1||days>366){editorError('Укажите количество дней от 1 до 366.');return;}
+        if(!next.start){editorError('Сначала укажите начало отпуска.');return;}
+        const finish=addLeaveDays(next.start,days);
+        if(!finish){editorError('Отпуск выходит за пределы 2027 года.');return;}
+        next.end=finish;next.days=days;
+      }else {
+        const iso=isoFromInput(value);
+        if(!iso){editorError('Неверная дата. Формат: дд.мм.гг, год 2027.');return;}
+        if(field==='start'){
+          const days=next.end&&next.start?leaveDays(next.start,next.end):Number(next.days)||0;
+          next.start=iso;
+          if(days){next.end=addLeaveDays(iso,days);if(!next.end){editorError('Период выходит за пределы года.');return;}}
+        } else {
+          if(!next.start||iso<next.start){editorError('Конец должен быть не раньше начала.');return;}
+          next.end=iso;
+        }
+      }
+      if(next.start&&next.end){
+        if(hasOverlap(next,index)){editorError('Периоды отпуска не должны пересекаться.');return;}
+        if(leaveDays(next.start,next.end)<1){editorError('В периоде нет учитываемых дней.');return;}
+        if(pendingDraft&&index===draftPeriods.length){
+          draftPeriods.push({start:next.start,end:next.end});
+          pendingDraft=null;selectedDraft=index;changingDraft=index;editorMode='edit';
+        }else draftPeriods[index]={start:next.start,end:next.end};
+        rangeStep=0;document.querySelector('#start').value='';document.querySelector('#end').value='';
+      }else if(pendingDraft&&index===draftPeriods.length)pendingDraft=next;
+      else draftPeriods[index]=next;
+      editorError('');drawRangeCalendar();updateCount();updateEditorMode();
     });
     document.querySelectorAll('[data-range-date]').forEach(b=>b.onclick=()=>{
       const date=b.dataset.rangeDate;
       if(editorMode==='view')return;
-      if(editorMode==='delete'){const i=draftPeriods.findIndex(p=>date>=p.start&&date<=p.end);if(i<0)return;if(!confirm('Удалить период '+displayDate(draftPeriods[i].start)+' — '+displayDate(draftPeriods[i].end)+'?'))return;draftPeriods.splice(i,1);drawRangeCalendar();updateCount();return;}
-      if(editorMode==='edit'&&changingDraft<0&&rangeStep===0&& !draftPeriods.some(p=>date>=p.start&&date<=p.end))return;
-      if(rangeStep!==1 && changingDraft<0 && editorMode==='edit'){const found=draftPeriods.findIndex(p=>date>=p.start&&date<=p.end);if(found>=0){selectedDraft=found;changingDraft=found;drawRangeCalendar();updateCount();return;}}
-      if(rangeStep!==1){document.querySelector('#start').value=date;document.querySelector('#end').value='';rangeStep=1;}
-      else {
-        const a=document.querySelector('#start').value;
-        document.querySelector('#start').value=date<a?date:a;
-        document.querySelector('#end').value=date<a?a:date;
-        const proposed={start:document.querySelector('#start').value,end:document.querySelector('#end').value};
-        if(draftPeriods.some((p,i)=>i!==changingDraft&&proposed.start<=p.end&&proposed.end>=p.start)){document.querySelector('#form-error').textContent='Периоды не должны пересекаться.';return;}
-        if(changingDraft>=0)draftPeriods[changingDraft]=proposed;else draftPeriods.push(proposed);
-        changingDraft=-1;selectedDraft=-1;
-        document.querySelector('#start').value='';document.querySelector('#end').value='';
-        rangeStep=0;
+      if(editorMode==='delete'){
+        const i=draftPeriods.findIndex(p=>date>=p.start&&date<=p.end);
+        if(i<0)return;
+        const p=draftPeriods[i];
+        if(!confirm('Удалить период '+displayDate(p.start)+' — '+displayDate(p.end)+'?'))return;
+        draftPeriods.splice(i,1);selectedDraft=-1;changingDraft=-1;editorError('');drawRangeCalendar();updateCount();updateEditorMode();return;
       }
-      drawRangeCalendar();updateCount();
+      if(editorMode==='edit'&&changingDraft<0){
+        const i=draftPeriods.findIndex(p=>date>=p.start&&date<=p.end);
+        if(i<0)return;
+        changingDraft=i;selectedDraft=i;rangeStep=0;
+        editorError('');drawRangeCalendar();return;
+      }
+      if(editorMode==='add'&&!pendingDraft){editorError('Нажмите «Добавить период» для нового отпуска.');return;}
+      const row=editorMode==='add'?pendingDraft:draftPeriods[changingDraft];
+      if(!row)return;
+      if(rangeStep===0){
+        if(editorMode==='edit'){
+          const days=leaveDays(row.start,row.end);
+          const finish=addLeaveDays(date,days);
+          if(!finish){editorError('Период выходит за пределы года.');return;}
+          const next={start:date,end:finish};
+          if(hasOverlap(next,changingDraft)){editorError('Периоды не должны пересекаться.');return;}
+          draftPeriods[changingDraft]=next;
+          rangeStep=1;
+        }else{
+          pendingDraft={start:date,end:'',days:''};rangeStep=1;
+        }
+        document.querySelector('#start').value=date;document.querySelector('#end').value='';
+      }else{
+        const a=editorMode==='add'?pendingDraft.start:document.querySelector('#start').value;
+        const next={start:date<a?date:a,end:date<a?a:date};
+        if(hasOverlap(next,changingDraft)){editorError('Периоды не должны пересекаться.');return;}
+        if(leaveDays(next.start,next.end)<1){editorError('Нет учитываемых дней отпуска.');return;}
+        if(editorMode==='add'){
+          draftPeriods.push(next);pendingDraft=null;selectedDraft=draftPeriods.length-1;changingDraft=selectedDraft;editorMode='edit';
+        }else draftPeriods[changingDraft]=next;
+        rangeStep=0;document.querySelector('#start').value='';document.querySelector('#end').value='';
+      }
+      editorError('');drawRangeCalendar();updateCount();updateEditorMode();
     });
   }
-  document.querySelector('#cancel').onclick=()=>dialog.close();
-  document.querySelector('#editor-close-x').onclick=()=>dialog.close();
+  const originalDraft=()=>{const id=Number(document.querySelector('#person').value);return JSON.stringify(periodsFor(id).map(p=>({start:p.start,end:p.end})).sort((a,b)=>a.start.localeCompare(b.start)));};
+  const closeVacationEditor=()=>{
+    const current=JSON.stringify([...draftPeriods].sort((a,b)=>a.start.localeCompare(b.start)));
+    if((pendingDraft||current!==originalDraft())&&!confirm('Изменения не сохранены. Закрыть без сохранения?'))return;
+    dialog.close();
+  };
+  document.querySelector('#cancel').onclick=closeVacationEditor;
+  document.querySelector('#editor-close-x').onclick=closeVacationEditor;
   document.querySelector('#vacation-form').onsubmit=e=>{
     e.preventDefault();
     const id=Number(document.querySelector('#person').value);
     if(editorMode==='view')return;
-    if(rangeStep===1||changingDraft>=0){document.querySelector('#form-error').textContent='Завершите выбор периода.';return;}
+    if(pendingDraft||rangeStep===1){document.querySelector('#form-error').textContent='Завершите ввод периода или отмените добавление.';return;}
+    if(draftPeriods.some(p=>!p.start||!p.end)){editorError('Заполните даты всех периодов.');return;}
     const original=periodsFor(id);
     const proposed=editingPeriod?original.filter(p=>p!==editingPeriod).concat(draftPeriods):draftPeriods;
     const sorted=[...proposed].sort((x,y)=>x.start.localeCompare(y.start));
