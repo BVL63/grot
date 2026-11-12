@@ -4,7 +4,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.177';
+const APP_VERSION='0.3.178';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -1115,9 +1115,10 @@ function render() {
             <button type="button" id="help-open">Справка · Правила отпусков</button><button type="button" id="about-open">О программе</button>
           </div>
         </details>
+        <button type="button" id="chart-info-open" class="menu-action-icon chart-info-button" title="Информация о графике" aria-label="Информация о графике"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5h.01"/></svg></button><button type="button" id="service-messages-open" class="menu-action-icon service-messages-button" title="Оповещения" aria-label="Оповещения"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button>
         <input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="archive-import-file" accept=".json,application/json" hidden><input type="file" id="chart-import-file" accept=".json,application/json" hidden>
       </nav>
-      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button></div>
+      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name header-caption">${chart.allStaff?'<span class="heading-full">'+escapeHtml(chart.name)+'</span>':'<button type="button" id="chart-members-add" class="chart-members-heading-button" title="Редактировать состав графика">Состав</button>'}</th>
       <th class="header-caption" title="Приоритет"><button type="button" id="priority-calculate" class="chart-action-icon" title="Приоритет" aria-label="Приоритет"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 5h2v4M3 9h4M4 15h2l-2 4h3"/></svg></button></th>
