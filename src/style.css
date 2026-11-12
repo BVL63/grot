@@ -1542,3 +1542,36 @@ main{padding-bottom:64px!important;}
  #chart-groups-dialog .group-assign-table td:last-child{width:83px}
  #chart-groups-dialog .group-assign-table tbody td{padding:7px 6px}
 }
+
+/* GROT 0.3.150: compact group journal sized to its content */
+#chart-groups-dialog{
+ box-sizing:border-box!important;
+ width:min(620px,calc(100vw - 28px))!important;
+ max-width:calc(100vw - 28px)!important;
+ padding:16px!important;
+}
+#chart-groups-dialog .staff-table{
+ width:100%!important;
+ table-layout:fixed!important;
+}
+#chart-groups-dialog .staff-table th:nth-child(1){width:46px!important}
+#chart-groups-dialog .staff-table th:nth-child(2){width:auto!important}
+#chart-groups-dialog .staff-table th:nth-child(3){width:75px!important}
+#chart-groups-dialog .staff-table th:nth-child(4){width:75px!important}
+#chart-groups-dialog .staff-table th,
+#chart-groups-dialog .staff-table td{padding:6px 7px!important}
+#chart-groups-dialog .group-journal-description{min-width:0!important;width:100%!important}
+#chart-groups-dialog .group-journal-min{width:100%!important;max-width:100%!important}
+#chart-groups-dialog .group-assign-table th:first-child,
+#chart-groups-dialog .group-assign-table td:first-child{width:44px!important}
+#chart-groups-dialog .group-assign-table th:last-child,
+#chart-groups-dialog .group-assign-table td:last-child{width:86px!important}
+#chart-groups-dialog .group-assign-table thead th,
+#chart-groups-dialog .group-assign-table tbody td{padding:7px 8px!important}
+#chart-groups-dialog .group-assignment-list{width:100%!important}
+@media(max-width:520px){
+ #chart-groups-dialog{padding:12px!important}
+ #chart-groups-dialog .staff-table th:nth-child(1){width:40px!important}
+ #chart-groups-dialog .staff-table th:nth-child(3),
+ #chart-groups-dialog .staff-table th:nth-child(4){width:66px!important}
+}
