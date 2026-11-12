@@ -1972,3 +1972,12 @@ main{padding-bottom:64px!important;}
  #editor .editor-period-table :is(th,td):first-child{width:36px!important}
  #editor .editor-period-table :is(th,td):last-child{width:54px!important}
 }
+
+/* GROT 0.3.165 — dedicated per-period save action */
+#editor .periods-toolbar #period-save{
+ background:#e8f4eb!important;border-color:#8ebda1!important;
+ color:#155d34!important;font-weight:700!important;
+}
+#editor .periods-toolbar #period-save:disabled{opacity:.45!important}
+#editor .editor-mode-actions{flex-wrap:wrap!important}
+#editor #form-error.period-save-success{color:#176a38!important}
