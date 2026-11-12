@@ -2082,3 +2082,61 @@ main{padding-bottom:64px!important;}
  #editor .editor-period-details #day-count{padding:10px!important;font-size:13px!important}
  #editor .periods-toolbar .editor-mode-actions button{min-width:0!important;padding:6px 9px!important}
 }
+
+/* GROT 0.3.168 — save feedback and footer actions inside the right summary panel */
+#editor .editor-period-details .editor-summary-panel{
+ box-sizing:border-box!important;
+ display:flex!important;
+ flex-direction:column!important;
+ width:100%!important;
+ min-width:0!important;
+ height:174px!important;
+ min-height:174px!important;
+ max-height:174px!important;
+ border:1px solid #c6d6e6!important;
+ border-radius:8px!important;
+ padding:12px 14px 9px!important;
+ background:#f8fbff!important;
+ overflow:hidden!important;
+}
+#editor .editor-period-details .editor-summary-panel #day-count{
+ display:block!important;
+ flex:0 0 auto!important;
+ width:100%!important;
+ height:auto!important;
+ min-height:0!important;
+ max-height:none!important;
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ margin:0!important;
+ padding:0!important;
+ font-size:15px!important;
+ line-height:1.4!important;
+}
+#editor .editor-summary-panel #editor-split-warning,
+#editor .editor-summary-panel #form-error{
+ margin:3px 0 0!important;
+ padding:0!important;
+ line-height:1.2!important;
+ font-size:12px!important;
+ min-height:0!important;
+}
+#editor .editor-summary-panel #editor-split-warning:empty,
+#editor .editor-summary-panel #form-error:empty{display:none!important}
+#editor .editor-summary-panel #form-error.period-save-success{color:#176a38!important}
+#editor .editor-summary-panel .actions{
+ display:flex!important;
+ flex:0 0 auto!important;
+ justify-content:flex-end!important;
+ align-items:center!important;
+ gap:7px!important;
+ margin:auto 0 0!important;
+ padding:0!important;
+}
+#editor .editor-summary-panel .actions button{white-space:nowrap!important}
+@media(max-width:740px){
+ #editor .editor-period-details .editor-summary-panel{padding:10px 8px 8px!important}
+ #editor .editor-period-details .editor-summary-panel #day-count{font-size:13px!important}
+ #editor .editor-summary-panel .actions button{font-size:12px!important;padding:5px 8px!important}
+}
