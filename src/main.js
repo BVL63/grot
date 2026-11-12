@@ -2090,7 +2090,7 @@ function render() {
 
   let pendingDraft=null;
   const isoFromInput=value=>{
-    const match=String(value||'').trim().match(/^(\\d{2})\\.(\\d{2})\\.(\\d{2,4})$/);
+    const match=String(value||'').trim().match(/^(\d{2})\.(\d{2})\.(\d{2,4})$/);
     if(!match)return null;
     const year=match[3].length===2?2000+Number(match[3]):Number(match[3]);
     const iso=year+'-'+match[2]+'-'+match[1];
@@ -2160,7 +2160,7 @@ function render() {
         const date='2027-'+String(month+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
         const saved=draftPeriods.some((p,index)=>index!==changingDraft&&date>=p.start&&date<=p.end);
         const pale=changingDraft>=0&&draftPeriods[changingDraft]&&date>=draftPeriods[changingDraft].start&&date<=draftPeriods[changingDraft].end;
-        const current=(pendingDraft&&date>=pendingDraft.start&&(!pendingDraft.end||date<=pendingDraft.end))||(start&&end?date>=start&&date<=end:date===start);
+        const current=(pendingDraft&&date>=pendingDraft.start&&(pendingDraft.end?date<=pendingDraft.end:date===pendingDraft.start))||(start&&end?date>=start&&date<=end:date===start);
         const kind=dayType(date);
         const cls=current?'range-pending':pale?'range-editing':saved?'range-active':kind==='holiday'?'range-holiday':kind==='weekend'?'range-weekend':'';
         cells+='<button type="button" data-range-date="'+date+'" class="'+cls+'">'+i+'</button>';
@@ -2272,7 +2272,7 @@ function render() {
       editorError('');drawRangeCalendar();updateCount();updateEditorMode();
     });
   }
-  const originalDraft=()=>{const id=Number(document.querySelector('#person').value);return JSON.stringify(periodsFor(id).map(p=>({start:p.start,end:p.end})).sort((a,b)=>a.start.localeCompare(b.start)));};
+  const originalDraft=()=>{const id=Number(document.querySelector('#person').value);return JSON.stringify((editingPeriod?[editingPeriod]:periodsFor(id)).map(p=>({start:p.start,end:p.end})).sort((a,b)=>a.start.localeCompare(b.start)));};
   const closeVacationEditor=()=>{
     const current=JSON.stringify([...draftPeriods].sort((a,b)=>a.start.localeCompare(b.start)));
     if((pendingDraft||current!==originalDraft())&&!confirm('Изменения не сохранены. Закрыть без сохранения?'))return;
