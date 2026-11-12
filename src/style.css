@@ -2367,3 +2367,18 @@ main{padding-bottom:64px!important;}
   flex-basis:23px!important;width:23px!important;height:23px!important;
  }
 }
+
+/* GROT 0.3.179 — raise footer content away from the lower screen edge */
+#app>main>.grot-version-footer{
+ box-sizing:border-box!important;
+ padding-top:4px!important;
+ padding-bottom:max(14px,env(safe-area-inset-bottom,0px))!important;
+ margin:0!important;
+ flex:0 0 auto!important;
+}
+@media(max-width:600px){
+ #app>main>.grot-version-footer{
+  padding-top:4px!important;
+  padding-bottom:max(16px,env(safe-area-inset-bottom,0px))!important;
+ }
+}
