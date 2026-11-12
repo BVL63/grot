@@ -73,7 +73,7 @@ function openGroupJournal(){
  body.innerHTML=[...groups].sort((a,b)=>a[0].localeCompare(b[0],'ru',{numeric:true})).map(([g,members])=>{
   const minimum=chartGroupMin(chart,g,members.length);
   const desc=String(chart.groupDescriptions?.[g]||'');
-  return '<tr><td class="group-journal-num">'+escapeHtml(g)+'</td><td><input type="text" data-group-description="'+escapeHtml(g)+'" value="'+escapeHtml(desc)+'" maxlength="100" placeholder="Описание" class="group-journal-description"></td><td class="group-journal-number">'+members.length+'</td><td><input type="number" min="0" max="'+members.length+'" step="1" data-group-min="'+escapeHtml(g)+'" value="'+minimum+'" class="group-journal-min"></td></tr>;
+  return '<tr><td class="group-journal-num">'+escapeHtml(g)+'</td><td><input type="text" data-group-description="'+escapeHtml(g)+'" value="'+escapeHtml(desc)+'" maxlength="100" placeholder="Описание" class="group-journal-description"></td><td class="group-journal-number">'+members.length+'</td><td><input type="number" min="0" max="'+members.length+'" step="1" data-group-min="'+escapeHtml(g)+'" value="'+minimum+'" class="group-journal-min"></td></tr>';
  }).join('')||'<tr><td colspan="4">Назначьте номера групп сотрудникам в таблице графика.</td></tr>';
  body.querySelectorAll('[data-group-description]').forEach(input=>input.onchange=()=>{
   const g=input.dataset.groupDescription;
