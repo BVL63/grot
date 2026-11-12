@@ -2,8 +2,9 @@ import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
+let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.169';
+const APP_VERSION='0.3.170';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -1847,7 +1848,37 @@ function render() {
     render();drawStaff();document.querySelector('#staff-dialog').showModal();
   };
 
-  document.querySelector('#staff-card-close').onclick=()=>{document.querySelector('#staff-card').close();drawStaff();document.querySelector('#staff-dialog').showModal();};
+  function restoreVacationFromStaff(){
+    if(!vacationStaffReturn)return false;
+    const saved=vacationStaffReturn;
+    vacationStaffReturn=null;
+    const driver=drivers.find(d=>Number(d.id)===Number(saved.id));
+    if(!driver)return false;
+    editingPeriod=saved.editingPeriod;
+    draftPeriods=saved.draftPeriods.map(p=>({...p}));
+    pendingDraft=saved.pendingDraft?{...saved.pendingDraft}:null;
+    editorMode=saved.editorMode;
+    rangeStep=saved.rangeStep;
+    selectedDraft=saved.selectedDraft;
+    changingDraft=saved.changingDraft;
+    document.querySelector('#person').value=String(saved.id);
+    document.querySelector('#person').disabled=true;
+    document.querySelector('#person').closest('label').hidden=true;
+    document.querySelector('#editor-title').textContent=driver.name+' — отпуска 2027';
+    document.querySelector('#start').value=saved.start;
+    document.querySelector('#end').value=saved.end;
+    drawRangeCalendar();
+    updateCount();
+    updateEditorMode();
+    if(saved.error)document.querySelector('#form-error').textContent=saved.error;
+    dialog.showModal();
+    return true;
+  }
+  document.querySelector('#staff-card-close').onclick=()=>{
+    document.querySelector('#staff-card').close();
+    if(restoreVacationFromStaff())return;
+    drawStaff();document.querySelector('#staff-dialog').showModal();
+  };
   document.querySelector('#staff-card-x').onclick=()=>document.querySelector('#staff-card-close').click();
   document.querySelector('#staff-history-open').onclick=()=>{const d=drivers.find(x=>x.id===Number(document.querySelector('#staff-id').value));if(d)showDriverHistory(shortStaffName(d));else alert('Сначала сохраните нового сотрудника.');};
   document.querySelector('#staff-form').onsubmit=e=>{
@@ -1871,7 +1902,9 @@ function render() {
     document.querySelector('#staff-card').close();
     if(fromStructure)document.querySelector('#structure-dialog').close();
     render();drawStaff();
-    if(fromStructure){
+    if(vacationStaffReturn){
+      restoreVacationFromStaff();
+    }else if(fromStructure){
       document.querySelector('#structure-tree').dataset.selectedId=selectedStructureId;
       structureOpen();
     }else document.querySelector('#staff-dialog').showModal();
@@ -2140,13 +2173,29 @@ function render() {
     const planned=combined.reduce((sum,p)=>sum+leaveDays(p.start,p.end),0);
     const remain=(driver?availableLeaveDays(driver):36)-planned;
     document.querySelector('#day-count').innerHTML='<table class="editor-totals-table" aria-label="Итоги отпускных дней"><tbody>'+
-      '<tr><th scope="row">Доступно</th><td>'+(driver?availableLeaveDays(driver):36)+'</td></tr>'+
+      '<tr><th scope="row"><button type="button" id="leave-available-open" class="leave-available-link" title="Открыть карточку сотрудника">Доступно</button></th><td>'+(driver?availableLeaveDays(driver):36)+'</td></tr>'+
       '<tr><th scope="row">Запланировано</th><td>'+planned+'</td></tr>'+
       '<tr><th scope="row">Осталось</th><td>'+remain+'</td></tr>'+
       '</tbody></table>';
     document.querySelector('#editor-split-warning').textContent=combined.length>0&&!combined.some(p=>leaveDays(p.start,p.end)>=14)?'⚠ Нет ни одной части отпуска продолжительностью не менее 14 дней. Перед утверждением графика необходимо исправить.':'';
     document.querySelector('#form-error').textContent=remain<0?'Предупреждение: превышение на '+(-remain)+' дн. Периоды можно сохранить, фамилия будет выделена красным.':'';
     document.querySelector('#vacation-form button[type="submit"]').disabled=editorMode==='view';
+    const availableLink=document.querySelector('#leave-available-open');
+    if(availableLink)availableLink.onclick=()=>{
+      const staff=drivers.find(d=>Number(d.id)===id);
+      if(!staff)return;
+      vacationStaffReturn={
+        id,editingPeriod:editingPeriod?{...editingPeriod}:null,
+        draftPeriods:draftPeriods.map(p=>({...p})),
+        pendingDraft:pendingDraft?{...pendingDraft}:null,
+        editorMode,rangeStep,selectedDraft,changingDraft,
+        start:document.querySelector('#start').value,
+        end:document.querySelector('#end').value,
+        error:document.querySelector('#form-error').textContent
+      };
+      dialog.close();
+      openStaffCard(staff);
+    };
   }
 
   function drawRangeCalendar() {
