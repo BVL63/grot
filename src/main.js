@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.144';
+const APP_VERSION='0.3.145';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -1820,7 +1820,35 @@ function render() {
    document.querySelector('#priority-sort').onclick=()=>{prioritySortDirection=prioritySortDirection===0?1:prioritySortDirection===1?-1:0;render();};
   const addChartMembers=document.querySelector('#chart-members-add');if(addChartMembers)addChartMembers.onclick=()=>vacationChartEdit(activeVacationChart().id,true);
   const groupOpen=document.querySelector('#chart-groups-open');if(groupOpen)groupOpen.onclick=openGroupJournal;
-  document.querySelector('#chart-groups-close').onclick=()=>{document.querySelector('#chart-groups-dialog').close();render()};
+  const groupsDialog=document.querySelector('#chart-groups-dialog');
+  const groupsHandle=groupsDialog.querySelector('h2');
+  let groupsDrag=null;
+  groupsHandle.addEventListener('pointerdown',e=>{
+    if(e.button!==0||e.target.closest('button,input,select,a'))return;
+    const rect=groupsDialog.getBoundingClientRect();
+    groupsDialog.style.margin='0';
+    groupsDialog.style.position='fixed';
+    groupsDialog.style.left=rect.left+'px';
+    groupsDialog.style.top=rect.top+'px';
+    groupsDrag={id:e.pointerId,x:e.clientX,y:e.clientY,left:rect.left,top:rect.top};
+    groupsHandle.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  groupsHandle.addEventListener('pointermove',e=>{
+    if(!groupsDrag||groupsDrag.id!==e.pointerId)return;
+    const maxX=Math.max(0,window.innerWidth-groupsDialog.offsetWidth);
+    const maxY=Math.max(0,window.innerHeight-groupsDialog.offsetHeight);
+    groupsDialog.style.left=Math.max(0,Math.min(maxX,groupsDrag.left+e.clientX-groupsDrag.x))+'px';
+    groupsDialog.style.top=Math.max(0,Math.min(maxY,groupsDrag.top+e.clientY-groupsDrag.y))+'px';
+  });
+  const stopGroupsDrag=e=>{if(groupsDrag?.id===e.pointerId){groupsDrag=null;if(groupsHandle.hasPointerCapture(e.pointerId))groupsHandle.releasePointerCapture(e.pointerId)}};
+  groupsHandle.addEventListener('pointerup',stopGroupsDrag);
+  groupsHandle.addEventListener('pointercancel',stopGroupsDrag);
+  groupsDialog.addEventListener('close',()=>{
+    groupsDrag=null;
+    for(const property of ['left','top','margin','position'])groupsDialog.style.removeProperty(property);
+  });
+  document.querySelector('#chart-groups-close').onclick=()=>{groupsDialog.close();render()};
   document.querySelectorAll('[data-conflict-id]').forEach(b=>b.onclick=()=>{
     const d=drivers.find(x=>String(x.id)===b.dataset.conflictId);
     const entries=groupConflicts.get(String(b.dataset.conflictId))||[];
