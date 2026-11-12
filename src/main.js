@@ -4,7 +4,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.173';
+const APP_VERSION='0.3.174';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -1117,7 +1117,7 @@ function render() {
         </details>
         <input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="archive-import-file" accept=".json,application/json" hidden><input type="file" id="chart-import-file" accept=".json,application/json" hidden>
       </nav>
-      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong>${chart.allStaff?'':'<button type="button" id="chart-groups-open">Группы</button>'}<button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
+      <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong>${chart.allStaff?'':'<button type="button" id="chart-groups-open">Группы</button>'}<button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Приоритет</button></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
       <th class="fixed name header-caption">${chart.allStaff?'<span class="heading-full">'+escapeHtml(chart.name)+'</span>':'<button type="button" id="chart-members-add" class="chart-members-heading-button" title="Редактировать состав графика">Состав</button>'}<span class="heading-phone" aria-hidden="true">Сотрудник</span></th>
       <th class="header-caption" title="Приоритет"><span class="heading-full">Приоритет</span><span class="heading-phone" aria-hidden="true">Приор.</span></th>
