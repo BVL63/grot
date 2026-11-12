@@ -1654,3 +1654,53 @@ main{padding-bottom:64px!important;}
  overflow-wrap:anywhere;font-size:12px;
 }
 #chart-groups-dialog .group-assignment-panel{max-width:100%;box-sizing:border-box}
+
+/* GROT 0.3.157: standalone group members dialog to the right of group register */
+#chart-group-assign-dialog{
+ box-sizing:border-box!important;width:min(470px,calc(100vw - 24px))!important;
+ max-width:calc(100vw - 24px)!important;max-height:85vh!important;
+ overflow:hidden!important;padding:15px!important;
+ box-shadow:0 12px 36px rgba(16,35,60,.25);
+}
+#chart-group-assign-dialog::backdrop{background:transparent}
+#chart-group-assign-dialog .group-assignment-heading{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+ margin-bottom:8px;
+}
+#chart-group-assign-dialog .group-assignment-heading h2{margin:0}
+#chart-group-assign-dialog #chart-group-assign-close{
+ flex:0 0 32px;width:32px;height:32px;padding:0;border:0;border-radius:5px;
+ background:transparent;font:normal 26px/1 Arial,sans-serif;cursor:pointer;
+}
+#chart-group-assign-dialog #chart-group-assign-close:hover{background:#eaf1f7}
+#chart-group-assign-dialog .group-assignment-list{
+ display:block!important;box-sizing:border-box;
+ overflow-y:auto!important;overflow-x:hidden!important;
+ max-height:min(48vh,480px)!important;padding:0!important;
+ border:1px solid #d2dfe9;border-radius:6px;-webkit-overflow-scrolling:touch;
+}
+#chart-group-assign-dialog .group-assign-table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:14px}
+#chart-group-assign-dialog .group-assign-table th{
+ position:sticky;top:0;z-index:2;background:#e9f0f6;
+ padding:8px 7px;text-align:left;border-bottom:1px solid #c6d6e4;
+}
+#chart-group-assign-dialog .group-assign-table td{
+ padding:8px 7px;border-bottom:1px solid #e0e8ef;
+ overflow-wrap:anywhere;vertical-align:middle;
+}
+#chart-group-assign-dialog .group-assign-table :is(th,td):first-child{width:36px;text-align:center}
+#chart-group-assign-dialog .group-assign-table :is(th,td):last-child{width:80px}
+#chart-group-assign-dialog .group-assign-table input.group-assign-check[type="checkbox"]{
+ display:inline-block!important;position:static!important;
+ width:19px!important;height:19px!important;min-width:19px!important;margin:0!important;
+ padding:0!important;transform:none!important;vertical-align:middle;
+}
+#chart-group-assign-dialog .group-assign-table tr:has(input:checked){background:#eaf5ff}
+#chart-group-assign-dialog .group-assignment-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+#chart-group-assign-dialog .group-assignment-apply{margin:12px 0}
+#chart-group-assign-dialog #chart-group-selected-label{font-size:14px;line-height:1.35;margin:4px 0 8px}
+#chart-group-assign-dialog .muted{font-size:12px;line-height:1.4}
+@media(max-width:650px){
+ #chart-group-assign-dialog{max-height:82vh!important}
+ #chart-group-assign-dialog .group-assignment-list{max-height:40vh!important}
+}
