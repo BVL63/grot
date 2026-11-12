@@ -2318,3 +2318,52 @@ main{padding-bottom:64px!important;}
   width:21px!important;height:21px!important;
  }
 }
+
+/* GROT 0.3.178 — information and alerts moved into the main menu */
+#app>main>.grot-toolbar .menu-action-icon{
+ box-sizing:border-box!important;
+ position:relative!important;
+ flex:0 0 44px!important;
+ display:inline-flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+ width:44px!important;
+ min-width:44px!important;
+ max-width:44px!important;
+ height:44px!important;
+ min-height:44px!important;
+ padding:8px!important;
+ margin:0!important;
+ border:1px solid #90abc8!important;
+ border-radius:9px!important;
+ background:#f9fcff!important;
+ color:#164976!important;
+ font-size:inherit!important;
+ box-shadow:0 1px 2px #142d4a18!important;
+ cursor:pointer!important;
+}
+#app>main>.grot-toolbar .menu-action-icon svg{
+ display:block!important;
+ flex:0 0 25px!important;
+ width:25px!important;
+ height:25px!important;
+}
+#app>main>.grot-toolbar .menu-action-icon:hover{
+ background:#e7f1fa!important;
+}
+#app>main>.grot-toolbar .menu-action-icon .service-alert-dot{
+ position:absolute!important;
+ top:3px!important;right:3px!important;
+ width:8px!important;height:8px!important;
+ border:1px solid #fff!important;border-radius:50%!important;
+ background:#d97706!important;
+}
+@media(max-width:800px){
+ #app>main>.grot-toolbar .menu-action-icon{
+  flex-basis:36px!important;width:36px!important;min-width:36px!important;max-width:36px!important;
+  height:36px!important;min-height:36px!important;padding:5px!important;
+ }
+ #app>main>.grot-toolbar .menu-action-icon svg{
+  flex-basis:23px!important;width:23px!important;height:23px!important;
+ }
+}
