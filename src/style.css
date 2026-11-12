@@ -2197,3 +2197,11 @@ main{padding-bottom:64px!important;}
 #editor .editor-totals-table .leave-available-link:focus-visible{
  outline:2px solid #267bcd!important;outline-offset:3px!important;border-radius:2px!important;
 }
+
+/* GROT 0.3.174 — clean top-menu titles without disclosure arrows */
+#app>main>.grot-toolbar .grot-menu>summary::after{content:none!important;display:none!important}
+#app>main>.grot-toolbar .grot-menu>summary{
+ list-style:none!important;
+}
+#app>main>.grot-toolbar .grot-menu>summary::-webkit-details-marker{display:none!important}
+#app>main>.grot-toolbar .grot-menu>summary::marker{content:''!important}
