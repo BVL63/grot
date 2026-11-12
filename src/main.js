@@ -4,7 +4,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.172';
+const APP_VERSION='0.3.173';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -2364,11 +2364,20 @@ function render() {
     drawRangeCalendar();updateCount();updateEditorMode();
     editorError('');
     notice='Периоды отпуска сохранены.';
-    if(closeAfter){dialog.close();render();}
-    else{
-      const status=document.querySelector('#form-error');
-      status.textContent='Период сохранён.';
-      status.classList.add('period-save-success');
+    // The main chart is rendered separately from the modal. Refresh it immediately
+    // after a successful write, and reopen this employee's calendar for continued work.
+    dialog.close();
+    render();
+    if(!closeAfter){
+      const sameEmployee=[...document.querySelectorAll('[data-driver]')].find(el=>Number(el.dataset.driver)===id);
+      if(sameEmployee){
+        sameEmployee.click();
+        const status=document.querySelector('#form-error');
+        if(status){
+          status.classList.add('period-save-success');
+          status.textContent='Период сохранён. График обновлён.';
+        }
+      }
     }
     return true;
   }
