@@ -1437,3 +1437,15 @@ main{padding-bottom:64px!important;}
  border-radius:6px;font:inherit;font-weight:700;white-space:nowrap;cursor:pointer;
 }
 .annual-table thead th.header-caption .chart-members-heading-button:hover{background:#deecfc}
+
+/* 0.3.144: compact group journal */
+#chart-groups-dialog .staff-table{width:100%;table-layout:fixed}
+#chart-groups-dialog .staff-table th,#chart-groups-dialog .staff-table td{padding:7px 8px;vertical-align:middle}
+#chart-groups-dialog .staff-table th:nth-child(1){width:48px}
+#chart-groups-dialog .staff-table th:nth-child(2){width:auto}
+#chart-groups-dialog .staff-table th:nth-child(3){width:76px}
+#chart-groups-dialog .staff-table th:nth-child(4){width:86px}
+#chart-groups-dialog .staff-table th:nth-child(5){width:74px}
+#chart-groups-dialog .group-journal-number,#chart-groups-dialog .group-journal-num{text-align:center;font-variant-numeric:tabular-nums}
+#chart-groups-dialog .group-journal-description{box-sizing:border-box;width:100%;min-width:0}
+#chart-groups-dialog .group-journal-min{box-sizing:border-box;width:100%;min-width:0;text-align:center}
