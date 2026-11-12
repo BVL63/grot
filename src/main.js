@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.140';
+const APP_VERSION='0.3.141';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -1118,27 +1118,38 @@ function render() {
       const unique=new Set();
       const validDate=d=>typeof d==='string'&&/^2027-\d{2}-\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T12:00:00Z'))&&new Date(d+'T12:00:00Z').toISOString().slice(0,10)===d;
       const norm=n=>String(n||'').trim().toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ');
+      const splitImportName=d=>{
+        const parts=String(d.name||'').trim().split(/\s+/);
+        const lastName=String(d.lastName||parts[0]||'').trim();
+        const firstName=String(d.firstName||parts[1]||'').trim();
+        const middleName=String(d.middleName||parts.slice(2).join(' ')||'').trim();
+        if(!lastName||!firstName||!middleName)throw Error('Неполное ФИО: '+d.name);
+        if([lastName,firstName,middleName].join(' ')!==String(d.name||'').trim())throw Error('ФИО и отдельные поля не совпадают: '+d.name);
+        return {lastName,firstName,middleName};
+      };
       const incoming=data.staff.map((d,i)=>{
         if(!d||typeof d.name!=='string'||!d.name.trim()||!Array.isArray(d.periods)||d.periods.length>25)throw Error('Ошибка сотрудника № '+(i+1));
-        const name=d.name.trim(),nk=norm(name);
+        const name=d.name.trim(),parts=splitImportName(d),nk=norm(name);
         if(unique.has(nk))throw Error('Повтор сотрудника: '+name);unique.add(nk);
         const incomingPeriods=d.periods.map(p=>{
           if(!p||!validDate(p.start)||!validDate(p.end)||p.end<p.start||Number(p.days)<1||Number(p.days)>120)throw Error('Неверный период у '+name);
           return {start:p.start,end:p.end};
         }).sort((a,b)=>a.start.localeCompare(b.start));
         for(let k=1;k<incomingPeriods.length;k++)if(incomingPeriods[k].start<=incomingPeriods[k-1].end)throw Error('Пересечение периодов у '+name);
-        const match=drivers.find(x=>norm(x.name)===nk);
-        const surname=name.split(' ')[0].toLocaleLowerCase('ru').replace(/ё/g,'е');
-        const maybe=drivers.filter(x=>norm(x.name).split(' ')[0]===surname);
+        const match=drivers.find(x=>norm([x.lastName,x.firstName,x.middleName].filter(Boolean).join(' '))===nk||norm(x.name)===nk);
+        const surname=norm(parts.lastName);
+        const maybe=drivers.filter(x=>norm(x.lastName||String(x.name||'').split(/\s+/)[0])===surname);
         const existingPeriods=match?periodsFor(match.id).length:0;
-        const state=existingPeriods?'Уже есть отпуска — пропуск':match?'Есть в справочнике':maybe.length?'Похожая фамилия — проверить':'Новый';
-        const allowed=!existingPeriods&&!(!match&&maybe.length);
-        return {name,position:typeof d.position==='string'?d.position.trim():'',periods:incomingPeriods,match,allowed,state};
+        const needsNameRepair=!!match&&(!match.lastName||!match.firstName||!match.middleName);
+        const mode=existingPeriods?(needsNameRepair?'repair':'skip'):match?'add':maybe.length?'skip':'add';
+        const state=mode==='repair'?'Исправить поля ФИО, отпуска сохранить':existingPeriods?'Уже есть отпуска — пропуск':match?'Есть в справочнике':maybe.length?'Похожая фамилия — проверить':'Новый';
+        const allowed=mode!=='skip';
+        return {name,parts,position:typeof d.position==='string'?d.position.trim():'',periods:incomingPeriods,match,allowed,state,mode};
       });
       pendingChartImport={data,incoming};
       document.querySelector('#chart-import-summary').textContent=
         'График: '+data.chartName+'\nГод: 2027\nСотрудников: '+incoming.length+'\nПериодов: '+incoming.reduce((n,x)=>n+x.periods.length,0)+
-        '\nМожно добавить без перезаписи: '+incoming.filter(x=>x.allowed).length+'\nПроверьте ФИО, даты окончания и нормы дней.';
+        '\nМожно добавить: '+incoming.filter(x=>x.mode==='add').length+'\nИсправить ФИО без изменения отпусков: '+incoming.filter(x=>x.mode==='repair').length+'\nПроверьте даты окончания и нормы дней.';
       document.querySelector('#chart-import-list').innerHTML='<table class="staff-table"><thead><tr><th>Выбрать</th><th>Сотрудник</th><th>Периодов</th><th>Статус</th></tr></thead><tbody>'+incoming.map((d,i)=>'<tr><td><input type="checkbox" class="chart-import-choice" value="'+i+'" '+(d.allowed?'checked':'disabled')+'></td><td>'+escapeHtml(d.name)+'</td><td>'+d.periods.length+'</td><td>'+escapeHtml(d.state)+'</td></tr>').join('')+'</tbody></table>';
       document.querySelector('#chart-import-notes').textContent=Array.isArray(data.reviewNotes)&&data.reviewNotes.length?'Проверить перед утверждением:\n'+data.reviewNotes.map(x=>'• '+x).join('\n'):'';
       document.querySelector('#chart-import-confirm').disabled=!incoming.some(x=>x.allowed);
@@ -1150,19 +1161,26 @@ function render() {
     const {data,incoming}=pendingChartImport;
     const chosen=[...document.querySelectorAll('.chart-import-choice:checked')].map(x=>incoming[Number(x.value)]).filter(x=>x?.allowed);
     if(!chosen.length)return;
-    const periodCount=chosen.reduce((n,d)=>n+d.periods.length,0);
-    if(!confirm('Загрузить '+chosen.length+' сотрудников и '+periodCount+' периодов в график «'+data.chartName+'»?\nСуществующие периоды останутся без изменений.\nНормы отпускных дней требуется проверить отдельно.'))return;
+    const added=chosen.filter(x=>x.mode==='add'),repaired=chosen.filter(x=>x.mode==='repair');
+    const periodCount=added.reduce((n,d)=>n+d.periods.length,0);
+    if(!confirm('Добавить или дополнить: '+added.length+' сотрудников, '+periodCount+' периодов.\nИсправить разделение ФИО: '+repaired.length+' сотрудников.\nСуществующие отпуска не изменятся.\nНормы отпускных дней требуется проверить отдельно. Продолжить?'))return;
     const snapshot={format:'grot-backup',version:2,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides,organization:readOrganization(),structure:structureNodes,charts:vacationCharts,activeChartId:activeVacationChartId,positions:getPositions(),priorities:readPriorities(),seasonalityHistory:loadHistory()};
     const url=URL.createObjectURL(new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}));
     const a=document.createElement('a');a.href=url;a.download='grot-before-chart-import-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
     const oldStaff=drivers,oldVac=vacations,oldCharts=vacationCharts,oldActive=activeVacationChartId;
     let nextId=Math.max(0,...drivers.map(x=>Number(x.id)||0));
-    const newStaff=[...drivers],newVac=[...vacations],members=[];
+    const newStaff=drivers.map(x=>({...x})),newVac=[...vacations],members=[];
     for(const item of chosen){
-      let d=item.match;
-      if(!d){d={id:++nextId,name:item.name,position:item.position,group:'',department:data.chartName,allowance:0,needsCompletion:true,sourceYear:2027};newStaff.push(d)}
+      let d=item.match?newStaff.find(x=>x.id===item.match.id):null;
+      if(!d){
+        d={id:++nextId,name:item.name,...item.parts,position:item.position,group:'',department:data.chartName,allowance:0,needsCompletion:true,sourceYear:2027};
+        newStaff.push(d);
+      }else if(item.mode==='repair'){
+        // Do not replace fields manually corrected by the user.
+        for(const field of ['lastName','firstName','middleName'])if(!String(d[field]||'').trim())d[field]=item.parts[field];
+      }
       members.push(d.id);
-      for(const p of item.periods)newVac.push({driverId:d.id,start:p.start,end:p.end});
+      if(item.mode==='add')for(const p of item.periods)newVac.push({driverId:d.id,start:p.start,end:p.end});
     }
     let chart=vacationCharts.find(c=>!c.allStaff&&c.name===data.chartName&&Number(c.year)===2027);
     const newCharts=vacationCharts.map(c=>({...c}));
@@ -1186,7 +1204,7 @@ function render() {
     }
     drivers=newStaff;vacations=newVac;vacationCharts=newCharts;activeVacationChartId=chart.id;
     pendingChartImport=null;chartImportDialog.close();selectedDriverIds=null;selectedGroups=null;
-    notice='Импортировано: '+chosen.length+' сотрудников, '+periodCount+' периодов. Проверьте нормы и расхождения в ФИО.';
+    notice='Импорт: '+added.length+' сотрудников и '+periodCount+' периодов; исправлено полей ФИО у '+repaired.length+' сотрудников. Проверьте нормы отпусков.';
     render();
   };
 
