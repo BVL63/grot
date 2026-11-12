@@ -1604,3 +1604,17 @@ main{padding-bottom:64px!important;}
 #group-conflict-dialog .staff-table{width:100%;table-layout:auto;white-space:normal}
 #group-conflict-dialog .staff-table th:not(:first-child),#group-conflict-dialog .staff-table td:not(:first-child){text-align:center;width:90px}
 #group-conflict-dialog .staff-table td{font-variant-numeric:tabular-nums}
+
+/* GROT 0.3.154 — totals and one-row controls in groups journal */
+#chart-groups-dialog .staff-table tfoot .group-journal-total th,
+#chart-groups-dialog .staff-table tfoot .group-journal-total td{
+ background:#eaf1f7!important;border-top:2px solid #b8c9d9!important;
+ font-weight:700!important;
+}
+#chart-groups-dialog .staff-table tfoot .group-journal-total th{text-align:left!important}
+#chart-groups-dialog .staff-table tfoot .group-journal-total td{text-align:center!important;font-variant-numeric:tabular-nums}
+#chart-groups-dialog .group-assignment-toolbar{
+ display:flex!important;align-items:center;justify-content:space-between!important;
+ gap:10px;flex-wrap:nowrap;margin-top:12px;
+}
+#chart-groups-dialog .group-assignment-toolbar>button{white-space:nowrap}
