@@ -1445,7 +1445,7 @@ main{padding-bottom:64px!important;}
 #chart-groups-dialog .staff-table th:nth-child(2){width:auto}
 #chart-groups-dialog .staff-table th:nth-child(3){width:76px}
 #chart-groups-dialog .staff-table th:nth-child(4){width:86px}
-#chart-groups-dialog .staff-table th:nth-child(5){width:74px}
+/* Четыре столбца: весь освободившийся объём — описанию */
 #chart-groups-dialog .group-journal-number,#chart-groups-dialog .group-journal-num{text-align:center;font-variant-numeric:tabular-nums}
 #chart-groups-dialog .group-journal-description{box-sizing:border-box;width:100%;min-width:0}
 #chart-groups-dialog .group-journal-min{box-sizing:border-box;width:100%;min-width:0;text-align:center}
@@ -1453,3 +1453,9 @@ main{padding-bottom:64px!important;}
 /* GROT 0.3.145: pointer-friendly dragging of the groups journal */
 #chart-groups-dialog > h2{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 #chart-groups-dialog > h2:active{cursor:grabbing}
+
+/* GROT 0.3.146: expanded group description */
+#chart-groups-dialog .staff-table th:nth-child(1){width:52px}
+#chart-groups-dialog .staff-table th:nth-child(3){width:80px}
+#chart-groups-dialog .staff-table th:nth-child(4){width:96px}
+#chart-groups-dialog .group-journal-description{display:block;width:100%}
