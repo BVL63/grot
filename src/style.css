@@ -1704,3 +1704,128 @@ main{padding-bottom:64px!important;}
  #chart-group-assign-dialog{max-height:82vh!important}
  #chart-group-assign-dialog .group-assignment-list{max-height:40vh!important}
 }
+
+/* GROT 0.3.160 — year vacation editor, 12 visible months on tablet */
+#editor{
+ box-sizing:border-box!important;
+ width:min(1020px,calc(100vw - 24px))!important;
+ max-width:calc(100vw - 24px)!important;
+ height:auto!important;
+ max-height:calc(100dvh - 20px)!important;
+ overflow:hidden!important;
+}
+#editor #vacation-form{
+ display:flex!important;
+ flex-direction:column!important;
+ height:auto!important;
+ max-height:calc(100dvh - 22px)!important;
+ min-height:0!important;
+}
+#editor .editor-header{
+ position:relative!important;
+ flex:0 0 auto!important;
+ padding:9px 56px 6px 14px!important;
+ min-height:42px!important;
+ box-sizing:border-box!important;
+}
+#editor #editor-close-x{
+ position:absolute!important;
+ right:12px!important;
+ top:8px!important;
+ left:auto!important;
+ transform:none!important;
+ z-index:5!important;
+}
+#editor .editor-header h2{margin:0!important;min-width:0!important}
+#editor .editor-calendar-scroll{
+ flex:0 1 auto!important;
+ min-height:0!important;
+ padding:0 12px 4px!important;
+ overflow-y:auto!important;
+ overflow-x:hidden!important;
+}
+#range-calendar.range-calendar{
+ display:grid!important;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:5px!important;
+ margin:1px 0!important;
+ max-width:100%!important;
+}
+#editor .range-month{
+ box-sizing:border-box!important;
+ min-width:0!important;
+ padding:4px 7px!important;
+ border-radius:9px!important;
+}
+#editor .range-month h3{
+ font-size:14px!important;
+ line-height:17px!important;
+ margin:0 0 2px!important;
+ text-align:center!important;
+}
+#editor .range-month-days{
+ display:grid!important;
+ grid-template-columns:repeat(7,minmax(0,1fr))!important;
+ justify-content:stretch!important;
+ gap:2px!important;
+ max-width:252px!important;
+ margin:0 auto!important;
+}
+#editor .range-month-days button{
+ width:100%!important;
+ height:clamp(22px,2.55dvh,30px)!important;
+ min-height:clamp(22px,2.55dvh,30px)!important;
+ max-height:clamp(22px,2.55dvh,30px)!important;
+ line-height:normal!important;
+ padding:0!important;
+ font-size:12px!important;
+ border-radius:5px!important;
+}
+#editor .range-month-days .range-weekday{
+ box-sizing:border-box!important;
+ width:100%!important;
+ height:20px!important;
+ line-height:20px!important;
+ padding:0!important;
+ font-size:11px!important;
+}
+#editor #range-selected{display:none!important}
+#editor .editor-bottom{
+ flex:0 0 auto!important;
+ max-height:min(24dvh,215px)!important;
+ min-height:0!important;
+ overflow:hidden!important;
+ padding:5px 12px 8px!important;
+ gap:4px!important;
+}
+#editor .periods-toolbar{
+ display:flex!important;
+ flex-direction:column!important;
+ align-items:stretch!important;
+ gap:6px!important;
+ min-height:0!important;
+}
+#editor .periods-toolbar .editor-mode-actions{
+ order:-1!important;
+ justify-content:flex-start!important;
+ flex-wrap:nowrap!important;
+ gap:7px!important;
+}
+#editor .periods-toolbar .period-scroll{
+ order:1!important;
+ box-sizing:border-box!important;
+ width:100%!important;
+ height:auto!important;
+ min-height:35px!important;
+ max-height:74px!important;
+ overflow-y:auto!important;
+}
+#editor .editor-bottom .day-count{flex:0 0 auto!important}
+#editor .editor-bottom .actions{flex:0 0 auto!important}
+@media(max-width:740px){
+ #editor{width:calc(100vw - 12px)!important;max-width:calc(100vw - 12px)!important}
+ #editor .editor-calendar-scroll{overflow:auto!important}
+ #range-calendar.range-calendar{min-width:620px!important}
+ #editor .range-month-days button{height:23px!important;min-height:23px!important;max-height:23px!important}
+ #editor .periods-toolbar .editor-mode-actions{flex-wrap:wrap!important}
+}
