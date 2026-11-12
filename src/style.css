@@ -640,9 +640,9 @@ main{padding-top:5px!important}
   #app>main>.grot-version-footer>div{display:none}
   #app>main>.scroll{margin-top:2px!important}
   /* Приоритет виден и на телефоне, сразу после фамилии */
-  #app>main>.scroll .annual-table thead tr:first-child th:nth-child(2),
-  #app>main>.scroll .annual-table tbody td:nth-child(2),
-  #app>main>.scroll .annual-table tfoot td:nth-child(2){
+  #app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child th:nth-child(2),
+  #app>main>.scroll .annual-table:not(.archive-table) tbody td:nth-child(2),
+  #app>main>.scroll .annual-table:not(.archive-table) tfoot td:nth-child(2){
     display:table-cell!important;
     position:sticky;
     left:132px;
@@ -654,10 +654,10 @@ main{padding-top:5px!important}
     background:#f5f8fd;
     z-index:6;
   }
-  #app>main>.scroll .annual-table thead tr:first-child th:nth-child(2),
-  #app>main>.scroll .annual-table tfoot td:nth-child(2){z-index:8}
-  #app>main>.scroll .annual-table thead tr:first-child th:nth-child(2){font-size:10px;overflow-wrap:anywhere}
-  #app>main>.scroll .annual-table td:nth-child(2) .priority-detail{padding:0 2px;font-size:12px;min-width:30px}
+  #app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child th:nth-child(2),
+  #app>main>.scroll .annual-table:not(.archive-table) tfoot td:nth-child(2){z-index:8}
+  #app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child th:nth-child(2){font-size:10px;overflow-wrap:anywhere}
+  #app>main>.scroll .annual-table:not(.archive-table) td:nth-child(2) .priority-detail{padding:0 2px;font-size:12px;min-width:30px}
   #app>main>.scroll .annual-table .name{width:132px!important;min-width:132px!important;max-width:132px!important;left:0!important}
   #app>main>.scroll .annual-table .group{width:58px!important;min-width:58px!important;max-width:58px!important;left:188px!important;padding-left:2px!important;padding-right:2px!important}
   #app>main>.scroll .annual-table .group .filter-trigger{min-width:20px!important;width:20px!important;flex-basis:20px!important;height:24px}
@@ -718,7 +718,7 @@ main{padding-bottom:64px!important;}
 @media(max-width:600px){
   #app>main>.scroll .annual-table thead .heading-full{display:none!important}
   #app>main>.scroll .annual-table thead .heading-phone{display:inline!important;white-space:nowrap}
-  #app>main>.scroll .annual-table thead tr:first-child th:nth-child(2){font-size:11px!important;overflow-wrap:normal}
+  #app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child th:nth-child(2){font-size:11px!important;overflow-wrap:normal}
   #app>main>.scroll .annual-table .group{width:49px!important;min-width:49px!important;max-width:49px!important}
   #app>main>.scroll .annual-table .group .header-filter{gap:1px!important}
   #app>main>.scroll .annual-table .group .filter-trigger{min-width:18px!important;width:18px!important;flex-basis:18px!important}
@@ -840,7 +840,7 @@ main{padding-bottom:64px!important;}
 #app>main>.scroll .annual-table thead .day-heading{min-width:39px;text-align:center}
 #app>main>.scroll .annual-table thead .day-heading button{min-height:25px;padding:2px}
 @media(max-width:600px){
- #app>main>.scroll .annual-table thead tr.calendar-days-row>th:nth-child(2){position:sticky;top:38px;left:auto!important;width:39px!important;min-width:39px!important;max-width:none!important;display:table-cell!important;z-index:5;background:#f3f7fb!important}
+ #app>main>.scroll .annual-table:not(.archive-table) thead tr.calendar-days-row>th:nth-child(2){position:sticky;top:38px;left:auto!important;width:39px!important;min-width:39px!important;max-width:none!important;display:table-cell!important;z-index:5;background:#f3f7fb!important}
  #app>main>.scroll .annual-table thead tr:first-child .month-heading{font-size:12px}
 }
 
@@ -1042,9 +1042,9 @@ main{padding-bottom:64px!important;}
 #app>main>.scroll .annual-table thead .header-action{text-align:center;vertical-align:middle;padding:1px 4px}
 #app>main>.scroll .annual-table thead .header-action .filter-trigger{display:inline-flex;align-items:center;justify-content:center;width:28px;min-width:28px;height:26px;padding:0;margin:auto;border:1px solid #b8c8d7;border-radius:5px;background:#f5f8fc;color:#173c5c;font-size:17px;font-weight:700;cursor:pointer}
 #app>main>.scroll .annual-table thead tr.calendar-days-row>th.fixed{z-index:9}
-#app>main>.scroll .annual-table thead tr.calendar-days-row>th:nth-child(2){z-index:9}
+#app>main>.scroll .annual-table:not(.archive-table) thead tr.calendar-days-row>th:nth-child(2){z-index:9}
 @media(max-width:600px){
- #app>main>.scroll .annual-table thead tr.calendar-days-row>th:nth-child(2){position:sticky;top:38px;left:132px!important;width:56px!important;min-width:56px!important;max-width:56px!important;display:table-cell!important;z-index:9;background:#f3f7fb!important}
+ #app>main>.scroll .annual-table:not(.archive-table) thead tr.calendar-days-row>th:nth-child(2){position:sticky;top:38px;left:132px!important;width:56px!important;min-width:56px!important;max-width:56px!important;display:table-cell!important;z-index:9;background:#f3f7fb!important}
  #app>main>.scroll .annual-table thead .header-action .filter-trigger{width:24px;min-width:24px;height:24px}
 }
 
@@ -2214,10 +2214,10 @@ main{padding-bottom:64px!important;}
  width:170px!important;min-width:170px!important;max-width:170px!important;
  left:0!important;overflow:hidden!important;
 }
-#app>main>.scroll .annual-table thead tr:first-child>th:nth-child(2),
-#app>main>.scroll .annual-table thead tr.calendar-days-row>th:nth-child(2),
-#app>main>.scroll .annual-table tbody tr>td:nth-child(2),
-#app>main>.scroll .annual-table tfoot tr>td:nth-child(2){
+#app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child>th:nth-child(2),
+#app>main>.scroll .annual-table:not(.archive-table) thead tr.calendar-days-row>th:nth-child(2),
+#app>main>.scroll .annual-table:not(.archive-table) tbody tr>td:nth-child(2),
+#app>main>.scroll .annual-table:not(.archive-table) tfoot tr>td:nth-child(2){
  box-sizing:border-box!important;
  width:100px!important;min-width:100px!important;max-width:100px!important;
  overflow:hidden!important;text-overflow:ellipsis!important;
@@ -2237,10 +2237,10 @@ main{padding-bottom:64px!important;}
  #app>main>.scroll .annual-table .name{
   width:132px!important;min-width:132px!important;max-width:132px!important;left:0!important;
  }
- #app>main>.scroll .annual-table thead tr:first-child>th:nth-child(2),
- #app>main>.scroll .annual-table thead tr.calendar-days-row>th:nth-child(2),
- #app>main>.scroll .annual-table tbody tr>td:nth-child(2),
- #app>main>.scroll .annual-table tfoot tr>td:nth-child(2){
+ #app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child>th:nth-child(2),
+ #app>main>.scroll .annual-table:not(.archive-table) thead tr.calendar-days-row>th:nth-child(2),
+ #app>main>.scroll .annual-table:not(.archive-table) tbody tr>td:nth-child(2),
+ #app>main>.scroll .annual-table:not(.archive-table) tfoot tr>td:nth-child(2){
   width:56px!important;min-width:56px!important;max-width:56px!important;
  }
  #app>main>.scroll .annual-table .group{
@@ -2402,4 +2402,16 @@ html,body{height:100%;overflow:hidden}
  position:relative!important;
  left:auto;right:auto;bottom:auto;
  flex:0 0 auto;
+}
+
+/* Archive has no priority column: group sits directly after employee. */
+#app>main>.scroll .annual-table.archive-table{--archive-name-width:170px}
+#app>main>.scroll .annual-table.archive-table :is(thead,tbody,tfoot) .name{
+ width:var(--archive-name-width)!important;
+ min-width:var(--archive-name-width)!important;
+ max-width:var(--archive-name-width)!important;
+}
+#app>main>.scroll .annual-table.archive-table .group{left:var(--archive-name-width)!important}
+@media(max-width:600px){
+ #app>main>.scroll .annual-table.archive-table{--archive-name-width:132px}
 }
