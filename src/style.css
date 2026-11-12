@@ -1505,3 +1505,40 @@ main{padding-bottom:64px!important;}
  font-size:12px!important;max-width:105px;overflow:hidden;text-overflow:ellipsis;
 }
 #chart-groups-dialog .group-assignment-person:has(input:checked){background:#edf5fd}
+
+/* 0.3.149: compact, independently scrolling assignment table */
+#chart-groups-dialog .group-assignment-list{
+ display:block!important;box-sizing:border-box!important;
+ max-height:min(38vh,370px)!important;overflow-y:auto!important;overflow-x:hidden!important;
+ padding:0!important;border:1px solid #d2dfe9;border-radius:6px;
+ -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+}
+#chart-groups-dialog .group-assign-table{
+ width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;
+ font-size:14px;
+}
+#chart-groups-dialog .group-assign-table thead th{
+ position:sticky;top:0;z-index:2;background:#e9f0f6;
+ border-bottom:1px solid #c6d6e4;text-align:left;
+ padding:9px 10px;font-weight:650;
+}
+#chart-groups-dialog .group-assign-table th:first-child,
+#chart-groups-dialog .group-assign-table td:first-child{width:48px;text-align:center}
+#chart-groups-dialog .group-assign-table th:last-child,
+#chart-groups-dialog .group-assign-table td:last-child{width:125px}
+#chart-groups-dialog .group-assign-table tbody td{
+ padding:9px 10px;border-bottom:1px solid #e0e8ef;
+ vertical-align:middle;text-align:left;line-height:1.35;overflow-wrap:anywhere;
+}
+#chart-groups-dialog .group-assign-table tbody tr:last-child td{border-bottom:0}
+#chart-groups-dialog .group-assign-table tbody tr:has(input:checked){background:#ebf5ff}
+#chart-groups-dialog .group-assign-table input.group-assign-check[type="checkbox"]{
+ display:inline-block!important;position:static!important;
+ width:20px!important;height:20px!important;min-width:20px!important;
+ margin:0!important;padding:0!important;transform:none!important;vertical-align:middle;
+}
+@media(max-width:600px){
+ #chart-groups-dialog .group-assign-table th:last-child,
+ #chart-groups-dialog .group-assign-table td:last-child{width:83px}
+ #chart-groups-dialog .group-assign-table tbody td{padding:7px 6px}
+}
