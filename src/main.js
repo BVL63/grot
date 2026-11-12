@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.148';
+const APP_VERSION='0.3.149';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -91,9 +91,9 @@ function openGroupJournal(){
  const members=drivers.filter(d=>chartContains(chart,d)&&isEligibleForYear(d,2027))
    .sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru'));
  const drawAssignments=()=>{
-  assignList.innerHTML=members.map(d=>
-   '<label class="group-assignment-person"><input type="checkbox" class="group-assign-check" value="'+escapeHtml(String(d.id))+'"><span>'+escapeHtml(shortStaffName(d))+'</span><span class="group-assignment-current">'+escapeHtml(chartGroup(chart,d)||'Без группы')+'</span></label>'
-  ).join('');
+  assignList.innerHTML='<table class="group-assign-table"><thead><tr><th scope="col">✓</th><th scope="col">Сотрудник</th><th scope="col">Группа</th></tr></thead><tbody>'+members.map(d=>
+   '<tr><td><input type="checkbox" class="group-assign-check" value="'+escapeHtml(String(d.id))+'" aria-label="Выбрать '+escapeHtml(shortStaffName(d))+'"></td><td>'+escapeHtml(shortStaffName(d))+'</td><td>'+escapeHtml(chartGroup(chart,d)||'—')+'</td></tr>'
+  ).join('')+'</tbody></table>';
   const refreshCount=()=>{document.querySelector('#chart-group-assign-status').textContent='Выбрано: '+assignList.querySelectorAll('.group-assign-check:checked').length};
   refreshCount();
   assignList.querySelectorAll('.group-assign-check').forEach(input=>{
