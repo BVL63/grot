@@ -1596,3 +1596,11 @@ main{padding-bottom:64px!important;}
 #chart-groups-dialog .staff-table th:nth-child(4){width:65px!important}
 #chart-groups-dialog .staff-table th,#chart-groups-dialog .staff-table td{padding:6px 5px!important}
 #chart-groups-dialog .group-assignment-apply input{width:112px;box-sizing:border-box}
+
+/* GROT 0.3.152: compact and scrollable conflict intervals */
+#group-conflict-dialog{width:min(510px,calc(100vw - 26px));box-sizing:border-box;max-height:80vh;overflow:auto}
+#group-conflict-dialog #group-conflict-summary{font-size:14px;margin:7px 0 12px}
+#group-conflict-dialog .group-conflict-scroll{max-height:48vh;overflow:auto}
+#group-conflict-dialog .staff-table{width:100%;table-layout:auto;white-space:normal}
+#group-conflict-dialog .staff-table th:not(:first-child),#group-conflict-dialog .staff-table td:not(:first-child){text-align:center;width:90px}
+#group-conflict-dialog .staff-table td{font-variant-numeric:tabular-nums}
