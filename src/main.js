@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.162';
+const APP_VERSION='0.3.163';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -2132,7 +2132,7 @@ function render() {
     }
     document.querySelector('#range-calendar').innerHTML=html;
     document.querySelector('#range-selected').textContent=editorMode==='view'?'Периоды отпуска':editorMode==='add'?'Добавление периода':editorMode==='edit'?'Выберите период для изменения':'Выберите период для удаления';
-    document.querySelector('#range-periods').innerHTML=draftPeriods.map((p,i)=>'<div class="draft-period '+(selectedDraft===i?'draft-selected':'')+'"><button type="button" class="period-choice" data-period-choice="'+i+'" '+(editorMode==='edit'||editorMode==='delete'?'':'disabled')+'>'+(i+1)+'. '+displayDate(p.start)+' — '+displayDate(p.end)+' · '+leaveDays(p.start,p.end)+' дн.</button></div>').join('');
+    document.querySelector('#range-periods').innerHTML='<table class="editor-period-table"><thead><tr><th scope="col">№</th><th scope="col">Начало</th><th scope="col">Конец</th><th scope="col">Дней</th></tr></thead><tbody>'+draftPeriods.map((p,i)=>'<tr class="'+(selectedDraft===i?'draft-selected':'')+'"><td>'+(i+1)+'</td><td><button type="button" class="period-choice" data-period-choice="'+i+'" '+(editorMode==='edit'||editorMode==='delete'?'':'disabled')+'>'+displayDate(p.start)+'</button></td><td>'+displayDate(p.end)+'</td><td>'+leaveDays(p.start,p.end)+'</td></tr>').join('')+'</tbody></table>';
     document.querySelector('#range-hint').textContent=editorMode==='view'?'Просмотр отпусков. Для изменений нажмите кнопку выше.':rangeStep===1?'Выберите окончание периода.':changingDraft>=0?'Выберите новые начало и окончание.':editorMode==='add'?'Выберите начало нового периода.':editorMode==='edit'?'Нажмите на существующий период для изменения.':'Нажмите на период для удаления.';
     document.querySelectorAll('[data-period-choice]').forEach(b=>b.onclick=()=>{
       const i=Number(b.dataset.periodChoice),p=draftPeriods[i];
