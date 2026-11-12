@@ -1829,3 +1829,31 @@ main{padding-bottom:64px!important;}
  #editor .range-month-days button{height:23px!important;min-height:23px!important;max-height:23px!important}
  #editor .periods-toolbar .editor-mode-actions{flex-wrap:wrap!important}
 }
+
+/* GROT 0.3.161 — compact calendar: all months and both vacation rows visible */
+#editor .editor-calendar-scroll{padding:0 10px 2px!important;}
+#range-calendar.range-calendar{gap:4px!important;margin:0!important;align-items:stretch!important}
+#editor .range-month{padding:3px 6px!important}
+#editor .range-month h3{font-size:13px!important;line-height:16px!important;margin:0 0 1px!important}
+#editor .range-month-days{gap:1px!important;max-width:224px!important}
+#editor .range-month-days button{
+ height:22px!important;min-height:22px!important;max-height:22px!important;
+ font-size:12px!important;line-height:22px!important;
+ padding:0!important;border-radius:4px!important;
+}
+#editor .range-month-days .range-weekday{
+ height:18px!important;line-height:18px!important;
+ font-size:11px!important;
+}
+#editor .editor-bottom{max-height:190px!important;padding:4px 10px 7px!important;gap:2px!important}
+#editor .periods-toolbar{gap:4px!important}
+#editor .periods-toolbar .period-scroll{
+ height:72px!important;min-height:72px!important;max-height:72px!important;
+}
+#editor .period-scroll .draft-period{
+ min-height:34px!important;padding:2px 8px!important;
+}
+#editor .period-scroll .draft-period button{padding:4px 6px!important;line-height:20px!important}
+@media(max-width:740px){
+ #editor .range-month-days button{height:21px!important;min-height:21px!important;max-height:21px!important}
+}
