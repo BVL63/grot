@@ -1942,3 +1942,33 @@ main{padding-bottom:64px!important;}
  #editor .editor-period-table :is(th,td):first-child{width:34px}
  #editor .editor-period-table :is(th,td):last-child{width:48px}
 }
+
+/* GROT 0.3.164 — editable leave table, four visible rows */
+#editor .periods-toolbar .period-scroll{
+ width:fit-content!important;max-width:100%!important;
+ height:174px!important;min-height:174px!important;max-height:174px!important;
+ overflow-y:auto!important;overflow-x:hidden!important;
+}
+#editor .editor-bottom{max-height:300px!important}
+#editor .editor-period-table{width:350px!important;max-width:100%!important;table-layout:fixed!important}
+#editor .editor-period-table :is(th,td):first-child{width:40px!important}
+#editor .editor-period-table :is(th,td):last-child{width:60px!important}
+#editor .editor-period-table th,#editor .editor-period-table td{
+ height:32px!important;box-sizing:border-box!important;padding:3px 4px!important;
+}
+#editor .editor-period-table .period-cell-input{
+ box-sizing:border-box;width:100%;height:26px;min-width:0;
+ border:1px solid #a6c4dd;border-radius:4px;background:#fff;
+ color:#173c64;font:inherit;text-align:center;padding:2px;
+}
+#editor .editor-period-table .period-row-select{
+ width:100%;border:0;background:transparent;font:inherit;cursor:pointer;
+}
+#editor .editor-period-table .draft-selected{background:#e5f3fa!important}
+#editor .range-month-days .range-editing{background:#abe1bc!important;color:#146b35!important}
+#editor .range-month-days .range-pending{background:#2476cc!important;color:#fff!important}
+@media(max-width:740px){
+ #editor .editor-period-table{width:340px!important}
+ #editor .editor-period-table :is(th,td):first-child{width:36px!important}
+ #editor .editor-period-table :is(th,td):last-child{width:54px!important}
+}
