@@ -2140,3 +2140,42 @@ main{padding-bottom:64px!important;}
  #editor .editor-period-details .editor-summary-panel #day-count{font-size:13px!important}
  #editor .editor-summary-panel .actions button{font-size:12px!important;padding:5px 8px!important}
 }
+
+/* GROT 0.3.169 — vertical three-row summary table */
+#editor .editor-summary-panel #day-count{
+ display:block!important;
+ padding:0!important;
+ flex:0 0 auto!important;
+}
+#editor .editor-summary-panel .editor-totals-table{
+ width:100%!important;
+ max-width:100%!important;
+ border-collapse:collapse!important;
+ table-layout:fixed!important;
+ font-size:15px!important;
+ line-height:1.25!important;
+ font-variant-numeric:tabular-nums;
+}
+#editor .editor-summary-panel .editor-totals-table th,
+#editor .editor-summary-panel .editor-totals-table td{
+ padding:6px 9px!important;
+ border-bottom:1px solid #d6e2ed!important;
+}
+#editor .editor-summary-panel .editor-totals-table th{
+ text-align:left!important;
+ font-weight:600!important;
+ width:75%!important;
+}
+#editor .editor-summary-panel .editor-totals-table td{
+ text-align:center!important;
+ font-weight:700!important;
+}
+#editor .editor-summary-panel .editor-totals-table tr:last-child th,
+#editor .editor-summary-panel .editor-totals-table tr:last-child td{
+ border-bottom:0!important;
+}
+@media(max-width:740px){
+ #editor .editor-summary-panel .editor-totals-table{font-size:13px!important}
+ #editor .editor-summary-panel .editor-totals-table th,
+ #editor .editor-summary-panel .editor-totals-table td{padding:5px 6px!important}
+}
