@@ -35,6 +35,10 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+      # Allow the Actions artifact index to register the upload before Pages queries it.
+      # Run a new workflow instead of re-running a failed attempt, which keeps prior artifacts.
+      - name: Wait for Pages artifact indexing
+        run: sleep 20
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
