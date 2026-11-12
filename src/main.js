@@ -695,7 +695,7 @@ function personnelExportRows(){
  return drivers.flatMap(d=>periodsFor(d.id).map((p,i)=>({
   department:d.department||'',name:[d.lastName,d.firstName,d.middleName].filter(Boolean).join(' ')||d.name||'',
   position:d.position||'Водитель автомобиля',personnel:d.personnelNumber||d.tabNumber||'',
-  group:d.group||'',days:leaveDays(p.start,p.end),start:displayDate(p.start),end:displayDate(p.end),
+  group:chartGroup(activeVacationChart(),d),days:leaveDays(p.start,p.end),start:displayDate(p.start),end:displayDate(p.end),
   part:i+1
  }))).sort((a,b)=>a.department.localeCompare(b.department,'ru')||a.name.localeCompare(b.name,'ru')||a.part-b.part);
 }
@@ -1007,7 +1007,7 @@ function render() {
             <label class="staff-info-field"><span>Принят(а)</span><input id="staff-hired" type="date"></label>
             <div class="staff-info-field staff-dismiss-row"><span class="staff-dismiss-caption"><label for="staff-dismissal">Уволен(а)</label><input id="staff-dismissed" type="checkbox" aria-label="Отметить увольнение" title="Сотрудник уволен"></span><input id="staff-dismissal" type="date"></div>
             <label class="staff-info-field"><span>Код</span><input id="staff-structure-code" readonly title="Код определяется структурой предприятия"></label>
-            <label class="staff-info-field"><span>Группа</span><input id="staff-group" maxlength="30"></label>
+            <input id="staff-group" type="hidden" value="">
           </div>
         </div>
         <div class="staff-card-lower">
@@ -1699,7 +1699,7 @@ function render() {
   document.querySelector('#staff-form').onsubmit=e=>{
     e.preventDefault();
     const id=Number(document.querySelector('#staff-id').value);
-    const lastName=document.querySelector('#staff-last').value.trim(),firstName=document.querySelector('#staff-first').value.trim(),middleName=document.querySelector('#staff-middle').value.trim(),name=lastName+' '+firstName[0]?.toUpperCase()+'.'+(middleName?middleName[0].toUpperCase()+'.':''),department=document.querySelector('#staff-department').value.trim(),group=document.querySelector('#staff-group').value.trim(),position=document.querySelector('#staff-position').value.trim(),allowance=Number(document.querySelector('#staff-allowance').value),hireDate=document.querySelector('#staff-hired').value,dismissalDate=document.querySelector('#staff-dismissal').value,dismissed=document.querySelector('#staff-dismissed').checked||Boolean(dismissalDate);
+    const lastName=document.querySelector('#staff-last').value.trim(),firstName=document.querySelector('#staff-first').value.trim(),middleName=document.querySelector('#staff-middle').value.trim(),name=lastName+' '+firstName[0]?.toUpperCase()+'.'+(middleName?middleName[0].toUpperCase()+'.':''),department=document.querySelector('#staff-department').value.trim(),group=(drivers.find(x=>x.id===id)?.group||''),position=document.querySelector('#staff-position').value.trim(),allowance=Number(document.querySelector('#staff-allowance').value),hireDate=document.querySelector('#staff-hired').value,dismissalDate=document.querySelector('#staff-dismissal').value,dismissed=document.querySelector('#staff-dismissed').checked||Boolean(dismissalDate);
     if(!lastName||!firstName)return;
     if(hireDate&&dismissalDate&&dismissalDate<hireDate){document.querySelector('#staff-error').textContent='Дата увольнения раньше даты приёма.';return;}
     saveDisplayedLeaveYear();
@@ -1766,10 +1766,10 @@ function render() {
   document.querySelector('#help-close').onclick=()=>document.querySelector('#help-dialog').close();
   let activeFilter=null;
   const filterDialog=document.querySelector('#filter-dialog');
-  const chartFilterMembers=()=>{const current=activeVacationChart();return drivers.filter(d=>chartContains(current,d)&&isEligibleForYear(d,2027)).sort(compareGroupAndName);};
+  const chartFilterMembers=()=>{const current=activeVacationChart();return drivers.filter(d=>chartContains(current,d)&&isEligibleForYear(d,2027)).sort((a,b)=>chartGroup(current,a).localeCompare(chartGroup(current,b),'ru',{numeric:true})||shortStaffName(a).localeCompare(shortStaffName(b),'ru'));};
   const getFilterValues=()=>activeFilter==='driver'
     ?chartFilterMembers().map(d=>({id:String(d.id),label:shortStaffName(d)}))
-    :[...new Set(chartFilterMembers().map(d=>String(d.group||'')))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true})).map(g=>({id:g,label:g||'Без группы'}));
+    :[...new Set(chartFilterMembers().map(d=>chartGroup(activeVacationChart(),d)))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true})).map(g=>({id:g,label:g||'Без группы'}));
   document.querySelectorAll('[data-filter-open]').forEach(b=>b.onclick=()=>{
     activeFilter=b.dataset.filterOpen;
     document.querySelector('#filter-title').textContent=activeFilter==='driver'?'Фильтр сотрудников':'Фильтр групп';
