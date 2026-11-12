@@ -2319,6 +2319,13 @@ main{padding-bottom:64px!important;}
  }
 }
 
+/* Main menu controls share the same height at every screen width. */
+#app>main>.grot-toolbar{--menu-control-height:44px}
+#app>main>.grot-toolbar .grot-menu>summary{
+ height:var(--menu-control-height)!important;
+ justify-content:center;
+}
+
 /* GROT 0.3.178 — information and alerts moved into the main menu */
 #app>main>.grot-toolbar .menu-action-icon{
  box-sizing:border-box!important;
@@ -2330,8 +2337,8 @@ main{padding-bottom:64px!important;}
  width:44px!important;
  min-width:44px!important;
  max-width:44px!important;
- height:44px!important;
- min-height:44px!important;
+ height:var(--menu-control-height)!important;
+ min-height:var(--menu-control-height)!important;
  padding:8px!important;
  margin:0!important;
  border:1px solid #90abc8!important;
@@ -2359,9 +2366,10 @@ main{padding-bottom:64px!important;}
  background:#d97706!important;
 }
 @media(max-width:800px){
+ #app>main>.grot-toolbar{--menu-control-height:36px}
  #app>main>.grot-toolbar .menu-action-icon{
   flex-basis:36px!important;width:36px!important;min-width:36px!important;max-width:36px!important;
-  height:36px!important;min-height:36px!important;padding:5px!important;
+  padding:5px!important;
  }
  #app>main>.grot-toolbar .menu-action-icon svg{
   flex-basis:23px!important;width:23px!important;height:23px!important;
