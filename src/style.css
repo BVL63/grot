@@ -1449,3 +1449,7 @@ main{padding-bottom:64px!important;}
 #chart-groups-dialog .group-journal-number,#chart-groups-dialog .group-journal-num{text-align:center;font-variant-numeric:tabular-nums}
 #chart-groups-dialog .group-journal-description{box-sizing:border-box;width:100%;min-width:0}
 #chart-groups-dialog .group-journal-min{box-sizing:border-box;width:100%;min-width:0;text-align:center}
+
+/* GROT 0.3.145: pointer-friendly dragging of the groups journal */
+#chart-groups-dialog > h2{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+#chart-groups-dialog > h2:active{cursor:grabbing}
