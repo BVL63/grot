@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.165';
+const APP_VERSION='0.3.166';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -1202,9 +1202,8 @@ function render() {
       <div class="editor-top"><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
       <p id="range-hint">Выберите начало отпуска, затем окончание.</p></div>
       <div class="editor-calendar-scroll"><div id="range-calendar" class="range-calendar"></div></div>
-      <div class="editor-bottom"><div id="range-selected"></div><div class="periods-toolbar"><div id="range-periods" class="period-scroll" tabindex="0"></div><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить период</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button><button type="button" id="period-save">Сохранить период</button></div></div>
-      <input id="start" type="hidden"><input id="end" type="hidden">
-      <div id="day-count" class="day-count" aria-live="polite"></div><p id="editor-split-warning" class="rule-warning" role="status"></p><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
+      <div class="editor-bottom"><div id="range-selected"></div><div class="periods-toolbar"><div class="editor-period-details"><div id="range-periods" class="period-scroll" tabindex="0"></div><div id="day-count" class="day-count" aria-live="polite"></div></div><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить период</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button><button type="button" id="period-save">Сохранить период</button></div></div>
+      <input id="start" type="hidden"><input id="end" type="hidden"><p id="editor-split-warning" class="rule-warning" role="status"></p><p class="muted">Добавление создаёт новый период. Изменение заменяет выбранный период.</p>
       <p id="form-error" role="alert"></p>
       <div class="actions"><button type="button" id="editor-history">История отпусков</button><button type="button" id="cancel">Закрыть</button><button type="submit">Сохранить</button></div></div>
     </form></dialog>
