@@ -2425,3 +2425,26 @@ html,body{height:100%;overflow:hidden}
  width:min(340px,calc(100vw - 24px))!important;
  max-width:calc(100vw - 24px)!important;
 }
+
+/* Freeze employee, priority and group as a single block. */
+#app>main>.scroll .annual-table:not(.archive-table){--staff-column-width:170px;--priority-column-width:100px}
+#app>main>.scroll .annual-table:not(.archive-table) :is(thead,tbody,tfoot) .name{
+ width:var(--staff-column-width)!important;
+ min-width:var(--staff-column-width)!important;
+ max-width:var(--staff-column-width)!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) :is(thead,tbody,tfoot) tr>:nth-child(2){
+ position:sticky!important;
+ left:var(--staff-column-width)!important;
+ width:var(--priority-column-width)!important;
+ min-width:var(--priority-column-width)!important;
+ max-width:var(--priority-column-width)!important;
+ background:#f5f7fa!important;
+ z-index:6;
+}
+#app>main>.scroll .annual-table:not(.archive-table) thead tr>:nth-child(2){background:#e7eef5!important;z-index:9}
+#app>main>.scroll .annual-table:not(.archive-table) tfoot tr>:nth-child(2){background:#dceaf3!important;z-index:7}
+#app>main>.scroll .annual-table:not(.archive-table) .group{left:calc(var(--staff-column-width) + var(--priority-column-width))!important}
+@media(max-width:600px){
+ #app>main>.scroll .annual-table:not(.archive-table){--staff-column-width:132px;--priority-column-width:56px}
+}
