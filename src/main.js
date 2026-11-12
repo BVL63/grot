@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.142';
+const APP_VERSION='0.3.143';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -1174,20 +1174,27 @@ function render() {
           return {start:p.start,end:p.end};
         }).sort((a,b)=>a.start.localeCompare(b.start));
         for(let k=1;k<incomingPeriods.length;k++)if(incomingPeriods[k].start<=incomingPeriods[k-1].end)throw Error('Пересечение периодов у '+name);
+        const plannedDays=d.periods.reduce((n,p)=>n+Number(p.days),0);
+        const breakdown=plannedDays>=36&&plannedDays<=120?{basic:28,territory:8,seniority:0,other:plannedDays-36,legacy:0,allowance:plannedDays}:null;
         const match=drivers.find(x=>norm([x.lastName,x.firstName,x.middleName].filter(Boolean).join(' '))===nk||norm(x.name)===nk);
         const surname=norm(parts.lastName);
         const maybe=drivers.filter(x=>norm(x.lastName||String(x.name||'').split(/\s+/)[0])===surname);
         const existingPeriods=match?periodsFor(match.id).length:0;
         const needsNameRepair=!!match&&(!match.lastName||!match.firstName||!match.middleName);
-        const mode=existingPeriods?(needsNameRepair?'repair':'skip'):match?'add':maybe.length?'skip':'add';
-        const state=mode==='repair'?'Исправить поля ФИО, отпуска сохранить':existingPeriods?'Уже есть отпуска — пропуск':match?'Есть в справочнике':maybe.length?'Похожая фамилия — проверить':'Новый';
+        const needsNorm=!!match&&!!breakdown&&!(Number(match.allowance)>0)&&!(Number(match.leaveByYear?.['2027']?.allowance)>0);
+        const mode=existingPeriods?(needsNameRepair||needsNorm?'repair':'skip'):match?'add':maybe.length?'skip':'add';
+        const state=mode==='repair'?(needsNameRepair?'Дополнить ФИО':'Сохранить отпуска')+(needsNorm?', заполнить норму':''):
+          existingPeriods?'Уже есть отпуска и норма — пропуск':match?'Есть в справочнике':maybe.length?'Похожая фамилия — проверить':'Новый';
         const allowed=mode!=='skip';
-        return {name,parts,position:typeof d.position==='string'?d.position.trim():'',periods:incomingPeriods,match,allowed,state,mode};
+        return {name,parts,position:typeof d.position==='string'?d.position.trim():'',periods:incomingPeriods,match,allowed,state,mode,plannedDays,breakdown,needsNorm};
       });
       pendingChartImport={data,incoming};
       document.querySelector('#chart-import-summary').textContent=
         'График: '+data.chartName+'\nГод: 2027\nСотрудников: '+incoming.length+'\nПериодов: '+incoming.reduce((n,x)=>n+x.periods.length,0)+
-        '\nМожно добавить: '+incoming.filter(x=>x.mode==='add').length+'\nИсправить ФИО без изменения отпусков: '+incoming.filter(x=>x.mode==='repair').length+'\nПроверьте даты окончания и нормы дней.';
+        '\nМожно добавить: '+incoming.filter(x=>x.mode==='add').length+'\nДополнить существующие записи: '+incoming.filter(x=>x.mode==='repair').length+
+        '\nРасчёт: основной 28 + ДВ 8 + дополнительный (план − 36).'+
+        '\nПлан менее 36 дней: '+incoming.filter(x=>x.plannedDays<36).map(x=>x.name+' ('+x.plannedDays+')').join('; ')+
+        '\nВ таких записях норму автоматически не назначаем. Существующие нормы не заменяем.';
       document.querySelector('#chart-import-list').innerHTML='<table class="staff-table"><thead><tr><th>Выбрать</th><th>Сотрудник</th><th>Периодов</th><th>Статус</th></tr></thead><tbody>'+incoming.map((d,i)=>'<tr><td><input type="checkbox" class="chart-import-choice" value="'+i+'" '+(d.allowed?'checked':'disabled')+'></td><td>'+escapeHtml(d.name)+'</td><td>'+d.periods.length+'</td><td>'+escapeHtml(d.state)+'</td></tr>').join('')+'</tbody></table>';
       document.querySelector('#chart-import-notes').textContent=Array.isArray(data.reviewNotes)&&data.reviewNotes.length?'Проверить перед утверждением:\n'+data.reviewNotes.map(x=>'• '+x).join('\n'):'';
       document.querySelector('#chart-import-confirm').disabled=!incoming.some(x=>x.allowed);
@@ -1201,7 +1208,7 @@ function render() {
     if(!chosen.length)return;
     const added=chosen.filter(x=>x.mode==='add'),repaired=chosen.filter(x=>x.mode==='repair');
     const periodCount=added.reduce((n,d)=>n+d.periods.length,0);
-    if(!confirm('Добавить или дополнить: '+added.length+' сотрудников, '+periodCount+' периодов.\nИсправить разделение ФИО: '+repaired.length+' сотрудников.\nСуществующие отпуска не изменятся.\nНормы отпускных дней требуется проверить отдельно. Продолжить?'))return;
+    if(!confirm('Добавить или дополнить: '+added.length+' сотрудников, '+periodCount+' периодов.\nДополнить существующие записи: '+repaired.length+'.\nНорма при плане от 36 дней: 28 основной + 8 ДВ + (план − 36) дополнительный.\nСуществующие нормы и отпуска не заменяем. Продолжить?'))return;
     const snapshot={format:'grot-backup',version:2,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides,organization:readOrganization(),structure:structureNodes,charts:vacationCharts,activeChartId:activeVacationChartId,positions:getPositions(),priorities:readPriorities(),seasonalityHistory:loadHistory()};
     const url=URL.createObjectURL(new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}));
     const a=document.createElement('a');a.href=url;a.download='grot-before-chart-import-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
@@ -1212,10 +1219,20 @@ function render() {
       let d=item.match?newStaff.find(x=>x.id===item.match.id):null;
       if(!d){
         d={id:++nextId,name:item.name,...item.parts,position:item.position,group:'',department:data.chartName,allowance:0,needsCompletion:true,sourceYear:2027};
+        if(item.breakdown){
+          d.allowance=item.plannedDays;
+          d.leaveBreakdown={...item.breakdown};
+          d.leaveByYear={'2027':{...item.breakdown}};
+        }
         newStaff.push(d);
-      }else if(item.mode==='repair'){
-        // Do not replace fields manually corrected by the user.
+      }else{
+        // Do not replace identity fields or leave norms manually entered by the user.
         for(const field of ['lastName','firstName','middleName'])if(!String(d[field]||'').trim())d[field]=item.parts[field];
+        if(item.needsNorm&&item.breakdown){
+          d.allowance=item.plannedDays;
+          d.leaveBreakdown={...item.breakdown};
+          d.leaveByYear={...(d.leaveByYear||{}),'2027':{...item.breakdown}};
+        }
       }
       members.push(d.id);
       if(item.mode==='add')for(const p of item.periods)newVac.push({driverId:d.id,start:p.start,end:p.end});
@@ -1242,7 +1259,7 @@ function render() {
     }
     drivers=newStaff;vacations=newVac;vacationCharts=newCharts;activeVacationChartId=chart.id;
     pendingChartImport=null;chartImportDialog.close();selectedDriverIds=null;selectedGroups=null;
-    notice='Импорт: '+added.length+' сотрудников и '+periodCount+' периодов; исправлено полей ФИО у '+repaired.length+' сотрудников. Проверьте нормы отпусков.';
+    notice='Импорт: '+added.length+' сотрудников, '+periodCount+' периодов; нормы распределены (28 + 8 + дополнительный) там, где план ≥36 и не было введённой нормы.';
     render();
   };
 
