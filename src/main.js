@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.147';
+const APP_VERSION='0.3.148';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -94,9 +94,11 @@ function openGroupJournal(){
   assignList.innerHTML=members.map(d=>
    '<label class="group-assignment-person"><input type="checkbox" class="group-assign-check" value="'+escapeHtml(String(d.id))+'"><span>'+escapeHtml(shortStaffName(d))+'</span><span class="group-assignment-current">'+escapeHtml(chartGroup(chart,d)||'Без группы')+'</span></label>'
   ).join('');
-  document.querySelector('#chart-group-assign-status').textContent='Выбрано: 0';
-  assignList.querySelectorAll('.group-assign-check').forEach(input=>input.onchange=()=>{
-   document.querySelector('#chart-group-assign-status').textContent='Выбрано: '+assignList.querySelectorAll('.group-assign-check:checked').length;
+  const refreshCount=()=>{document.querySelector('#chart-group-assign-status').textContent='Выбрано: '+assignList.querySelectorAll('.group-assign-check:checked').length};
+  refreshCount();
+  assignList.querySelectorAll('.group-assign-check').forEach(input=>{
+   input.onchange=refreshCount;
+   input.onclick=()=>requestAnimationFrame(refreshCount);
   });
  };
  drawAssignments();
