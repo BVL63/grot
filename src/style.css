@@ -2247,3 +2247,35 @@ main{padding-bottom:64px!important;}
   left:188px!important;width:58px!important;min-width:58px!important;max-width:58px!important;
  }
 }
+
+/* GROT 0.3.176 — icon-only chart actions with native hover tooltips */
+#app>main>.chart-actionbar .chart-action-icon{
+ display:inline-flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+ flex:0 0 44px!important;
+ width:44px!important;
+ min-width:44px!important;
+ height:44px!important;
+ min-height:44px!important;
+ padding:8px!important;
+ border-radius:10px!important;
+ line-height:1!important;
+}
+#app>main>.chart-actionbar .chart-action-icon svg{
+ display:block!important;
+ width:25px!important;
+ height:25px!important;
+ flex:none!important;
+}
+@media(max-width:600px){
+ #app>main>.chart-actionbar .chart-action-icon{
+  flex-basis:36px!important;
+  width:36px!important;
+  min-width:36px!important;
+  height:36px!important;
+  min-height:36px!important;
+  padding:6px!important;
+ }
+ #app>main>.chart-actionbar .chart-action-icon svg{width:23px!important;height:23px!important}
+}
