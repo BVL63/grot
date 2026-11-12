@@ -4,8 +4,16 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.171';
+const APP_VERSION='0.3.172';
 import grotLogo from '../IMG_0637.jpeg';
+
+function forceGrotUpdate(){
+  // Unique document URL bypasses a cached index.html, including in iPad Safari.
+  // Do not clear localStorage: it contains the user's vacation schedule.
+  const url=new URL(window.location.href);
+  url.searchParams.set('grot_update',Date.now().toString());
+  window.location.replace(url.href);
+}
 
 const app = document.querySelector('#app');
 const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -1011,7 +1019,7 @@ function renderHistory2026(){
  document.querySelectorAll('[data-archive-about]').forEach(b=>b.onclick=showAboutGrot);
  document.querySelectorAll('[data-archive-organization]').forEach(b=>b.onclick=openOrganizationCard);
  document.querySelector('#archive-current').onclick=()=>{displayYear=2027;render()};
- document.querySelector('#archive-refresh').onclick=()=>location.reload();
+ document.querySelector('#archive-refresh').onclick=forceGrotUpdate;
  document.querySelector('#archive-print').onclick=()=>printMonthlyVacationChart(archiveYear);
  document.querySelectorAll('[data-archive-go]').forEach(b=>b.onclick=()=>{const target=b.dataset.archiveGo;displayYear=2027;render();document.getElementById(target)?.click()});
  document.querySelectorAll('[data-history-month]').forEach(b=>b.onclick=()=>{const m=Number(b.dataset.historyMonth);expandedMonths.has(m)?expandedMonths.delete(m):expandedMonths.add(m);render();scrollToCalendarMonth(m,true)});
@@ -2044,7 +2052,7 @@ function render() {
     const d=drivers.find(x=>String(x.id)===button.dataset.editGroup);
     if(d&&!chart.allStaff)openGroupJournal(chartGroup(chart,d));
   });
-  document.querySelector('#app-refresh').onclick=()=>location.reload();
+  document.querySelector('#app-refresh').onclick=forceGrotUpdate;
   document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
   const dialog = document.querySelector('#editor');
   const driverCard=document.querySelector('#driver-card');
