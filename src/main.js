@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.139';
+const APP_VERSION='0.3.140';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -923,12 +923,12 @@ function render() {
           <summary>Сервис</summary>
           <div class="grot-menu-panel">
             <button type="button" id="backup-settings-open">Настройки</button><button type="button" id="backup-export">Резервная копия</button>
-            <button type="button" id="backup-restore">Восстановить</button><button type="button" id="archive-import-open">Загрузить прошлые годы</button>
+            <button type="button" id="backup-restore">Восстановить</button><button type="button" id="chart-import-open">Загрузить график · JSON</button><button type="button" id="archive-import-open">Загрузить прошлые годы</button>
             <button type="button" id="app-refresh">Обновить</button>
             <button type="button" id="help-open">Справка · Правила отпусков</button><button type="button" id="about-open">О программе</button>
           </div>
         </details>
-        <input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="archive-import-file" accept=".json,application/json" hidden>
+        <input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="archive-import-file" accept=".json,application/json" hidden><input type="file" id="chart-import-file" accept=".json,application/json" hidden>
       </nav>
       <div class="chart-actionbar"><strong>График: ${escapeHtml(chart.name)}</strong><button type="button" id="chart-info-open" class="chart-info-button" title="Подсказки по графику" aria-label="Подсказки по графику">ⓘ</button><button type="button" id="service-messages-open" class="service-messages-button" title="Служебные сообщения" aria-label="Служебные сообщения">🔔${notice?'<span class="service-alert-dot" aria-hidden="true"></span>':''}</button><button type="button" id="priority-calculate">Рассчитать приоритет</button></div>
       <div class="scroll"><table class="annual-table"><thead><tr>
@@ -952,7 +952,7 @@ function render() {
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◎</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled><span class="grot-pencil-right" aria-hidden="true">✎</span></button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>⌫</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span></div><div class="staff-search-row"><label for="staff-search">Поиск</label><input id="staff-search" type="search" placeholder="Фамилия, имя, должность, подразделение или группа" autocomplete="off"><button type="button" id="staff-search-clear" title="Очистить поиск" aria-label="Очистить поиск">×</button><label class="staff-dismissed-filter" title="Показать в списке также уволенных сотрудников"><input type="checkbox" id="staff-show-dismissed"> Показывать уволенных</label><span id="staff-search-count"></span></div><div id="staff-list"></div>
     </dialog>
     <dialog id="staff-import-dialog"><h2>Перенос сотрудников из 2026 года</h2><p>Из архива берутся только фамилии и известные группы. Проверьте полные ФИО, группы и нормы отпуска после переноса. Совпадающие фамилии не добавляются повторно.</p><div class="staff-table-scroll" id="staff-import-list"></div><p id="staff-import-status" role="status"></p><div class="actions"><button type="button" id="staff-import-confirm">Добавить выбранных</button><button type="button" id="staff-import-cancel">Отмена</button></div></dialog>
-    <dialog id="archive-import-dialog" class="structure-dialog"><h2>Загрузка архивных отпусков</h2><p>Импорт добавляет историю за 2025–2026 годы. Данные сотрудников и графики 2027 года не изменяются.</p><div id="archive-import-summary" style="white-space:pre-line;line-height:1.7"></div><div class="actions"><button type="button" id="archive-import-cancel">Отмена</button><button type="button" id="archive-import-confirm" disabled>Создать копию и загрузить</button></div></dialog>
+    <dialog id="chart-import-dialog" class="structure-dialog"><h2>Загрузка графика отпусков · 2027</h2><p class="muted">Добавляются только выбранные сотрудники и их отпуска. Существующие периоды не перезаписываются. Перед импортом автоматически скачивается резервная копия.</p><div id="chart-import-summary" style="white-space:pre-line;line-height:1.6"></div><div class="staff-table-scroll" id="chart-import-list" style="max-height:43vh;overflow:auto"></div><div id="chart-import-notes" style="max-height:12vh;overflow:auto;font-size:12px"></div><div class="actions"><button type="button" id="chart-import-confirm" disabled>Создать копию и загрузить выбранных</button><button type="button" id="chart-import-cancel">Отмена</button></div></dialog><dialog id="archive-import-dialog" class="structure-dialog"><h2>Загрузка архивных отпусков</h2><p>Импорт добавляет историю за 2025–2026 годы. Данные сотрудников и графики 2027 года не изменяются.</p><div id="archive-import-summary" style="white-space:pre-line;line-height:1.7"></div><div class="actions"><button type="button" id="archive-import-cancel">Отмена</button><button type="button" id="archive-import-confirm" disabled>Создать копию и загрузить</button></div></dialog>
     <dialog id="backup-preview-dialog" class="structure-dialog"><h2>Резервное копирование</h2><div id="backup-preview-details" style="white-space:pre-line;line-height:1.8"></div><p class="muted">В копию также входят справочники, настройки и доступная история.</p><div class="actions"><button type="button" id="backup-preview-cancel">Отмена</button><button type="button" id="backup-preview-save">Сохранить копию</button></div></dialog>
     <dialog id="backup-result-dialog" class="structure-dialog"><h2 id="backup-result-title">Резервная копия</h2><div id="backup-result-details" style="white-space:pre-line;line-height:1.8"></div><div class="actions"><button type="button" id="backup-result-close">Закрыть</button></div></dialog>
     <dialog id="backup-settings-dialog" class="structure-dialog"><h2>Настройки · Резервные копии</h2><p id="backup-directory-status"></p><p class="muted">Выберите папку для сохранения и восстановления копий. Браузер может повторно запросить доступ к ней.</p><div class="actions"><button type="button" id="backup-directory-choose">Выбрать папку</button><button type="button" id="backup-settings-close">Закрыть</button></div></dialog><dialog id="staff-card"><div class="staff-card-header"><h2 id="staff-card-title">Карточка сотрудника</h2><button type="button" id="staff-card-x" aria-label="Закрыть карточку">×</button></div><form id="staff-form">
@@ -1102,6 +1102,94 @@ function render() {
     const button=document.querySelector('#service-messages-open');if(button&&!button.querySelector('.service-alert-dot'))button.insertAdjacentHTML('beforeend','<span class="service-alert-dot" aria-hidden="true"></span>');
   };
   let pendingArchiveImport=null;
+
+  // Selective 2027 chart import: never overwrite existing vacations or staff identity.
+  let pendingChartImport=null;
+  const chartImportDialog=document.querySelector('#chart-import-dialog');
+  const chartImportFile=document.querySelector('#chart-import-file');
+  document.querySelector('#chart-import-open').onclick=()=>chartImportFile.click();
+  document.querySelector('#chart-import-cancel').onclick=()=>{pendingChartImport=null;chartImportDialog.close()};
+  chartImportFile.onchange=async e=>{
+    const file=e.target.files?.[0];e.target.value='';if(!file)return;
+    try{
+      if(file.size>2_000_000)throw Error('Файл превышает 2 МБ.');
+      const data=JSON.parse(await file.text());
+      if(data.format!=='grot-chart-import'||data.version!==1||data.year!==2027||!Array.isArray(data.staff)||!data.staff.length||data.staff.length>500||typeof data.chartName!=='string'||!data.chartName.trim())throw Error('Неверный формат графика (ожидается GROT, 2027 год).');
+      const unique=new Set();
+      const validDate=d=>typeof d==='string'&&/^2027-\d{2}-\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T12:00:00Z'))&&new Date(d+'T12:00:00Z').toISOString().slice(0,10)===d;
+      const norm=n=>String(n||'').trim().toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ');
+      const incoming=data.staff.map((d,i)=>{
+        if(!d||typeof d.name!=='string'||!d.name.trim()||!Array.isArray(d.periods)||d.periods.length>25)throw Error('Ошибка сотрудника № '+(i+1));
+        const name=d.name.trim(),nk=norm(name);
+        if(unique.has(nk))throw Error('Повтор сотрудника: '+name);unique.add(nk);
+        const incomingPeriods=d.periods.map(p=>{
+          if(!p||!validDate(p.start)||!validDate(p.end)||p.end<p.start||Number(p.days)<1||Number(p.days)>120)throw Error('Неверный период у '+name);
+          return {start:p.start,end:p.end};
+        }).sort((a,b)=>a.start.localeCompare(b.start));
+        for(let k=1;k<incomingPeriods.length;k++)if(incomingPeriods[k].start<=incomingPeriods[k-1].end)throw Error('Пересечение периодов у '+name);
+        const match=drivers.find(x=>norm(x.name)===nk);
+        const surname=name.split(' ')[0].toLocaleLowerCase('ru').replace(/ё/g,'е');
+        const maybe=drivers.filter(x=>norm(x.name).split(' ')[0]===surname);
+        const existingPeriods=match?periodsFor(match.id).length:0;
+        const state=existingPeriods?'Уже есть отпуска — пропуск':match?'Есть в справочнике':maybe.length?'Похожая фамилия — проверить':'Новый';
+        const allowed=!existingPeriods&&!(!match&&maybe.length);
+        return {name,position:typeof d.position==='string'?d.position.trim():'',periods:incomingPeriods,match,allowed,state};
+      });
+      pendingChartImport={data,incoming};
+      document.querySelector('#chart-import-summary').textContent=
+        'График: '+data.chartName+'\nГод: 2027\nСотрудников: '+incoming.length+'\nПериодов: '+incoming.reduce((n,x)=>n+x.periods.length,0)+
+        '\nМожно добавить без перезаписи: '+incoming.filter(x=>x.allowed).length+'\nПроверьте ФИО, даты окончания и нормы дней.';
+      document.querySelector('#chart-import-list').innerHTML='<table class="staff-table"><thead><tr><th>Выбрать</th><th>Сотрудник</th><th>Периодов</th><th>Статус</th></tr></thead><tbody>'+incoming.map((d,i)=>'<tr><td><input type="checkbox" class="chart-import-choice" value="'+i+'" '+(d.allowed?'checked':'disabled')+'></td><td>'+escapeHtml(d.name)+'</td><td>'+d.periods.length+'</td><td>'+escapeHtml(d.state)+'</td></tr>').join('')+'</tbody></table>';
+      document.querySelector('#chart-import-notes').textContent=Array.isArray(data.reviewNotes)&&data.reviewNotes.length?'Проверить перед утверждением:\n'+data.reviewNotes.map(x=>'• '+x).join('\n'):'';
+      document.querySelector('#chart-import-confirm').disabled=!incoming.some(x=>x.allowed);
+      chartImportDialog.showModal();
+    }catch(err){alert('Загрузка отменена: '+err.message)}
+  };
+  document.querySelector('#chart-import-confirm').onclick=()=>{
+    if(!pendingChartImport)return;
+    const {data,incoming}=pendingChartImport;
+    const chosen=[...document.querySelectorAll('.chart-import-choice:checked')].map(x=>incoming[Number(x.value)]).filter(x=>x?.allowed);
+    if(!chosen.length)return;
+    const periodCount=chosen.reduce((n,d)=>n+d.periods.length,0);
+    if(!confirm('Загрузить '+chosen.length+' сотрудников и '+periodCount+' периодов в график «'+data.chartName+'»?\nСуществующие периоды останутся без изменений.\nНормы отпускных дней требуется проверить отдельно.'))return;
+    const snapshot={format:'grot-backup',version:2,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides,organization:readOrganization(),structure:structureNodes,charts:vacationCharts,activeChartId:activeVacationChartId,positions:getPositions(),priorities:readPriorities(),seasonalityHistory:loadHistory()};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download='grot-before-chart-import-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+    const oldStaff=drivers,oldVac=vacations,oldCharts=vacationCharts,oldActive=activeVacationChartId;
+    let nextId=Math.max(0,...drivers.map(x=>Number(x.id)||0));
+    const newStaff=[...drivers],newVac=[...vacations],members=[];
+    for(const item of chosen){
+      let d=item.match;
+      if(!d){d={id:++nextId,name:item.name,position:item.position,group:'',department:data.chartName,allowance:0,needsCompletion:true,sourceYear:2027};newStaff.push(d)}
+      members.push(d.id);
+      for(const p of item.periods)newVac.push({driverId:d.id,start:p.start,end:p.end});
+    }
+    let chart=vacationCharts.find(c=>!c.allStaff&&c.name===data.chartName&&Number(c.year)===2027);
+    const newCharts=vacationCharts.map(c=>({...c}));
+    if(chart){
+      chart=newCharts.find(c=>c.id===chart.id);
+      if(Array.isArray(chart.structureIds))chart.includeStaffIds=[...new Set([...(chart.includeStaffIds||[]),...members])];
+      else chart.staffIds=[...new Set([...(chart.staffIds||[]),...members])];
+    }else{
+      chart={id:'chart-import-'+Date.now(),name:data.chartName,year:2027,staffIds:[...members],allStaff:false};
+      newCharts.push(chart);
+    }
+    try{
+      localStorage.setItem(staffKey,JSON.stringify(newStaff));
+      localStorage.setItem(key,JSON.stringify(newVac));
+      localStorage.setItem(vacationChartsKey,JSON.stringify(newCharts));
+      localStorage.setItem('grotActiveVacationChart',chart.id);
+    }catch(err){
+      for(const [k,v] of [[staffKey,oldStaff],[key,oldVac],[vacationChartsKey,oldCharts]])try{localStorage.setItem(k,JSON.stringify(v))}catch{}
+      try{localStorage.setItem('grotActiveVacationChart',oldActive)}catch{}
+      alert('Ошибка сохранения: '+err.message+'. Восстановите резервную копию при необходимости.');return;
+    }
+    drivers=newStaff;vacations=newVac;vacationCharts=newCharts;activeVacationChartId=chart.id;
+    pendingChartImport=null;chartImportDialog.close();selectedDriverIds=null;selectedGroups=null;
+    notice='Импортировано: '+chosen.length+' сотрудников, '+periodCount+' периодов. Проверьте нормы и расхождения в ФИО.';
+    render();
+  };
+
   document.querySelector('#archive-import-open').onclick=()=>document.querySelector('#archive-import-file').click();
   document.querySelector('#archive-import-cancel').onclick=()=>{pendingArchiveImport=null;document.querySelector('#archive-import-dialog').close()};
   document.querySelector('#archive-import-file').onchange=async e=>{
