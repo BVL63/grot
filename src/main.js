@@ -3,7 +3,7 @@ import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonal
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.154';
+const APP_VERSION='0.3.155';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -66,75 +66,131 @@ function chartGroupMin(chart,g,size){
  const raw=chart?.groupMinimums?.[g];
  return raw===undefined?Math.max(0,size-1):Number(raw);
 }
-function openGroupJournal(){
+function openGroupJournal(preferredCode=''){
  const chart=activeVacationChart();
- if(chart.allStaff){alert('Группы задаются только для отдельного графика.');return}
- const groups=chartGroups(chart),body=document.querySelector('#chart-groups-body');
- body.innerHTML=[...groups].sort((a,b)=>a[0].localeCompare(b[0],'ru',{numeric:true})).map(([g,members])=>{
-  const minimum=chartGroupMin(chart,g,members.length);
-  const desc=String(chart.groupDescriptions?.[g]||'');
-  return '<tr><td class="group-journal-num">'+escapeHtml(g)+'</td><td><input type="text" data-group-description="'+escapeHtml(g)+'" value="'+escapeHtml(desc)+'" maxlength="100" placeholder="Описание" class="group-journal-description"></td><td class="group-journal-number">'+members.length+'</td><td><input type="number" min="0" max="'+members.length+'" step="1" data-group-min="'+escapeHtml(g)+'" value="'+minimum+'" class="group-journal-min"></td></tr>';
- }).join('')||'<tr><td colspan="4">Назначьте номера групп сотрудникам в таблице графика.</td></tr>';
- const updateGroupTotals=()=>{
-  const list=[...groups];
-  document.querySelector('#chart-groups-total-staff').textContent=String(list.reduce((sum,[,members])=>sum+members.length,0));
-  document.querySelector('#chart-groups-total-min').textContent=String(list.reduce((sum,[g,members])=>sum+chartGroupMin(chart,g,members.length),0));
- };
- updateGroupTotals();
- body.querySelectorAll('[data-group-description]').forEach(input=>input.onchange=()=>{
-  const g=input.dataset.groupDescription;
-  chart.groupDescriptions={...(chart.groupDescriptions||{}),[g]:input.value.trim()};
-  saveVacationCharts();
- });
- body.querySelectorAll('[data-group-min]').forEach(input=>input.onchange=()=>{
-  const g=input.dataset.groupMin,total=groups.get(g).length,minimum=Number(input.value);
-  if(!Number.isInteger(minimum)||minimum<0||minimum>total){alert('Укажите число от 0 до '+total);input.value=chartGroupMin(chart,g,total);return}
-  chart.groupMinimums={...(chart.groupMinimums||{}),[g]:minimum};saveVacationCharts();
-  updateGroupTotals();
- });
- const assignPanel=document.querySelector('#chart-group-assign-panel');
- const assignList=document.querySelector('#chart-group-assign-list');
+ if(chart.allStaff){alert('Группы создаются только в отдельном графике.');return}
+ const dialog=document.querySelector('#chart-groups-dialog');
+ const tbody=document.querySelector('#chart-groups-body');
+ const panel=document.querySelector('#chart-group-assign-panel');
+ const form=document.querySelector('#chart-group-editor');
+ const codeInput=document.querySelector('#chart-group-code');
+ const descInput=document.querySelector('#chart-group-description');
+ const message=document.querySelector('#chart-groups-message');
  const members=drivers.filter(d=>chartContains(chart,d)&&isEligibleForYear(d,2027))
-   .sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru'));
- const drawAssignments=()=>{
-  assignList.innerHTML='<table class="group-assign-table"><thead><tr><th scope="col">✓</th><th scope="col">Сотрудник</th><th scope="col">Группа</th></tr></thead><tbody>'+members.map(d=>
-   '<tr><td><input type="checkbox" class="group-assign-check" value="'+escapeHtml(String(d.id))+'" aria-label="Выбрать '+escapeHtml(shortStaffName(d))+'"></td><td>'+escapeHtml(shortStaffName(d))+'</td><td>'+escapeHtml(chartGroup(chart,d)||'—')+'</td></tr>'
-  ).join('')+'</tbody></table>';
-  const refreshCount=()=>{document.querySelector('#chart-group-assign-status').textContent='Выбрано: '+assignList.querySelectorAll('.group-assign-check:checked').length};
-  refreshCount();
-  assignList.querySelectorAll('.group-assign-check').forEach(input=>{
-   input.onchange=refreshCount;
-   input.onclick=()=>requestAnimationFrame(refreshCount);
-  });
+  .sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru'));
+ const explicit=Array.isArray(chart.groupDefinitions)?chart.groupDefinitions:[];
+ // Preserve existing groups created under the former per-person workflow.
+ const codes=[...new Set([...explicit.map(x=>String(x.code||'').trim()),...chartGroups(chart).keys()])].filter(Boolean)
+  .sort((a,b)=>a.localeCompare(b,'ru',{numeric:true}));
+ let selected=codes.includes(preferredCode)?preferredCode:(codes[0]||'');
+ let editingCode=null;
+ const definitions=()=>codes.map(code=>({
+  code,description:String(chart.groupDescriptions?.[code]||explicit.find(x=>String(x.code)===code)?.description||'')
+ }));
+ const refreshTotals=()=>{
+  const groups=chartGroups(chart);
+  document.querySelector('#chart-groups-total-staff').textContent=String([...groups.values()].reduce((n,people)=>n+people.length,0));
+  document.querySelector('#chart-groups-total-min').textContent=String(codes.reduce((n,code)=>n+chartGroupMin(chart,code,(groups.get(code)||[]).length),0));
  };
- drawAssignments();
+ const renderJournal=()=>{
+  const groups=chartGroups(chart);
+  tbody.innerHTML=definitions().map(({code,description})=>{
+   const count=(groups.get(code)||[]).length,min=chartGroupMin(chart,code,count);
+   return '<tr class="group-journal-choice'+(code===selected?' is-selected':'')+'" data-chart-group="'+escapeHtml(code)+'">'+
+    '<td class="group-journal-num">'+escapeHtml(code)+'</td><td>'+escapeHtml(description||'—')+'</td>'+
+    '<td class="group-journal-number">'+count+'</td><td><input class="group-journal-min" type="number" data-group-min="'+escapeHtml(code)+'" min="0" max="'+count+'" step="1" value="'+min+'" aria-label="Должно работать, группа '+escapeHtml(code)+'"></td></tr>';
+  }).join('')||'<tr><td colspan="4">Групп нет. Нажмите «Добавить группу».</td></tr>';
+  tbody.querySelectorAll('[data-chart-group]').forEach(row=>row.onclick=e=>{
+   if(e.target.closest('input,button'))return;
+   selected=row.dataset.chartGroup;
+   renderJournal();
+   if(!panel.hidden)drawMembers();
+  });
+  tbody.querySelectorAll('[data-group-min]').forEach(input=>input.onchange=()=>{
+   const code=input.dataset.groupMin,count=(groups.get(code)||[]).length,v=Number(input.value);
+   if(!Number.isInteger(v)||v<0||v>count){alert('Укажите число от 0 до '+count);input.value=chartGroupMin(chart,code,count);return}
+   chart.groupMinimums={...(chart.groupMinimums||{}),[code]:v};
+   saveVacationCharts();refreshTotals();
+  });
+  document.querySelector('#chart-group-assign-open').disabled=!selected;
+  document.querySelector('#chart-group-edit-open').disabled=!selected;
+  refreshTotals();
+ };
+ const list=document.querySelector('#chart-group-assign-list');
+ const refreshChecked=()=>{document.querySelector('#chart-group-assign-status').textContent='Выбрано: '+list.querySelectorAll('.group-assign-check:checked').length};
+ const drawMembers=()=>{
+  if(!selected){panel.hidden=true;return}
+  document.querySelector('#chart-group-selected-label').textContent='Группа '+selected+' · '+(definitions().find(x=>x.code===selected)?.description||'');
+  list.innerHTML='<table class="group-assign-table"><thead><tr><th>✓</th><th>Сотрудник</th><th>Текущая группа</th></tr></thead><tbody>'+
+   members.map(d=>{
+    const active=chartGroup(chart,d)===selected;
+    return '<tr><td><input class="group-assign-check" type="checkbox" value="'+escapeHtml(String(d.id))+'" '+(active?'checked':'')+' aria-label="Выбрать '+escapeHtml(shortStaffName(d))+'"></td>'+
+     '<td>'+escapeHtml(shortStaffName(d))+'</td><td>'+escapeHtml(chartGroup(chart,d)||'—')+'</td></tr>';
+   }).join('')+'</tbody></table>';
+  list.querySelectorAll('.group-assign-check').forEach(input=>input.onchange=refreshChecked);
+  refreshChecked();
+ };
+ document.querySelector('#chart-group-add-open').onclick=()=>{
+  editingCode=null;form.hidden=false;panel.hidden=true;
+  codeInput.value='';descInput.value='';codeInput.disabled=false;
+  document.querySelector('#chart-group-save').textContent='Добавить';
+  message.textContent='';codeInput.focus();
+ };
+ document.querySelector('#chart-group-edit-open').onclick=()=>{
+  if(!selected)return;
+  editingCode=selected;form.hidden=false;panel.hidden=true;
+  codeInput.value=selected;codeInput.disabled=true;
+  descInput.value=definitions().find(x=>x.code===selected)?.description||'';
+  document.querySelector('#chart-group-save').textContent='Сохранить';
+  message.textContent='';descInput.focus();
+ };
+ document.querySelector('#chart-group-cancel').onclick=()=>{form.hidden=true;message.textContent=''};
+ document.querySelector('#chart-group-save').onclick=()=>{
+  const code=codeInput.value.trim(),description=descInput.value.trim();
+  if(!code||code.length>30){message.textContent='Укажите код группы (до 30 символов).';return}
+  if(!description){message.textContent='Укажите описание группы.';return}
+  if(!editingCode&&codes.includes(code)){message.textContent='Группа с таким кодом уже есть.';return}
+  const oldDefinitions=chart.groupDefinitions,oldDescriptions=chart.groupDescriptions;
+  chart.groupDefinitions=[...definitions().filter(x=>x.code!==code),{code,description}];
+  chart.groupDescriptions={...(chart.groupDescriptions||{}),[code]:description};
+  try{saveVacationCharts()}catch(err){
+   chart.groupDefinitions=oldDefinitions;chart.groupDescriptions=oldDescriptions;
+   message.textContent='Ошибка сохранения: '+err.message;return;
+  }
+  if(!codes.includes(code))codes.push(code);
+  codes.sort((a,b)=>a.localeCompare(b,'ru',{numeric:true}));
+  selected=code;form.hidden=true;renderJournal();
+ };
  document.querySelector('#chart-group-assign-open').onclick=()=>{
-  assignPanel.hidden=!assignPanel.hidden;
-  if(!assignPanel.hidden)document.querySelector('#chart-group-assign-number').focus();
+  if(!selected)return;
+  form.hidden=true;panel.hidden=false;drawMembers();
  };
  document.querySelector('#chart-group-select-all').onclick=()=>{
-  assignList.querySelectorAll('.group-assign-check').forEach(x=>x.checked=true);
-  document.querySelector('#chart-group-assign-status').textContent='Выбрано: '+members.length;
+  list.querySelectorAll('.group-assign-check').forEach(x=>x.checked=true);refreshChecked();
  };
  document.querySelector('#chart-group-select-none').onclick=()=>{
-  assignList.querySelectorAll('.group-assign-check').forEach(x=>x.checked=false);
-  document.querySelector('#chart-group-assign-status').textContent='Выбрано: 0';
+  list.querySelectorAll('.group-assign-check').forEach(x=>x.checked=false);refreshChecked();
  };
  document.querySelector('#chart-group-assign-apply').onclick=()=>{
-  const ids=[...assignList.querySelectorAll('.group-assign-check:checked')].map(x=>x.value);
-  const group=document.querySelector('#chart-group-assign-number').value.trim();
-  if(!ids.length){alert('Сначала отметьте сотрудников.');return}
-  if(group.length>30){alert('Номер группы — не более 30 символов.');return}
-  if(!confirm('Назначить группу '+(group||'«без группы»')+' выбранным сотрудникам ('+ids.length+') в графике «'+chart.name+'»?'))return;
-  const previous={...(chart.groupAssignments||{})};
-  chart.groupAssignments={...previous};
-  for(const id of ids)chart.groupAssignments[id]=group;
-  try{saveVacationCharts()}catch(err){chart.groupAssignments=previous;alert('Не удалось сохранить: '+err.message);return}
-  assignPanel.hidden=true;
-  openGroupJournal();
-  notice='Группа '+(group||'«без группы»')+' назначена '+ids.length+' сотрудникам графика «'+chart.name+'».';
+  if(!selected)return;
+  const checked=new Set([...list.querySelectorAll('.group-assign-check:checked')].map(x=>x.value));
+  const changes=members.filter(d=>checked.has(String(d.id))!==(chartGroup(chart,d)===selected));
+  const moving=members.filter(d=>checked.has(String(d.id))&&chartGroup(chart,d)!==selected&&chartGroup(chart,d));
+  if(!changes.length){panel.hidden=true;return}
+  if(moving.length&&!confirm('У '+moving.length+' выбранных сотрудников уже назначена другая группа. Перенести их в группу '+selected+'?'))return;
+  const before={...(chart.groupAssignments||{})};
+  chart.groupAssignments={...before};
+  for(const d of members){
+   const id=String(d.id);
+   if(checked.has(id))chart.groupAssignments[id]=selected;
+   else if(chartGroup(chart,d)===selected)chart.groupAssignments[id]='';
+  }
+  try{saveVacationCharts()}catch(err){chart.groupAssignments=before;alert('Ошибка сохранения: '+err.message);return}
+  panel.hidden=true;renderJournal();
+  notice='Состав группы '+selected+' сохранён в графике «'+chart.name+'».';
  };
- const dialog=document.querySelector('#chart-groups-dialog');
+ form.hidden=true;panel.hidden=true;
+ renderJournal();
  if(!dialog.open)dialog.showModal();
 }
 function vacationChartOpen(){
@@ -1040,7 +1096,7 @@ function render() {
     <dialog id="filter-dialog"><h2 id="filter-title">Фильтр</h2><div class="filter-actions"><button type="button" id="filter-all">Выбрать все</button><button type="button" id="filter-none">Снять все</button></div><div id="filter-options"></div><div class="actions"><button type="button" id="filter-cancel">Отмена</button><button type="button" id="filter-apply">Применить</button></div></dialog>
     <dialog id="structure-dialog" class="structure-dialog"><h2>Структура предприятия</h2><button type="button" id="structure-dialog-x" class="structure-dialog-top-close" aria-label="Закрыть структуру предприятия" title="Закрыть">×</button><div class="staff-toolbar structure-toolbar"><button type="button" id="structure-add">＋ Добавить</button><button type="button" id="structure-edit"><span class="grot-pencil-right" aria-hidden="true">✎</span> Изменить</button><button type="button" id="structure-delete">Удалить</button><button type="button" id="structure-assign">Выбрать сотрудников</button><button type="button" id="structure-new-employee">＋ Новый сотрудник</button></div><div id="structure-tree"></div><p id="structure-current" class="muted"></p></dialog><dialog id="structure-card-dialog" class="structure-dialog"><h2 id="structure-card-title">Структурное звено</h2><button type="button" id="structure-card-x" class="structure-dialog-top-close" aria-label="Закрыть карточку" title="Закрыть">×</button><form id="structure-card-form"><div class="structure-fields"><label>Тип<select id="structure-card-type"></select></label><label>Наименование<input id="structure-card-name" required></label><label>Код<input id="structure-card-code"></label><label>Вышестоящее подразделение<input id="structure-card-parent" disabled></label><label>Должность руководителя<input id="structure-card-title-position"></label><label>Руководитель<span class="structure-leader-picker"><select id="structure-card-leader" hidden aria-hidden="true" tabindex="-1"></select><button type="button" id="structure-card-leader-open" class="structure-leader-open"><span id="structure-card-leader-label">Не назначен</span><span aria-hidden="true">⌕</span></button></span></label></div><div class="actions"><button type="button" id="structure-card-edit" hidden>Редактировать</button><button type="button" id="structure-card-delete" hidden>Удалить</button><button type="button" id="structure-card-cancel">Закрыть</button><button type="submit" id="structure-card-save">Записать и закрыть</button></div></form></dialog><dialog id="structure-leader-dialog" class="structure-dialog structure-leader-dialog"><h2>Выбор руководителя</h2><label for="structure-leader-search">Поиск сотрудника</label><input id="structure-leader-search" type="search" placeholder="Введите фамилию или имя" autocomplete="off"><div id="structure-leader-list" class="structure-leader-list"></div><div class="actions"><button type="button" id="structure-leader-cancel">Закрыть</button></div></dialog>
 <dialog id="structure-assign-dialog" class="structure-dialog"><h2 id="structure-assignment-title">Добавить сотрудников</h2><p class="muted">Отметьте сотрудников для выбранного звена. Снятие отметки открепит сотрудника от него. Отпуска сохраняются.</p><div class="structure-assign-search-row"><label for="structure-assign-search">Поиск</label><input type="search" id="structure-assign-search" placeholder="Фамилия или подразделение" autocomplete="off"><span id="structure-assign-count"></span></div><div id="structure-employees"></div><div class="actions"><button type="button" id="structure-assign-cancel">Отмена</button><button type="button" id="structure-assign-save">Сохранить</button></div></dialog>
-<dialog id="chart-groups-dialog" class="structure-dialog"><h2>Журнал групп · 2027</h2><button type="button" id="chart-groups-close-x" class="chart-groups-close-x" title="Закрыть" aria-label="Закрыть журнал групп">×</button><p class="muted">Численность рассчитывается из состава этого графика. Минимум работающих устанавливается отдельно для каждой группы.</p><table class="staff-table"><thead><tr><th title="Номер группы">Гр.</th><th>Описание</th><th title="Количество сотрудников">Кол-во</th><th title="Минимум работающих">Мин.</th></tr></thead><tbody id="chart-groups-body"></tbody><tfoot><tr class="group-journal-total"><th colspan="2" scope="row">Итого</th><td id="chart-groups-total-staff">0</td><td id="chart-groups-total-min">0</td></tr></tfoot></table><div class="group-assignment-toolbar"><button type="button" id="chart-group-assign-open">Выбрать сотрудников</button><button type="button" id="chart-groups-close">Закрыть</button></div><div id="chart-group-assign-panel" class="group-assignment-panel" hidden><div class="group-assignment-actions"><button type="button" id="chart-group-select-all">Все</button><button type="button" id="chart-group-select-none">Снять выбор</button><span id="chart-group-assign-status">Выбрано: 0</span></div><div id="chart-group-assign-list" class="group-assignment-list"></div><div class="group-assignment-apply"><label>Группа <input id="chart-group-assign-number" maxlength="30" placeholder="Например, 1 или 9.1"></label><button type="button" id="chart-group-assign-apply">Присвоить выбранным</button></div><p class="muted">Чтобы снять группу, оставьте номер пустым. Изменения касаются только этого графика.</p></div></dialog><dialog id="group-conflict-dialog" class="structure-dialog group-conflict-dialog"><h2 id="group-conflict-heading">Нарушения численности</h2><p id="group-conflict-summary"></p><div class="group-conflict-scroll"><table class="staff-table"><thead><tr><th>Период</th><th>В отпуске</th><th>Работают</th></tr></thead><tbody id="group-conflict-rows"></tbody></table></div><div class="actions"><button type="button" id="group-conflict-close">Закрыть</button></div></dialog><dialog id="group-edit-dialog" class="group-edit-dialog"><form id="group-edit-form"><h2>Группа отпусков</h2><p id="group-edit-person"></p><label>Номер группы <input type="text" id="group-edit-input" maxlength="30" autocomplete="off" placeholder="Например, 2 или 9.1"></label><p class="muted">Пустое значение означает отсутствие группы.</p><p id="group-edit-error" role="alert"></p><div class="actions"><button type="submit">Сохранить</button><button type="button" id="group-edit-cancel">Отмена</button></div></form></dialog>
+<dialog id="chart-groups-dialog" class="structure-dialog"><h2>Журнал групп · 2027</h2><button type="button" id="chart-groups-close-x" class="chart-groups-close-x" title="Закрыть" aria-label="Закрыть журнал групп">×</button><p class="muted">Сначала создайте группу, затем выберите её сотрудников. Численность считается автоматически.</p><table class="staff-table"><thead><tr><th>Код</th><th>Описание</th><th>Кол-во</th><th>Мин.</th></tr></thead><tbody id="chart-groups-body"></tbody><tfoot><tr class="group-journal-total"><th colspan="2" scope="row">Итого</th><td id="chart-groups-total-staff">0</td><td id="chart-groups-total-min">0</td></tr></tfoot></table><div class="group-assignment-toolbar"><button type="button" id="chart-group-add-open">＋ Добавить группу</button><button type="button" id="chart-group-edit-open">Изменить</button><button type="button" id="chart-group-assign-open">Сотрудники</button><button type="button" id="chart-groups-close">Закрыть</button></div><div id="chart-group-editor" class="group-editor-panel" hidden><label>Код <input id="chart-group-code" maxlength="30" autocomplete="off" placeholder="Например, 9.1"></label><label>Описание <input id="chart-group-description" maxlength="100" autocomplete="off" placeholder="Название группы"></label><div class="group-assignment-actions"><button type="button" id="chart-group-save">Добавить</button><button type="button" id="chart-group-cancel">Отмена</button></div><p id="chart-groups-message" role="alert"></p></div><div id="chart-group-assign-panel" class="group-assignment-panel" hidden><h3 id="chart-group-selected-label"></h3><div class="group-assignment-actions"><button type="button" id="chart-group-select-all">Все</button><button type="button" id="chart-group-select-none">Снять выбор</button><span id="chart-group-assign-status">Выбрано: 0</span></div><div id="chart-group-assign-list" class="group-assignment-list"></div><div class="group-assignment-apply"><button type="button" id="chart-group-assign-apply">Сохранить состав группы</button></div><p class="muted">Галочками отмечены сотрудники этой группы. Снятие галочки исключает сотрудника из группы. Выбор сотрудника другой группы переносит его в текущую.</p></div></dialog><dialog id="group-conflict-dialog" class="structure-dialog group-conflict-dialog"><h2 id="group-conflict-heading">Нарушения численности</h2><p id="group-conflict-summary"></p><div class="group-conflict-scroll"><table class="staff-table"><thead><tr><th>Период</th><th>В отпуске</th><th>Работают</th></tr></thead><tbody id="group-conflict-rows"></tbody></table></div><div class="actions"><button type="button" id="group-conflict-close">Закрыть</button></div></dialog><dialog id="group-edit-dialog" class="group-edit-dialog"><form id="group-edit-form"><h2>Группа отпусков</h2><p id="group-edit-person"></p><label>Номер группы <input type="text" id="group-edit-input" maxlength="30" autocomplete="off" placeholder="Например, 2 или 9.1"></label><p class="muted">Пустое значение означает отсутствие группы.</p><p id="group-edit-error" role="alert"></p><div class="actions"><button type="submit">Сохранить</button><button type="button" id="group-edit-cancel">Отмена</button></div></form></dialog>
 <dialog id="vacation-charts-dialog"><h2>Графики отпусков · 2027</h2><table class="staff-table"><thead><tr><th>Название</th><th>Год</th><th>Сотрудников</th><th></th></tr></thead><tbody id="vacation-charts-list"></tbody></table><div class="actions"><button type="button" id="vacation-chart-add">＋ Добавить</button><button type="button" id="vacation-charts-close">Закрыть</button></div></dialog><dialog id="vacation-chart-members-dialog" class="chart-composition-dialog"><h2>Состав графика</h2><label class="chart-composition-name">Название графика <input id="vacation-chart-edit-name" maxlength="120"></label><p class="muted">Выберите нужные структурные звенья. Сотрудники этих отделов включаются автоматически, включая вновь добавленных.</p><div id="chart-structure-units" class="chart-composition-units"></div><p id="chart-composition-summary" class="chart-composition-summary"></p><details class="chart-composition-special"><summary>Исключения и отдельные сотрудники</summary><p class="muted">Поиск по фамилии — только если требуется добавить или исключить конкретного сотрудника.</p><input id="chart-composition-search" placeholder="Введите первые буквы фамилии" autocomplete="off"><div id="chart-composition-matches"></div><div id="chart-composition-overrides"></div></details><p id="chart-composition-error" role="alert"></p><div class="actions"><button type="button" id="vacation-chart-save">Сохранить</button><button type="button" id="vacation-chart-cancel">Отмена</button></div></dialog><dialog id="positions-dialog"><h2>Справочник должностей</h2><div id="positions-list" style="max-height:50vh;overflow:auto"></div><div style="display:flex;gap:8px"><input id="positions-new" placeholder="Новая должность" maxlength="120"><button type="button" id="positions-add">Добавить</button></div><div class="actions"><button type="button" id="positions-close">Закрыть</button></div></dialog><dialog id="staff-dialog"><h2>Справочник сотрудников</h2><button type="button" id="staff-close" class="staff-dialog-top-close" title="Закрыть" aria-label="Закрыть">×</button>
       <div class="staff-toolbar"><button type="button" id="staff-add" title="Добавить сотрудника" aria-label="Добавить сотрудника">＋</button><button type="button" id="staff-view" title="Просмотр" aria-label="Просмотр" disabled>◎</button><button type="button" id="staff-edit" title="Изменить" aria-label="Изменить" disabled><span class="grot-pencil-right" aria-hidden="true">✎</span></button><button type="button" id="staff-delete" title="Удалить" aria-label="Удалить" disabled>⌫</button><button type="button" id="staff-import-2026" title="Загрузить из 2026 года" aria-label="Загрузить из 2026 года">⇩</button><span class="staff-toolbar-hint" id="staff-selected-label">Выберите сотрудника</span></div><div class="staff-search-row"><label for="staff-search">Поиск</label><input id="staff-search" type="search" placeholder="Фамилия, имя, должность, подразделение или группа" autocomplete="off"><button type="button" id="staff-search-clear" title="Очистить поиск" aria-label="Очистить поиск">×</button><label class="staff-dismissed-filter" title="Показать в списке также уволенных сотрудников"><input type="checkbox" id="staff-show-dismissed"> Показывать уволенных</label><span id="staff-search-count"></span></div><div id="staff-list"></div>
     </dialog>
