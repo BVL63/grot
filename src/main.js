@@ -4,7 +4,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.170';
+const APP_VERSION='0.3.171';
 import grotLogo from '../IMG_0637.jpeg';
 
 const app = document.querySelector('#app');
@@ -1871,7 +1871,7 @@ function render() {
     updateCount();
     updateEditorMode();
     if(saved.error)document.querySelector('#form-error').textContent=saved.error;
-    dialog.showModal();
+    if(!dialog.open)dialog.showModal();
     return true;
   }
   document.querySelector('#staff-card-close').onclick=()=>{
@@ -2196,7 +2196,8 @@ function render() {
         end:document.querySelector('#end').value,
         error:document.querySelector('#form-error').textContent
       };
-      dialog.close();
+      // Keep the vacation editor mounted and open behind the staff card.
+      // Stacked modal dialogs return focus to the editor when the card closes.
       openStaffCard(staff);
     };
   }
