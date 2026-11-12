@@ -1901,13 +1901,16 @@ function render() {
     saveStaff();
     document.querySelector('#staff-card').close();
     if(fromStructure)document.querySelector('#structure-dialog').close();
-    render();drawStaff();
     if(vacationStaffReturn){
+      // Keep the mounted editor and its closures intact until the draft is restored.
       restoreVacationFromStaff();
-    }else if(fromStructure){
+    }else{
+      render();drawStaff();
+      if(fromStructure){
       document.querySelector('#structure-tree').dataset.selectedId=selectedStructureId;
       structureOpen();
-    }else document.querySelector('#staff-dialog').showModal();
+      }else document.querySelector('#staff-dialog').showModal();
+    }
   };
   let pendingCalendar=null;
   document.querySelector('#calendar-open').onclick=()=>document.querySelector('#calendar-dialog').showModal();
