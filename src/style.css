@@ -2502,3 +2502,12 @@ html,body{height:100%;overflow:hidden}
  max-width:calc(100% - 24px)!important;
  text-overflow:ellipsis!important;overflow:hidden!important;white-space:nowrap!important;
 }
+
+/* GROT 0.3.186 — first-year leave warning and agreement */
+#editor #early-leave-control[hidden]{display:none!important}
+#editor .early-leave-control{font-size:12px;line-height:1.25;margin:4px 0 0;color:#9a570b;flex:0 0 auto}
+#editor .early-leave-warning{display:block;font-weight:600}
+#editor .early-leave-check{display:flex;flex-direction:row;align-items:center;gap:6px;margin:3px 0 0;padding:0;color:#18466e;cursor:pointer;font-size:12px}
+#editor .early-leave-check input{width:16px;height:16px;flex:0 0 16px;margin:0;padding:0}
+#editor .editor-summary-panel:has(.early-leave-control:not([hidden])){height:auto!important;min-height:174px!important;max-height:235px!important;overflow:visible!important}
+@media(max-width:740px){#editor .early-leave-control,#editor .early-leave-check{font-size:11px}}
