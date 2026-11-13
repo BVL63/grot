@@ -64,7 +64,8 @@ function buildMonthCells(row){
  // Сначала резервируем месяцы однозначных длинных периодов.
  entries.sort((a,b)=>b.span-a.span||a.first-b.first);
  for(const entry of entries){
-  if(entry.span>1&&entry.all.every(m=>!reservations.has(m.month))){
+  if(entry.span>1&&entry.all.every(m=>!reservations.has(m.month))&&
+   !entries.some(other=>other!==entry&&other.all.some(m=>m.month>=entry.first&&m.month<=entry.last))){
    entry.merged=true;
    for(const m of entry.all)reservations.add(m.month);
   }
