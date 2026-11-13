@@ -1,10 +1,11 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
+import { readAnnualVacationRecords } from './yearRecords.js';
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.198';
+const APP_VERSION='0.3.199';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -917,7 +918,7 @@ function printStaffDepartmentCode(d){
 }
 function printMonthlyVacationChart(year=displayYear){
  const chart=activeVacationChart(),esc=escapeHtml;
- const historic=year<=2026?loadHistory().filter(p=>Number(p.year)===year):[];
+ const historic=year<=2026?yearLeaveRecords(year):[];
  const archiveMembers=year<=2026?[...new Set(historic.map(p=>p.driver).filter(Boolean))].map((name,i)=>({id:'history-'+i,name,position:'',department:'',historicalPeriods:historic.filter(p=>p.driver===name)})):[];
  const members=(year<=2026?archiveMembers:drivers.filter(d=>(chartContains(chart,d))&&isEligibleForYear(d,2027))).sort((a,b)=>{
   if(year<=2026)return shortStaffName(a).localeCompare(shortStaffName(b),'ru');
@@ -1029,10 +1030,14 @@ function preserveYearHeader(previousHeader){
  if(picker)picker.value=String(displayYear);
  refreshHeaderOrganization();
 }
+// All annual views use the same read-only period shape; legacy browser keys remain unchanged.
+function yearLeaveRecords(year){
+ return readAnnualVacationRecords(year,{current:vacations,historical:loadHistory(),staff:drivers});
+}
 function renderHistory2026(){
  const previousHeader=app.querySelector('.grot-header');
  const archiveYear=displayYear;
- const entries=loadHistory().filter(p=>Number(p.year)===archiveYear);
+ const entries=yearLeaveRecords(archiveYear);
  const names=[...new Set(entries.map(p=>p.driver))];
  const groups={'Бахметьев':'8','Винник':'8','Данилюк':'9.1','Дунаев':'9.1','Илюхин':'9','Каминик':'11','Карнацкий':'8','Киселев':'1','Кулеш':'11','Ломов':'9','Мальцев':'9.1','Шпаков':'1'};
  names.sort((a,b)=>String(groups[a]||'').localeCompare(String(groups[b]||''),'ru',{numeric:true})||a.localeCompare(b,'ru'));
