@@ -4,7 +4,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.191';
+const APP_VERSION='0.3.192';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -353,7 +353,7 @@ function vacationChartEdit(id,membersOnly=false){
   }).join('')||'<p class="muted">Исключений нет</p>';
   overrides.querySelectorAll('[data-override-clear]').forEach(btn=>btn.onclick=()=>{includes.delete(btn.dataset.overrideClear);excludes.delete(btn.dataset.overrideClear);refresh()});
   const query=search.value.trim().toLocaleLowerCase('ru');
-  matches.innerHTML=query.length<2?'':drivers.filter(d=>(shortStaffName(d)+' '+d.name+' '+d.department).toLocaleLowerCase('ru').includes(query))
+  matches.innerHTML=query.length<2?'':drivers.filter(d=>(shortStaffName(d)+' '+d.name+' '+currentStaffWorkplace(d)).toLocaleLowerCase('ru').includes(query))
    .sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).slice(0,12)
    .map(d=>{
     const active=ids.has(String(d.id));
@@ -544,6 +544,11 @@ function structureWorkplace(id){
  if(!id)return '';
  return structureAncestors(id).filter(node=>node.type!=='organization').map(node=>node.name).join(' → ');
 }
+// Current workplace is derived from the organizational structure.
+// Legacy department text remains only as a fallback for employees without a valid link.
+function currentStaffWorkplace(staff){
+ return structureWorkplace(staff?.structureId)||staff?.department||'';
+}
 function structureEnsureOrganization(){
  const org=readOrganization();
  let roots=structureNodes.filter(n=>n.type==='organization');
@@ -657,7 +662,7 @@ function structureAssignOpen(){
  const n=structureSelected();if(!n){alert('Выберите подразделение, отдел или бригаду.');return}
  if(n.type==='organization'){alert('Выберите подразделение, отдел или бригаду.');return}
  const box=document.querySelector('#structure-employees');
- box.innerHTML=[...drivers].sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).map(d=>{const hierarchy=d.structureId?structureAncestors(d.structureId).filter(node=>node.type!=='organization').map(node=>node.name):[];const location=hierarchy.length?hierarchy.join(' → '):(d.department||'Не закреплён за структурным звеном');return '<label class="structure-person"><input type="checkbox" value="'+structureEscape(d.id)+'" '+(d.structureId===n.id?'checked':'')+'><span class="structure-person-info"><span class="structure-person-name">'+structureEscape(shortStaffName(d)+(d.position?' — '+d.position:''))+'</span><small>'+structureEscape(location)+'</small></span></label>';}).join('');
+ box.innerHTML=[...drivers].sort((a,b)=>shortStaffName(a).localeCompare(shortStaffName(b),'ru')).map(d=>{const hierarchy=d.structureId?structureAncestors(d.structureId).filter(node=>node.type!=='organization').map(node=>node.name):[];const location=hierarchy.length?hierarchy.join(' → '):(currentStaffWorkplace(d)||'Не закреплён за структурным звеном');return '<label class="structure-person"><input type="checkbox" value="'+structureEscape(d.id)+'" '+(d.structureId===n.id?'checked':'')+'><span class="structure-person-info"><span class="structure-person-name">'+structureEscape(shortStaffName(d)+(d.position?' — '+d.position:''))+'</span><small>'+structureEscape(location)+'</small></span></label>';}).join('');
  const search=document.querySelector('#structure-assign-search');search.value='';
  document.querySelector('#structure-assign-count').textContent=drivers.length+' из '+drivers.length;
  document.querySelector('#structure-assignment-title').textContent='Сотрудники: '+n.name;
@@ -671,10 +676,9 @@ function structureAssignSave(){
  const departmentName=structureWorkplace(n.id)||division?.name||n.name;
  for(const d of drivers){
    if(ids.has(String(d.id))){
-     // One source of truth: structureId determines the code in the staff card.
-     // Department is copied to the employee directory on assignment.
+     // Keep the structure link as the authoritative current workplace.
      d.structureId=n.id;
-     d.department=departmentName;
+     d.department='';
    }else if(String(d.structureId||'')===String(n.id)){
      // Removing an employee from this unit must not leave its old department.
      d.structureId=null;
@@ -857,7 +861,7 @@ function dateAt(day) {
 }
 function personnelExportRows(){
  return drivers.flatMap(d=>periodsFor(d.id).map((p,i)=>({
-  department:d.department||'',name:[d.lastName,d.firstName,d.middleName].filter(Boolean).join(' ')||d.name||'',
+  department:currentStaffWorkplace(d),name:[d.lastName,d.firstName,d.middleName].filter(Boolean).join(' ')||d.name||'',
   position:d.position||'Водитель автомобиля',personnel:d.personnelNumber||d.tabNumber||'',
   group:chartGroup(activeVacationChart(),d),days:leaveDays(p.start,p.end),start:displayDate(p.start),end:displayDate(p.end),
   part:i+1
@@ -879,7 +883,7 @@ function printGroupOverlaps(){
   if(!String(a.group||'').trim()||String(a.group||'').trim()!==String(b.group||'').trim())continue;
   for(const pa of periodsFor(Number(a.id)))for(const pb of periodsFor(Number(b.id))){
    const start=pa.start>pb.start?pa.start:pb.start,end=pa.end<pb.end?pa.end:pb.end;
-   if(start<=end)matches.push({department:a.department||'—',group:a.group||'—',a:shortStaffName(a),b:shortStaffName(b),start,end,days:leaveDays(start,end)});
+   if(start<=end)matches.push({department:currentStaffWorkplace(a)||'—',group:a.group||'—',a:shortStaffName(a),b:shortStaffName(b),start,end,days:leaveDays(start,end)});
   }
  }
  matches.sort((a,b)=>a.department.localeCompare(b.department,'ru')||String(a.group).localeCompare(String(b.group),'ru',{numeric:true})||a.start.localeCompare(b.start)||a.a.localeCompare(b.a,'ru'));
@@ -1720,10 +1724,13 @@ function render() {
     form.dataset.fromStructure=structureId?'1':'0';
     document.querySelector('#staff-id').value=d?.id||'';
     document.querySelector('#staff-card-title').textContent=d?'Карточка сотрудника':'Новый сотрудник';
-    if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=structureWorkplace(d.structureId)||d.department||'';document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-position').value=d.position||'';document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
+    if(d){const p=staffParts(d);document.querySelector('#staff-last').value=p.last;document.querySelector('#staff-first').value=p.first;document.querySelector('#staff-middle').value=p.middle;document.querySelector('#staff-department').value=currentStaffWorkplace(d);document.querySelector('#staff-group').value=d.group;document.querySelector('#staff-position').value=d.position||'';document.querySelector('#staff-hired').value=d.hireDate||'';document.querySelector('#staff-dismissal').value=d.dismissalDate||'';document.querySelector('#staff-dismissed').checked=Boolean(d.dismissed);}
     showDisplayedLeaveYear();
     const effectiveStructureId=structureId||d?.structureId;document.querySelector('#staff-structure-code').value=structureNodes.find(n=>n.id===effectiveStructureId)?.code||'';
-    if(structureId){document.querySelector('#staff-department').value=structureWorkplace(structureId)||'';}
+    const linkedWorkplace=structureWorkplace(effectiveStructureId);
+    if(linkedWorkplace)document.querySelector('#staff-department').value=linkedWorkplace;
+    document.querySelector('#staff-department').readOnly=Boolean(linkedWorkplace);
+    document.querySelector('#staff-department').title=linkedWorkplace?'Место работы определяется структурой предприятия. Для изменения используйте справочник «Структура предприятия».':'Место работы сотрудника без привязки к структуре';
     redrawDayOperations();
     document.querySelector('#staff-dialog').close();document.querySelector('#staff-card').showModal();
   }
@@ -1736,10 +1743,10 @@ function render() {
   function drawStaff(){
     const query=document.querySelector('#staff-search').value.trim().toLocaleLowerCase('ru');
     const showDismissed=document.querySelector('#staff-show-dismissed').checked;
-    const sorted=[...drivers].filter(d=>(showDismissed||!(d.dismissed||d.dismissalDate))&&(!query||[shortStaffName(d),d.lastName,d.firstName,d.middleName,d.position,d.department,d.group].some(v=>String(v||'').toLocaleLowerCase('ru').includes(query)))).sort((a,b)=>Number(Boolean(a.dismissed||a.dismissalDate))-Number(Boolean(b.dismissed||b.dismissalDate))||compareGroupAndName(a,b));
+    const sorted=[...drivers].filter(d=>(showDismissed||!(d.dismissed||d.dismissalDate))&&(!query||[shortStaffName(d),d.lastName,d.firstName,d.middleName,d.position,currentStaffWorkplace(d),d.group].some(v=>String(v||'').toLocaleLowerCase('ru').includes(query)))).sort((a,b)=>Number(Boolean(a.dismissed||a.dismissalDate))-Number(Boolean(b.dismissed||b.dismissalDate))||compareGroupAndName(a,b));
     document.querySelector('#staff-search-count').textContent=sorted.length+' из '+drivers.length;
     if(selectedStaffId!==null&&!sorted.some(d=>d.id===selectedStaffId))selectedStaffId=null;
-    document.querySelector('#staff-list').innerHTML='<div class="staff-table-scroll"><table class="staff-table"><thead><tr><th>№</th><th>Фамилия И.О.</th><th>Подразделение</th><th>Дней отпуска</th></tr></thead><tbody>'+sorted.map((d,i)=>'<tr data-staff-row="'+d.id+'"><td>'+(i+1)+'</td><td><button type="button" class="staff-name-link" data-staff="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button>'+(d.dismissed||d.dismissalDate?' <small title="Сотрудник уволен" style="color:#9b4b32">Уволен</small>':'')+'</td><td>'+escapeHtml(d.department||'—')+'</td><td>'+d.allowance+'</td></tr>').join('')+'</tbody></table></div>';
+    document.querySelector('#staff-list').innerHTML='<div class="staff-table-scroll"><table class="staff-table"><thead><tr><th>№</th><th>Фамилия И.О.</th><th>Подразделение</th><th>Дней отпуска</th></tr></thead><tbody>'+sorted.map((d,i)=>'<tr data-staff-row="'+d.id+'"><td>'+(i+1)+'</td><td><button type="button" class="staff-name-link" data-staff="'+d.id+'">'+escapeHtml(shortStaffName(d))+'</button>'+(d.dismissed||d.dismissalDate?' <small title="Сотрудник уволен" style="color:#9b4b32">Уволен</small>':'')+'</td><td>'+escapeHtml(currentStaffWorkplace(d)||'—')+'</td><td>'+d.allowance+'</td></tr>').join('')+'</tbody></table></div>';
     document.querySelectorAll('[data-staff]').forEach(btn=>btn.onclick=()=>{selectedStaffId=Number(btn.dataset.staff);updateStaffSelection();});
     document.querySelectorAll('[data-staff-row]').forEach(row=>{
       row.onclick=()=>{selectedStaffId=Number(row.dataset.staffRow);updateStaffSelection();};
@@ -1918,8 +1925,10 @@ function render() {
     for(const [year,record] of Object.entries(leaveByYear))if(record.allowance>120){document.querySelector('#staff-error').textContent='Норма за '+year+' год превышает 120 дней.';return;}
     const leaveBreakdown={basic:current.basic,territory:current.territory,seniority:current.seniority,other:current.other,legacy:current.legacy};
     const activeAllowance=current.allowance;
-    if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department,group,position,allowance:activeAllowance,leaveBreakdown,leaveByYear,hireDate,dismissalDate,dismissed,dayOperations:pendingDayOperations.map(x=>({...x}))});}
-    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department,group,position,allowance:activeAllowance,leaveBreakdown,leaveByYear,hireDate,dismissalDate,dismissed,dayOperations:pendingDayOperations.map(x=>({...x})),...(e.currentTarget.dataset.structureId?{structureId:e.currentTarget.dataset.structureId}:{})});
+    const activeStructureId=e.currentTarget.dataset.structureId||drivers.find(x=>x.id===id)?.structureId||'';
+    const storedDepartment=structureWorkplace(activeStructureId)?'':department;
+    if(id){const d=drivers.find(x=>x.id===id);Object.assign(d,{name,lastName,firstName,middleName,department:storedDepartment,group,position,allowance:activeAllowance,leaveBreakdown,leaveByYear,hireDate,dismissalDate,dismissed,dayOperations:pendingDayOperations.map(x=>({...x}))});}
+    else drivers.push({id:Math.max(0,...drivers.map(d=>d.id))+1,name,lastName,firstName,middleName,department:storedDepartment,group,position,allowance:activeAllowance,leaveBreakdown,leaveByYear,hireDate,dismissalDate,dismissed,dayOperations:pendingDayOperations.map(x=>({...x})),...(e.currentTarget.dataset.structureId?{structureId:e.currentTarget.dataset.structureId}:{})});
     const fromStructure=e.currentTarget.dataset.fromStructure==='1';
     const selectedStructureId=e.currentTarget.dataset.structureId;
     saveStaff();
