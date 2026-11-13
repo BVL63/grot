@@ -3,6 +3,7 @@
  * Keeps the exact uploaded object as sourceSnapshot. NEVER writes to browser storage.
  */
 import {makeDateRange} from './vacationModelV2.js';
+import {historical2026} from './history2026.js';
 const clone=x=>JSON.parse(JSON.stringify(x));
 const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const nameOf=s=>String(s?.name||[s?.lastName,s?.firstName,s?.middleName].filter(Boolean).join(' ')).trim();
@@ -81,7 +82,7 @@ export function inspectGrotBackup(data){
        warnings.push('График «'+String(chart.name||index+1)+'»: отсутствует элемент структуры '+String(structureId));
    }
  });
- if(!hist.length)warnings.push('История отпусков пуста: нельзя восстановить из этой копии данные 2025–2026');
+ if(!hist.length)warnings.push('История отпусков в резервной копии пуста. В программе отдельно встроены '+historical2026.length+' периодов 2026 года; они не включены в этот файл и требуют отдельной сверки перед переносом.');
  if(!Object.keys(annual).length)warnings.push('В копии отсутствуют подготовленные графики будущих годов');
  const original=clone(data);
  return {
@@ -96,6 +97,7 @@ export function inspectGrotBackup(data){
    charts:Array.isArray(data.charts)?data.charts.length:0,
    structure:Array.isArray(data.structure)?data.structure.length:0,
    historical:hist.length,
+   bundledHistory2026Available:historical2026.length,
    annualYears:Object.keys(annual).length
   }
  };
