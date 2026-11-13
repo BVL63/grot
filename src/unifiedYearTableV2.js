@@ -42,12 +42,66 @@ export function buildUnifiedYearView(year,records=[],staff=[]){
  }
  return {year:y,months:MONTHS,rows:[...people.values()].sort((a,b)=>a.name.localeCompare(b.name,'ru'))};
 }
+/**
+ * На одном месяце даты располагаются вертикально.
+ * Период через несколько месяцев показываем одной объединённой ячейкой,
+ * только когда объединение не скрывает другой отпуск в тех же месяцах.
+ */
+const duration=(start,end)=>{
+ const a=Date.parse(start+'T12:00:00Z'),b=Date.parse(end+'T12:00:00Z');
+ return Number.isFinite(a)&&Number.isFinite(b)?Math.round((b-a)/86400000)+1:0;
+};
+function buildMonthCells(row){
+ const used=Array.from({length:12},()=>[]);
+ const reservations=new Set();
+ const entries=[];
+ for(const rec of row.periods){
+  const all=monthIntersections(rec,Number(rec.year));
+  if(!all.length)continue;
+  const first=all[0].month,last=all[all.length-1].month;
+  entries.push({rec,first,last,all,span:last-first+1});
+ }
+ // Сначала резервируем месяцы однозначных длинных периодов.
+ entries.sort((a,b)=>b.span-a.span||a.first-b.first);
+ for(const entry of entries){
+  if(entry.span>1&&entry.all.every(m=>!reservations.has(m.month))){
+   entry.merged=true;
+   for(const m of entry.all)reservations.add(m.month);
+  }
+ }
+ const blocks=Array.from({length:12},()=>[]);
+ const mergedByStart=new Map();
+ const occupied=new Set();
+ for(const entry of entries){
+  if(entry.merged){
+   mergedByStart.set(entry.first,entry);
+   for(const m of entry.all)occupied.add(m.month);
+  }else for(const segment of entry.all)blocks[segment.month].push({rec:entry.rec,segment});
+ }
+ const cells=[];
+ for(let m=0;m<12;){
+  const merged=mergedByStart.get(m);
+  if(merged){
+   const d=duration(merged.rec.period.start,merged.rec.period.end);
+   cells.push('<td colspan="'+merged.span+'" class="period-span"><button type="button" class="vacation-period multi-month" data-period-id="'+esc(merged.rec.id)+'">'+
+    '<span>'+dateText(merged.rec.period.start)+' – '+dateText(merged.rec.period.end)+'</span><strong>'+d+' дн.</strong></button></td>');
+   m+=merged.span;
+  }else if(occupied.has(m)){
+   // В реальном расписании этот месяц уже покрыт colspan.
+   m++;
+  }else{
+   cells.push('<td>'+blocks[m].map(p=>'<button type="button" class="vacation-period single-month" data-period-id="'+esc(p.rec.id)+'">'+
+    '<span>'+dateText(p.segment.from)+'</span><span>'+dateText(p.segment.to)+'</span>'+
+    '<strong>'+duration(p.rec.period.start,p.rec.period.end)+' дн.</strong></button>').join('')+'</td>');
+   m++;
+  }
+ }
+ return cells.join('');
+}
 export function renderUnifiedYearTable(view){
  const header=view.months.map(m=>'<th>'+esc(m)+'</th>').join('');
- const body=view.rows.map(row=>'<tr><th scope="row">'+esc(row.name)+'</th>'+row.months.map(parts=>
-  '<td>'+parts.map(p=>'<div class="vacation-period" data-period-id="'+esc(p.id)+'">'+
-  dateText(p.from)+' – '+dateText(p.to)+'<div>'+p.days+' дн.</div></div>').join('')+'</td>'
- ).join('')+'</tr>').join('');
- return '<table class="annual-table grot-unified-year"><thead><tr><th>Сотрудник</th>'+header+
+ const body=view.rows.map(row=>'<tr><th scope="row">'+esc(row.name)+'</th>'+
+  buildMonthCells(row)+'</tr>').join('');
+ return '<table class="annual-table grot-unified-year"><thead><tr><th scope="col">Сотрудник</th>'+header+
  '</tr></thead><tbody>'+body+'</tbody></table>';
 }
