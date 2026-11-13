@@ -2,6 +2,7 @@ import {buildUnifiedYearView,renderUnifiedYearTable} from './unifiedYearTableV2.
 import {addVacationPeriod,editVacationPeriod,removeVacationPeriod} from './vacationEditorV2.js';
 import {inspectPreviewImport} from './previewImportV2.js';
 import {stageBundledHistory} from './stageHistoryV2.js';
+import {queryVacationAudit} from './v2AuditJournal.js';
 import './v2Preview.css';
 
 const root=document.querySelector('#v2-root');
@@ -40,6 +41,7 @@ function draw(){
     <button id="v2-add">Добавить период</button>
     <button id="v2-import">Загрузить JSON для просмотра</button>
     <button id="v2-export">Скачать JSON</button>
+    <button id="v2-audit-open" type="button">Журнал изменений</button>
     <button id="v2-source" ${originalImport?'':'disabled'}>Исходный JSON</button>
     <span class="muted">${escapeHtml(loadedSource)} · ${dirty?'есть несохранённые изменения':'нет изменений'}</span>
    </div>
@@ -47,8 +49,15 @@ function draw(){
    <p id="v2-import-report" role="status">${escapeHtml(importReport)}</p>
    ${historyReview?`<div class="warning"><p>Встроенная история 2026: ${historyReview.total} периодов, сопоставлено по фамилии: ${historyReview.matched}, не сопоставлено: ${historyReview.unresolved}. Даты требуют проверки; это не подтверждённый факт отпуска.</p><button type="button" id="v2-stage-history">Добавить историю 2026 в тестовую копию</button></div>`:''}
    <div class="table-wrap">${renderUnifiedYearTable(buildUnifiedYearView(year,active,staff))}</div>
-   <section id="v2-history"><h2>История изменений</h2><p>Выберите период в таблице для просмотра истории.</p></section>
   </main>
+  <dialog id="v2-audit-dialog">
+   <div class="audit-header"><h2>Журнал изменений</h2><button type="button" id="v2-audit-close">Закрыть</button></div>
+   <p class="muted">Просмотр по запросу. Не влияет на ввод отпусков.</p>
+   <div class="audit-filters"><label>Год <select id="v2-audit-year"><option value="all">Все годы</option>${years.map(y=>`<option value="${y}" ${y===year?'selected':''}>${y}</option>`).join('')}</select></label>
+   <label>Сотрудник <input type="search" id="v2-audit-search" placeholder="Поиск по ФИО"></label></div>
+   <p id="v2-audit-count" class="muted"></p>
+   <div class="audit-results" id="v2-audit-results"></div>
+  </dialog>
   <dialog id="v2-dialog">
    <form method="dialog" id="v2-editor">
     <h2 id="v2-dialog-title">Отпуск</h2>
@@ -68,6 +77,10 @@ function draw(){
  q('#v2-import').onclick=()=>q('#v2-file').click();
  q('#v2-file').onchange=importJson;
  q('#v2-export').onclick=exportJson;
+ q('#v2-audit-open').onclick=()=>{q('#v2-audit-year').value=String(year);q('#v2-audit-search').value='';renderAudit();q('#v2-audit-dialog').showModal();};
+ q('#v2-audit-close').onclick=()=>q('#v2-audit-dialog').close();
+ q('#v2-audit-year').onchange=renderAudit;
+ q('#v2-audit-search').oninput=renderAudit;
  q('#v2-source').onclick=()=>{if(originalImport)downloadJson(originalImport,'grot-v2-original-import.json');};
  const stageButton=q('#v2-stage-history');
  if(stageButton)stageButton.onclick=()=>{
@@ -83,22 +96,25 @@ function draw(){
   if(!node)return;
   const id=node.dataset.periodId;
   selected=records.find(r=>String(r.id)===id)||null;
-  if(selected){showHistory(selected);openEditor(selected);}
+  if(selected)openEditor(selected);
  });
 }
-function showHistory(rec){
- const section=q('#v2-history');
- if(!section)return;
- const rows=(rec.audit||[]).map(a=>'<tr><td>'+escapeHtml(a.at)+'</td><td>'+escapeHtml(a.actor)+
- '</td><td>'+escapeHtml(a.reason)+'</td><td>'+
- escapeHtml(a.previous?.start||'—')+' – '+escapeHtml(a.previous?.end||'—')+
- '</td><td>'+escapeHtml(a.next?.start||'—')+' – '+escapeHtml(a.next?.end||'—')+'</td></tr>').join('');
- section.innerHTML='<h2>История изменений</h2><p>'+
- (rec.verificationStatus==='unverified-source'?'Источник: встроенная история 2026, даты не проверены. ':'')+
- escapeHtml(rec.staffName||'')+
- ' · '+escapeHtml(rec.id)+'</p><div class="table-wrap"><table><thead><tr>'+
- '<th>Когда</th><th>Кто</th><th>Причина</th><th>Было</th><th>Стало</th></tr></thead>'+
- '<tbody>'+ (rows||'<tr><td colspan="5">Изменений пока нет</td></tr>')+'</tbody></table></div>';
+const auditDates=x=>x&&typeof x==='object'?
+ escapeHtml([x.start,x.end].filter(Boolean).join(' — ')||JSON.stringify(x)):
+ escapeHtml(x===null?'—':String(x));
+function renderAudit(){
+ const dialog=q('#v2-audit-dialog');if(!dialog)return;
+ const current=dialog.querySelector('#v2-audit-year').value;
+ const search=dialog.querySelector('#v2-audit-search').value;
+ const found=queryVacationAudit(records,{year:current==='all'?null:Number(current),search});
+ dialog.querySelector('#v2-audit-count').textContent='Записей: '+found.length;
+ dialog.querySelector('#v2-audit-results').innerHTML=found.length?
+  found.map(a=>'<article class="audit-entry"><div><strong>'+escapeHtml(a.employee)+
+  '</strong> · '+escapeHtml(a.year)+' · '+escapeHtml(a.date)+'</div>'+
+  '<div>Кто: '+escapeHtml(a.actor)+' · Причина: '+escapeHtml(a.reason)+'</div>'+
+  '<div>Было: '+auditDates(a.previous)+'</div>'+
+  '<div>Стало: '+auditDates(a.next)+'</div></article>').join(''):
+  '<p>По выбранным условиям изменений не найдено.</p>';
 }
 function openEditor(rec){
  selected=rec;
