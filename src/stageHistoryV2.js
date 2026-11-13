@@ -13,9 +13,9 @@ export function stageBundledHistory(records,review){
  for(const row of review.records){
   if(row.requiresReview||!row.staffId){unresolved++;continue;}
   const signature=key(row);
+  // An already staged row may have been edited: do not restore its old dates.
+  if(next.some(r=>String(r.id)===String(row.id))){duplicates++;continue;}
   if(seen.has(signature)){duplicates++;continue;}
-  if(next.some(r=>String(r.id)===String(row.id)))
-   throw new Error('Конфликт идентификатора: '+row.id);
   const period={...row.period};
   const sameEmployee=next.filter(r=>!r.deleted&&Number(r.year)===2026&&
     String(r.staffId)===String(row.staffId));
