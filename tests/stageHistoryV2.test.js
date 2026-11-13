@@ -23,3 +23,12 @@ test('Неоднозначное совпадение и пересечение 
  assert.equal(stageBundledHistory([],{records:[unresolved]}).counts.unresolved,1);
  assert.throws(()=>stageBundledHistory([{...item,id:'other',period:{start:'2026-03-20',end:'2026-04-01'}}],{records:[item]}),/пересечение/);
 });
+
+test('После редактирования года повторное добавление не возвращает старые даты',()=>{
+ const first=stageBundledHistory([],{records:[item]});
+ const changed=first.records.map(r=>({...r,period:{start:'2026-04-01',end:'2026-04-10'}}));
+ const second=stageBundledHistory(changed,{records:[item]});
+ assert.equal(second.counts.added,0);
+ assert.equal(second.counts.duplicates,1);
+ assert.equal(second.records[0].period.start,'2026-04-01');
+});
