@@ -5,7 +5,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.204';
+const APP_VERSION='0.3.205';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -1155,6 +1155,59 @@ function annualHeaderFixedCells(chart,readOnly=false){
  const groups=readOnly?'<span class="chart-action-icon" title="Группы · только просмотр">'+groupIcon+'</span>':chart.allStaff?'<span class="heading-full">Группа</span><span class="heading-phone" aria-hidden="true">Гр.</span>':'<button type="button" id="chart-groups-open" class="chart-action-icon" title="Группы" aria-label="Группы">'+groupIcon+'</button>';
  return '<th class="fixed name header-caption">'+name+'</th><th class="header-caption" title="Приоритет">'+priority+'</th><th class="fixed group header-caption">'+groups+'</th>';
 }
+// Historical periods can be corrected independently of the live 2027 vacations.
+// Preserve an original snapshot and a pre-change snapshot in localStorage.
+function editHistoricalPeriods(year,driver=''){
+ const y=Number(year);
+ if(y!==2026){alert('Редактирование сейчас предусмотрено для 2026 года.');return;}
+ let dlg=document.getElementById('historical-period-editor');
+ if(!dlg){dlg=document.createElement('dialog');dlg.id='historical-period-editor';dlg.className='structure-dialog';document.body.appendChild(dlg);}
+ const original=loadHistory().filter(p=>Number(p.year)===y);
+ const allNames=[...new Set(original.map(p=>p.driver).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
+ let selected=driver&&allNames.includes(driver)?driver:allNames[0]||'';
+ let draft=original.filter(p=>p.driver===selected).map(p=>({...p}));
+ const inputDate=d=>/^\\d{4}-\\d{2}-\\d{2}$/.test(d||'')?d:'';
+ const display=()=>{
+  dlg.innerHTML='<h2>Отпуска '+y+' · исправление данных</h2>'+
+   '<p class="muted">Исправляйте только подтверждённые сведения. Изменения затронут историю '+y+' года и расчёты КОН / КСН, но не график 2027 года.</p>'+
+   '<label>Сотрудник <select id="history-edit-person">'+allNames.map(n=>'<option value="'+escapeHtml(n)+'" '+(n===selected?'selected':'')+'>'+escapeHtml(n)+'</option>').join('')+'</select></label>'+
+   '<div style="max-height:50vh;overflow:auto"><table class="staff-table"><thead><tr><th>Начало</th><th>Конец</th><th></th></tr></thead><tbody id="historical-edit-rows">'+
+   draft.map((p,i)=>'<tr><td><input type="date" data-history-start="'+i+'" value="'+inputDate(p.start)+'"></td><td><input type="date" data-history-end="'+i+'" value="'+inputDate(p.end)+'"></td><td><button type="button" data-history-remove="'+i+'" aria-label="Удалить период">✕</button></td></tr>').join('')+
+   '</tbody></table></div><p id="historical-edit-error" role="alert"></p>'+
+   '<div class="actions"><button type="button" id="historical-edit-add">＋ Период</button><button type="button" id="historical-edit-save">Сохранить</button><button type="button" id="historical-edit-cancel">Закрыть</button></div>';
+  dlg.querySelector('#historical-edit-cancel').onclick=()=>dlg.close();
+  dlg.querySelector('#history-edit-person').onchange=e=>{
+   selected=e.target.value;draft=original.filter(p=>p.driver===selected).map(p=>({...p}));display();
+  };
+  dlg.querySelectorAll('[data-history-start]').forEach(e=>e.onchange=()=>{draft[Number(e.dataset.historyStart)].start=e.value});
+  dlg.querySelectorAll('[data-history-end]').forEach(e=>e.onchange=()=>{draft[Number(e.dataset.historyEnd)].end=e.value});
+  dlg.querySelectorAll('[data-history-remove]').forEach(e=>e.onclick=()=>{draft.splice(Number(e.dataset.historyRemove),1);display()});
+  dlg.querySelector('#historical-edit-add').onclick=()=>{draft.push({year:y,driver:selected,start:'',end:''});display()};
+  dlg.querySelector('#historical-edit-save').onclick=()=>{
+   const error=dlg.querySelector('#historical-edit-error');
+   if(!selected){error.textContent='Нет сотрудника для редактирования.';return;}
+   if(draft.some(p=>!/^\\d{4}-\\d{2}-\\d{2}$/.test(p.start||'')||!/^\\d{4}-\\d{2}-\\d{2}$/.test(p.end||'')||!p.start.startsWith(y+'-')||!p.end.startsWith(y+'-')||p.end<p.start||Number.isNaN(Date.parse(p.start))||Number.isNaN(Date.parse(p.end)))){
+    error.textContent='Проверьте обе даты: они должны относиться к '+y+' году, а конец не должен быть раньше начала.';return;
+   }
+   const ordered=[...draft].sort((a,b)=>a.start.localeCompare(b.start));
+   if(ordered.some((p,i)=>i>0&&ordered[i-1].end>=p.start)){error.textContent='Периоды одного сотрудника не должны пересекаться.';return;}
+   if(!confirm('Сохранить изменения отпусков '+selected+' за '+y+' год?\\n\\nИстория 2027 года и будущие графики не изменяются.'))return;
+   try{
+    const storageKey='grot-seasonality-history-v1';
+    const savedRaw=localStorage.getItem(storageKey);
+    const current=loadHistory();
+    const retained=current.filter(p=>!(Number(p.year)===y&&p.driver===selected));
+    const updated=[...retained,...draft.map(p=>({...p,year:y,driver:selected}))];
+    const prefix='grot-history-before-edit-'+y;
+    if(localStorage.getItem(prefix)===null)localStorage.setItem(prefix,JSON.stringify(current));
+    localStorage.setItem(prefix+'-latest',savedRaw===null?JSON.stringify(current):savedRaw);
+    localStorage.setItem(storageKey,JSON.stringify(updated));
+    dlg.close();render();
+   }catch(err){error.textContent='Не удалось сохранить: '+err.message}
+  };
+ };
+ display();dlg.showModal();
+}
 function renderHistory2026(){
  const previousHeader=app.querySelector('.grot-header');
  const archiveYear=displayYear;
@@ -1170,12 +1223,13 @@ function renderHistory2026(){
  const dayHeadings=columns.map(c=>'<th class="'+(c.d?'day-heading':'month-placeholder')+'">'+(c.d?'<button type="button" data-history-month="'+c.m+'" title="'+months[c.m]+'">'+c.d+'</button>':'')+'</th>').join('');
  const rows=names.map(n=>'<tr><th class="fixed name"><button type="button" class="driver" data-history-driver="'+escapeHtml(n)+'" title="История отпусков">'+escapeHtml(n)+'</button></th><td title="Приоритет для архивного графика не задан">—</td><td class="fixed group">'+(groups[n]||'—')+'</td>'+columns.map(c=>{const set=days.get(n);const count=c.d?Number(set.has(dateAt(c.m,c.d))):[...set].filter(x=>Number(x.slice(5,7))===c.m+1).length;return '<td class="'+(c.d?'day ':'month-cell ')+(count?(c.d?'vacation':'has-vacation'):'')+'">'+(c.d?(count?'●':''):(count||''))+'</td>'}).join('')+'<td class="annual-total">'+(days.get(n).size||'')+'</td><td title="Норма отпуска за архивный год не указана">—</td><td title="Остаток за архивный год не указан">—</td></tr>').join('');
  const totals=columns.map(c=>{const n=names.filter(n=>c.d?days.get(n).has(dateAt(c.m,c.d)):[...days.get(n)].some(x=>Number(x.slice(5,7))===c.m+1)).length;return '<td>'+(n||'')+'</td>';}).join('');
- app.innerHTML='<header class="grot-header"><img class="grot-header-logo" src="'+grotLogo+'" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">'+structureEscape(readOrganization().shortName||readOrganization().fullName)+'</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option></select></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>Графики</summary><div class="grot-menu-panel"><button type="button" data-archive-go="vacation-charts-open">Графики отпусков</button><button type="button" id="archive-current">Перейти к графику 2027</button><button type="button" id="archive-metrics">Анализ отпускной нагрузки · КОН / КСН / ИПО</button></div></details><details class="grot-menu"><summary>Справочник</summary><div class="grot-menu-panel"><button type="button" data-archive-organization="1">Организация</button><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="structure-open">Структура предприятия</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Печать</summary><div class="grot-menu-panel"><button type="button" id="archive-print">Печать графика '+archiveYear+'</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" data-archive-go="backup-settings-open">Настройки</button><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-about="1">О программе</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button><button type="button" data-archive-go="archive-import-open">Загрузить прошлые годы</button></div></details></nav><p><strong>Архивный график '+archiveYear+' года</strong> · только просмотр · '+entries.length+' периодов. <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr>'+annualHeaderFixedCells({allStaff:false},true)+''+monthHeadings+'<th rowspan="2" class="annual-total-heading" title="Запланировано">План</th><th rowspan="2" title="Доступно">Дост.</th><th rowspan="2" title="Остаток">Ост.</th></tr><tr class="calendar-days-row"><th class="fixed name header-action"><span class="filter-trigger" title="Архив: только просмотр">▾</span></th><th class="header-action"><span class="filter-trigger priority-sort-trigger" title="Архив: только просмотр">↕</span></th><th class="fixed group header-action"><span class="filter-trigger" title="Архив: только просмотр">▾</span></th>'+dayHeadings+'</tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td></td><td class="fixed group"></td>'+totals+'<td class="annual-total">'+(names.length||'')+'</td><td></td><td></td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия '+APP_VERSION+'<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>';
+ app.innerHTML='<header class="grot-header"><img class="grot-header-logo" src="'+grotLogo+'" alt="ГРОТ"><div class="grot-header-title"><div class="grot-header-name">ГРАФИК ОТПУСКОВ</div><div class="grot-header-org">'+structureEscape(readOrganization().shortName||readOrganization().fullName)+'</div></div><div class="grot-header-year"><select id="grot-year" aria-label="Год графика"><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option></select></div></header><main><nav class="toolbar grot-toolbar" aria-label="Главное меню"><details class="grot-menu"><summary>Графики</summary><div class="grot-menu-panel"><button type="button" data-archive-go="vacation-charts-open">Графики отпусков</button><button type="button" id="archive-current">Перейти к графику 2027</button><button type="button" id="archive-metrics">Анализ отпускной нагрузки · КОН / КСН / ИПО</button></div></details><details class="grot-menu"><summary>Справочник</summary><div class="grot-menu-panel"><button type="button" data-archive-organization="1">Организация</button><button type="button" data-archive-go="staff-open">Сотрудники</button><button type="button" data-archive-go="structure-open">Структура предприятия</button><button type="button" data-archive-go="calendar-open">Производственный календарь</button></div></details><details class="grot-menu"><summary>Печать</summary><div class="grot-menu-panel"><button type="button" id="archive-print">Печать графика '+archiveYear+'</button></div></details><details class="grot-menu"><summary>Сервис</summary><div class="grot-menu-panel"><button type="button" data-archive-go="backup-settings-open">Настройки</button><button type="button" id="archive-refresh">Обновить</button><button type="button" data-archive-go="help-open">Справка · Правила отпусков</button><button type="button" data-archive-about="1">О программе</button><button type="button" data-archive-go="backup-export">Резервная копия</button><button type="button" data-archive-go="backup-restore">Восстановить</button><button type="button" data-archive-go="archive-import-open">Загрузить прошлые годы</button></div></details></nav><p><strong>Архивный график '+archiveYear+' года</strong> · '+entries.length+' периодов. <button type="button" id="history-edit-open">Исправить отпуска 2026</button> <button id="history-metrics">КОН / КСН / ИПО</button></p><div class="scroll"><table class="annual-table"><thead><tr>'+annualHeaderFixedCells({allStaff:false},true)+''+monthHeadings+'<th rowspan="2" class="annual-total-heading" title="Запланировано">План</th><th rowspan="2" title="Доступно">Дост.</th><th rowspan="2" title="Остаток">Ост.</th></tr><tr class="calendar-days-row"><th class="fixed name header-action"><span class="filter-trigger" title="Архив: только просмотр">▾</span></th><th class="header-action"><span class="filter-trigger priority-sort-trigger" title="Архив: только просмотр">↕</span></th><th class="fixed group header-action"><span class="filter-trigger" title="Архив: только просмотр">▾</span></th>'+dayHeadings+'</tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th class="fixed name">В отпуске</th><td></td><td class="fixed group"></td>'+totals+'<td class="annual-total">'+(names.length||'')+'</td><td></td><td></td></tr></tfoot></table></div><p>Нажмите на месяц, чтобы развернуть или свернуть дни.</p><footer class="grot-version-footer">ГРОТ · версия '+APP_VERSION+'<div>Разработка: В. Л. Бахметьев · при содействии OpenAI</div></footer></main>';
  preserveYearHeader(previousHeader);
  document.querySelector('#grot-year').value=String(archiveYear);
  document.querySelector('#grot-year').onchange=e=>{displayYear=Number(e.target.value);render()};
 
- document.querySelectorAll('[data-history-driver]').forEach(b=>b.onclick=()=>showDriverHistory(b.dataset.historyDriver));
+ document.querySelectorAll('[data-history-driver]').forEach(b=>b.onclick=()=>editHistoricalPeriods(archiveYear,b.dataset.historyDriver));
+ document.querySelector('#history-edit-open').onclick=()=>editHistoricalPeriods(archiveYear);
  document.querySelector('#archive-metrics').onclick=()=>openSeasonality(archiveYear);
  document.querySelectorAll('[data-archive-about]').forEach(b=>b.onclick=showAboutGrot);
  document.querySelectorAll('[data-archive-organization]').forEach(b=>b.onclick=openOrganizationCard);
