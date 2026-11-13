@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Test annual store and shared calendar
         run: npm test
       - name: Build web preview
