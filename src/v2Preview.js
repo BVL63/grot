@@ -1,6 +1,7 @@
 import {buildUnifiedYearView,renderUnifiedYearTable} from './unifiedYearTableV2.js';
 import {addVacationPeriod,editVacationPeriod,removeVacationPeriod} from './vacationEditorV2.js';
 import {inspectPreviewImport} from './previewImportV2.js';
+import {stageBundledHistory} from './stageHistoryV2.js';
 import './v2Preview.css';
 
 const root=document.querySelector('#v2-root');
@@ -44,7 +45,7 @@ function draw(){
    </div>
    <input id="v2-file" type="file" accept=".json,application/json" hidden>
    <p id="v2-import-report" role="status">${escapeHtml(importReport)}</p>
-   ${historyReview?`<p class="warning">История 2026 из встроенного источника: ${historyReview.total} периодов, однозначно сопоставлено: ${historyReview.matched}, требуется проверка: ${historyReview.unresolved}. Эти периоды пока НЕ добавлены в таблицу.</p>`:''}
+   ${historyReview?`<div class="warning"><p>Встроенная история 2026: ${historyReview.total} периодов, сопоставлено по фамилии: ${historyReview.matched}, не сопоставлено: ${historyReview.unresolved}. Даты требуют проверки; это не подтверждённый факт отпуска.</p><button type="button" id="v2-stage-history">Добавить историю 2026 в тестовую копию</button></div>`:''}
    <div class="table-wrap">${renderUnifiedYearTable(buildUnifiedYearView(year,active,staff))}</div>
    <section id="v2-history"><h2>История изменений</h2><p>Выберите период в таблице для просмотра истории.</p></section>
   </main>
@@ -68,6 +69,15 @@ function draw(){
  q('#v2-file').onchange=importJson;
  q('#v2-export').onclick=exportJson;
  q('#v2-source').onclick=()=>{if(originalImport)downloadJson(originalImport,'grot-v2-original-import.json');};
+ const stageButton=q('#v2-stage-history');
+ if(stageButton)stageButton.onclick=()=>{
+  if(!confirm('Добавить встроенную историю 2026 только в тестовую копию? Даты останутся помеченными как непроверенные.'))return;
+  try{const staged=stageBundledHistory(records,historyReview);
+   records=staged.records;year=2026;dirty=true;
+   importReport='История 2026: добавлено '+staged.counts.added+', повторов '+staged.counts.duplicates+', без сопоставления '+staged.counts.unresolved+'.';
+   draw();
+  }catch(err){alert('История не добавлена: '+err.message);}
+ };
  q('.table-wrap').addEventListener('click',e=>{
   const node=e.target.closest('[data-period-id]');
   if(!node)return;
@@ -83,7 +93,9 @@ function showHistory(rec){
  '</td><td>'+escapeHtml(a.reason)+'</td><td>'+
  escapeHtml(a.previous?.start||'—')+' – '+escapeHtml(a.previous?.end||'—')+
  '</td><td>'+escapeHtml(a.next?.start||'—')+' – '+escapeHtml(a.next?.end||'—')+'</td></tr>').join('');
- section.innerHTML='<h2>История изменений</h2><p>'+escapeHtml(rec.staffName||'')+
+ section.innerHTML='<h2>История изменений</h2><p>'+
+ (rec.verificationStatus==='unverified-source'?'Источник: встроенная история 2026, даты не проверены. ':'')+
+ escapeHtml(rec.staffName||'')+
  ' · '+escapeHtml(rec.id)+'</p><div class="table-wrap"><table><thead><tr>'+
  '<th>Когда</th><th>Кто</th><th>Причина</th><th>Было</th><th>Стало</th></tr></thead>'+
  '<tbody>'+ (rows||'<tr><td colspan="5">Изменений пока нет</td></tr>')+'</tbody></table></div>';
@@ -97,7 +109,7 @@ function openEditor(rec){
  form.elements.start.value=rec?.period.start||'';
  form.elements.end.value=rec?.period.end||'';
  form.elements.reason.value='';
- q('#v2-error').textContent='';
+ q('#v2-error').textContent=rec?.verificationStatus==='unverified-source'?'Даты перенесены из встроенной истории, не проверены. Для корректировки укажите причину.':'';
  q('#v2-delete').hidden=!rec;
  q('#v2-save').onclick=()=>{
   try{
