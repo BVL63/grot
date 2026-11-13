@@ -4,6 +4,7 @@
  */
 import {makeDateRange} from './vacationModelV2.js';
 import {historical2026} from './history2026.js';
+import {inspectBundledHistory2026} from './bundledHistoryReviewV2.js';
 const clone=x=>JSON.parse(JSON.stringify(x));
 const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const nameOf=s=>String(s?.name||[s?.lastName,s?.firstName,s?.middleName].filter(Boolean).join(' ')).trim();
@@ -84,12 +85,14 @@ export function inspectGrotBackup(data){
  });
  if(!hist.length)warnings.push('История отпусков в резервной копии пуста. В программе отдельно встроены '+historical2026.length+' периодов 2026 года; они не включены в этот файл и требуют отдельной сверки перед переносом.');
  if(!Object.keys(annual).length)warnings.push('В копии отсутствуют подготовленные графики будущих годов');
+ const bundledHistoryReview=inspectBundledHistory2026(staff);
  const original=clone(data);
  return {
   ok:issues.length===0,
   type:'grot-backup',
   records,staff,
   sourceSnapshot:original,
+  bundledHistoryReview,
   warnings,problems:issues,
   counts:{
    original:expected,converted:records.length,
