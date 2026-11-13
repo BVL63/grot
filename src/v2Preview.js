@@ -4,7 +4,7 @@ import {inspectPreviewImport} from './previewImportV2.js';
 import './v2Preview.css';
 
 const root=document.querySelector('#v2-root');
-const years=[2025,2026,2027,2028];
+const baseYears=[2025,2026,2027,2028];
 const sampleStaff=[
  {id:'1',name:'Иванов Иван Иванович'},
  {id:'2',name:'Петров Пётр Петрович'},
@@ -25,6 +25,7 @@ const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({
 const editPolicy=()=>({year,readOnly:false,canEditPlan:true,canCorrect:true});
 function dateFmt(s){return s?s.slice(8)+'.'+s.slice(5,7)+'.'+s.slice(0,4):'—';}
 function draw(){
+ const years=[...new Set([...baseYears,...records.map(r=>Number(r.year)).filter(Number.isInteger)])].sort((a,b)=>a-b);
  const active=records.filter(r=>!r.deleted);
  root.innerHTML=`
   <header class="v2-header"><div><strong>ГРАФИК ОТПУСКОВ</strong>
@@ -131,11 +132,13 @@ async function importJson(e){
   const data=JSON.parse(await file.text());
   const inspected=inspectPreviewImport(data);
   importReport='Исходных периодов: '+inspected.counts.original+
-   ', проверено: '+inspected.counts.converted+'. '+inspected.problems.join('; ');
+   ', преобразовано: '+inspected.counts.converted+'. '+
+   [...(inspected.problems||[]),...(inspected.warnings||[])].join('; ');
   if(!inspected.ok){alert('Импорт не выполнен: '+inspected.problems.join('; '));draw();return;}
   const newRecords=inspected.records,newStaff=inspected.staff;
   records=newRecords;staff=newStaff;originalImport=inspected.sourceSnapshot;
   loadedSource='Проверен файл: '+file.name;
+  if(!records.some(r=>Number(r.year)===year))year=records[0]?.year||2027;
   dirty=false;selected=null;draw();
  }catch(err){alert('Импорт не выполнен: '+err.message);}
 }
