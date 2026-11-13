@@ -39,3 +39,17 @@ test('Некорректные даты не пропадают без пред�
 test('Резервная копия не соответствует другим форматам',()=>{
  assert.throws(()=>inspectGrotBackup({format:'grot-backup',year:2027,version:9}));
 });
+
+test('Пустая архивная история явно отмечается, структура проверяется',()=>{
+ const copy=structuredClone(backup);
+ copy.seasonalityHistory=[];
+ copy.annualPlans={};
+ copy.charts[0].structureIds=['missing-node'];
+ const res=inspectGrotBackup(copy);
+ assert.equal(res.ok,true);
+ assert.equal(res.counts.original,1);
+ assert.ok(res.warnings.some(w=>w.includes('2025–2026')));
+ assert.ok(res.warnings.some(w=>w.includes('отсутствует элемент структуры')));
+ assert.ok(res.warnings.some(w=>w.includes('будущих годов')));
+ assert.equal(res.sourceSnapshot.charts[0].structureIds[0],'missing-node');
+});
