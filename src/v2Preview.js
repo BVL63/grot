@@ -1,6 +1,6 @@
 import {buildUnifiedYearView,renderUnifiedYearTable} from './unifiedYearTableV2.js';
 import {addVacationPeriod,editVacationPeriod,removeVacationPeriod} from './vacationEditorV2.js';
-import {previewLegacyMigration} from './vacationModelV2.js';
+import {inspectPreviewImport} from './previewImportV2.js';
 import './v2Preview.css';
 
 const root=document.querySelector('#v2-root');
@@ -17,6 +17,7 @@ let records=[
  {id:'demo-3',year:2027,chartId:null,staffId:'2',staffName:staff[1].name,period:{start:'2027-08-10',end:'2027-08-23'},audit:[]}
 ];
 let year=2027,selected=null,dirty=false,loadedSource='Демонстрационные данные';
+let originalImport=null,importReport='';
 const q=selector=>root.querySelector(selector);
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({
  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -37,9 +38,11 @@ function draw(){
     <button id="v2-add">Добавить период</button>
     <button id="v2-import">Загрузить JSON для просмотра</button>
     <button id="v2-export">Скачать JSON</button>
+    <button id="v2-source" ${originalImport?'':'disabled'}>Исходный JSON</button>
     <span class="muted">${escapeHtml(loadedSource)} · ${dirty?'есть несохранённые изменения':'нет изменений'}</span>
    </div>
    <input id="v2-file" type="file" accept=".json,application/json" hidden>
+   <p id="v2-import-report" role="status">${escapeHtml(importReport)}</p>
    <div class="table-wrap">${renderUnifiedYearTable(buildUnifiedYearView(year,active,staff))}</div>
    <section id="v2-history"><h2>История изменений</h2><p>Выберите период в таблице для просмотра истории.</p></section>
   </main>
@@ -62,6 +65,7 @@ function draw(){
  q('#v2-import').onclick=()=>q('#v2-file').click();
  q('#v2-file').onchange=importJson;
  q('#v2-export').onclick=exportJson;
+ q('#v2-source').onclick=()=>{if(originalImport)downloadJson(originalImport,'grot-v2-original-import.json');};
  q('.table-wrap').addEventListener('click',e=>{
   const node=e.target.closest('[data-period-id]');
   if(!node)return;
@@ -122,27 +126,26 @@ function openEditor(rec){
  q('#v2-dialog').showModal();
 }
 async function importJson(e){
- const file=e.target.files?.[0];
- if(!file)return;
+ const file=e.target.files?.[0];if(!file)return;
  try{
   const data=JSON.parse(await file.text());
-  if(Array.isArray(data.records)&&data.records.every(r=>r&&Number.isInteger(Number(r.year))&&r.period)){
-   records=data.records.map(r=>({...r}));
-   staff=Array.isArray(data.staff)?data.staff.map(p=>({...p})):staff;
-  }else if(Array.isArray(data.working2027)&&Array.isArray(data.history)){
-   const preview=previewLegacyMigration(data);
-   if(preview.warnings.length)throw new Error('Неоднозначные данные: '+preview.warnings.slice(0,3).join('; '));
-   records=preview.records;
-   staff=Array.isArray(data.staff)?data.staff:staff;
-  }else throw new Error('Неподдерживаемый формат. Нужен JSON с records и staff или working2027/history/staff.');
-  loadedSource='Файл: '+file.name;dirty=false;selected=null;draw();
+  const inspected=inspectPreviewImport(data);
+  importReport='Исходных периодов: '+inspected.counts.original+
+   ', проверено: '+inspected.counts.converted+'. '+inspected.problems.join('; ');
+  if(!inspected.ok){alert('Импорт не выполнен: '+inspected.problems.join('; '));draw();return;}
+  const newRecords=inspected.records,newStaff=inspected.staff;
+  records=newRecords;staff=newStaff;originalImport=inspected.sourceSnapshot;
+  loadedSource='Проверен файл: '+file.name;
+  dirty=false;selected=null;draw();
  }catch(err){alert('Импорт не выполнен: '+err.message);}
 }
-function exportJson(){
- const data=JSON.stringify({schemaVersion:2,staff,records},null,2);
- const url=URL.createObjectURL(new Blob([data],{type:'application/json;charset=utf-8'}));
- const a=document.createElement('a');a.href=url;a.download='grot-v2-preview-'+year+'.json';a.click();
+function downloadJson(data,name){
+ const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}));
+ const a=document.createElement('a');a.href=url;a.download=name;a.click();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function exportJson(){
+ downloadJson({schemaVersion:2,staff,records},'grot-v2-preview-'+year+'.json');
  dirty=false;draw();
 }
 draw();
