@@ -18,7 +18,7 @@ const samePerson=(a,b)=>a.staffId!=null&&b.staffId!=null
  : a.staffId==null&&b.staffId==null&&String(a.staffName||'')===String(b.staffName||'');
 const overlap=(a,b)=>a.start<=b.end&&b.start<=a.end;
 function validateNoOverlap(records,period,identity,excludeId=null){
- const conflicts=records.filter(r=>String(r.id)!==String(excludeId) &&
+ const conflicts=records.filter(r=>!r.deleted && String(r.id)!==String(excludeId) &&
    Number(r.year)===Number(identity.year) &&
    String(r.chartId??'')===String(identity.chartId??'') &&
    samePerson(r,identity) && r.period && overlap(r.period,period));
