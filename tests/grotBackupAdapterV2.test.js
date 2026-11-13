@@ -48,7 +48,8 @@ test('Пустая архивная история явно отмечается
  const res=inspectGrotBackup(copy);
  assert.equal(res.ok,true);
  assert.equal(res.counts.original,1);
- assert.ok(res.warnings.some(w=>w.includes('2025–2026')));
+ assert.equal(res.counts.bundledHistory2026Available,26);
+ assert.ok(res.warnings.some(w=>w.includes('встроены 26 периодов 2026')));
  assert.ok(res.warnings.some(w=>w.includes('отсутствует элемент структуры')));
  assert.ok(res.warnings.some(w=>w.includes('будущих годов')));
  assert.equal(res.sourceSnapshot.charts[0].structureIds[0],'missing-node');
