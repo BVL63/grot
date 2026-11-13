@@ -21,3 +21,11 @@ jobs:
         run: npm run build
       - name: Verify preview page included
         run: test -f dist/v2-preview.html
+      - name: Upload standalone preview build for review
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grot-v2-preview-build
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
