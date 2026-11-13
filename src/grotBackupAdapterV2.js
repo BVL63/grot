@@ -72,6 +72,17 @@ export function inspectGrotBackup(data){
  const expected=data.vacations.length+hist.length+
   Object.values(annual).reduce((n,p)=>n+(Array.isArray(p?.periods)?p.periods.length:0),0);
  if(records.length!==expected)issues.push('Преобразовано '+records.length+' из '+expected+' периодов');
+ const structureIds=new Set((Array.isArray(data.structure)?data.structure:[]).filter(obj).map(n=>String(n.id)));
+ const charts=Array.isArray(data.charts)?data.charts:[];
+ charts.forEach((chart,index)=>{
+   if(!obj(chart)){issues.push('График №'+(index+1)+': неверный формат');return;}
+   for(const structureId of chart.structureIds||[]){
+     if(!structureIds.has(String(structureId)))
+       warnings.push('График «'+String(chart.name||index+1)+'»: отсутствует элемент структуры '+String(structureId));
+   }
+ });
+ if(!hist.length)warnings.push('История отпусков пуста: нельзя восстановить из этой копии данные 2025–2026');
+ if(!Object.keys(annual).length)warnings.push('В копии отсутствуют подготовленные графики будущих годов');
  const original=clone(data);
  return {
   ok:issues.length===0,
