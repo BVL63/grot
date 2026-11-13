@@ -2511,3 +2511,25 @@ html,body{height:100%;overflow:hidden}
 #editor .early-leave-check input{width:16px;height:16px;flex:0 0 16px;margin:0;padding:0}
 #editor .editor-summary-panel:has(.early-leave-control:not([hidden])){height:auto!important;min-height:174px!important;max-height:235px!important;overflow:visible!important}
 @media(max-width:740px){#editor .early-leave-control,#editor .early-leave-check{font-size:11px}}
+
+/* GROT 0.3.187 — totals footer must cover the final employee row */
+#app>main>.scroll .annual-table:not(.archive-table) tfoot th,
+#app>main>.scroll .annual-table:not(.archive-table) tfoot td{
+ position:sticky!important;
+ bottom:0!important;
+ z-index:12!important;
+ background:#dceaf3!important;
+ background-clip:padding-box!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tfoot th.name{
+ left:0!important;
+ z-index:15!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tfoot td:nth-child(2){
+ left:var(--staff-column-width)!important;
+ z-index:14!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tfoot td.group{
+ left:calc(var(--staff-column-width) + var(--priority-column-width))!important;
+ z-index:14!important;
+}
