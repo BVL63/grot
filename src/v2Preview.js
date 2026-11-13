@@ -17,7 +17,7 @@ let records=[
  {id:'demo-3',year:2027,chartId:null,staffId:'2',staffName:staff[1].name,period:{start:'2027-08-10',end:'2027-08-23'},audit:[]}
 ];
 let year=2027,selected=null,dirty=false,loadedSource='Демонстрационные данные';
-let originalImport=null,importReport='';
+let originalImport=null,importReport='',historyReview=null;
 const q=selector=>root.querySelector(selector);
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({
  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -44,6 +44,7 @@ function draw(){
    </div>
    <input id="v2-file" type="file" accept=".json,application/json" hidden>
    <p id="v2-import-report" role="status">${escapeHtml(importReport)}</p>
+   ${historyReview?`<p class="warning">История 2026 из встроенного источника: ${historyReview.total} периодов, однозначно сопоставлено: ${historyReview.matched}, требуется проверка: ${historyReview.unresolved}. Эти периоды пока НЕ добавлены в таблицу.</p>`:''}
    <div class="table-wrap">${renderUnifiedYearTable(buildUnifiedYearView(year,active,staff))}</div>
    <section id="v2-history"><h2>История изменений</h2><p>Выберите период в таблице для просмотра истории.</p></section>
   </main>
@@ -137,6 +138,7 @@ async function importJson(e){
   if(!inspected.ok){alert('Импорт не выполнен: '+inspected.problems.join('; '));draw();return;}
   const newRecords=inspected.records,newStaff=inspected.staff;
   records=newRecords;staff=newStaff;originalImport=inspected.sourceSnapshot;
+  historyReview=inspected.bundledHistoryReview||null;
   loadedSource='Проверен файл: '+file.name;
   if(!records.some(r=>Number(r.year)===year))year=records[0]?.year||2027;
   dirty=false;selected=null;draw();
