@@ -5,7 +5,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.203';
+const APP_VERSION='0.3.204';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -256,6 +256,18 @@ function annualPlans(){
   return saved&&typeof saved==='object'&&!Array.isArray(saved)?saved:{};
  }catch{return {}}
 }
+// Only source-period dates and staff IDs are tracked. Future-year dates remain untouched.
+function sourcePeriodSnapshot(year=2027){
+ return vacations.filter(p=>String(p.start||'').slice(0,4)===String(year))
+  .map(p=>({driverId:String(p.driverId),start:String(p.start),end:String(p.end),earlyLeaveApproved:Boolean(p.earlyLeaveApproved)}))
+  .sort((a,b)=>a.driverId.localeCompare(b.driverId,'ru',{numeric:true})||a.start.localeCompare(b.start)||a.end.localeCompare(b.end));
+}
+function annualPlanSourceStatus(plan){
+ if(!Array.isArray(plan?.sourceSnapshot))return 'Исходные данные не зафиксированы';
+ const current=sourcePeriodSnapshot(plan.sourceYear||2027);
+ return JSON.stringify(current)===JSON.stringify(plan.sourceSnapshot)
+  ?'Исходные данные актуальны':'Изменился график '+(plan.sourceYear||2027)+' года — проверьте КОН, КСН, приоритеты и остатки';
+}
 function openNewYearDialog(){
  const plans=annualPlans();
  const next=Math.max(2028,...Object.keys(plans).map(Number).filter(Number.isInteger).map(y=>y+1));
@@ -268,8 +280,28 @@ function openNewYearDialog(){
   '<label>Год <input id="new-year-value" type="number" min="2028" max="2100" step="1" value="'+next+'"></label>'+
   '<p class="muted">Состав, группы и норматив минимальной численности копируются в отдельную запись года. Отпуска 2027 года останутся без изменений.</p>'+
   '<p class="muted">Крайний срок утверждения: <strong><span id="new-year-deadline">'+approvalDeadlineText(next)+'</span></strong>. Создать график можно раньше.</p>'+ '<p class="muted">Календарь нового года будет доступен после завершения перехода на общее годовое хранение.</p>'+
-  '<p id="new-year-message" role="alert"></p>'+
+  '<div id="new-year-existing" class="muted"></div>'+ '<p id="new-year-message" role="alert"></p>'+
   '<div class="actions"><button type="button" id="new-year-create">Создать</button><button type="button" id="new-year-close">Закрыть</button></div>';
+ const drawExisting=()=>{
+  const existing=annualPlans();
+  dlg.querySelector('#new-year-existing').innerHTML=Object.keys(existing).sort((a,b)=>Number(a)-Number(b)).map(y=>{
+   const p=existing[y];
+   const textStatus=annualPlanSourceStatus(p);
+   return '<p><strong>'+escapeHtml(y)+' год:</strong> '+escapeHtml(textStatus)+
+    ' <button type="button" data-year-source-review="'+escapeHtml(y)+'">Зафиксировать исходные данные</button></p>';
+  }).join('')||'<p>Будущие годы ещё не созданы.</p>';
+  dlg.querySelectorAll('[data-year-source-review]').forEach(btn=>btn.onclick=()=>{
+   const y=btn.dataset.yearSourceReview,all=annualPlans(),p=all[y];if(!p)return;
+   if(!confirm('Зафиксировать текущие данные '+(p.sourceYear||2027)+' года как исходные для '+y+' года?\\n\\nКОН, КСН и остатки автоматически НЕ пересчитываются. Отпуска '+y+' года не изменятся.'))return;
+   try{
+    all[y]={...p,sourceSnapshot:sourcePeriodSnapshot(p.sourceYear||2027),sourceCheckedAt:new Date().toISOString()};
+    localStorage.setItem(annualPlansKey,JSON.stringify(all));
+    dlg.querySelector('#new-year-message').textContent='Исходные данные зафиксированы. Расчёт КОН, КСН и остатков требуется проверить отдельно.';
+    drawExisting();
+   }catch(err){dlg.querySelector('#new-year-message').textContent='Не удалось сохранить: '+err.message}
+  });
+ };
+ drawExisting();
  dlg.querySelector('#new-year-value').oninput=e=>{const y=Number(e.target.value);dlg.querySelector('#new-year-deadline').textContent=Number.isInteger(y)&&y>=2028&&y<=2100?approvalDeadlineText(y):'—'};
  dlg.querySelector('#new-year-close').onclick=()=>dlg.close();
  dlg.querySelector('#new-year-create').onclick=()=>{
@@ -298,10 +330,11 @@ function openNewYearDialog(){
    };
   });
   try{
-   const plan={year,sourceYear:2027,createdAt:new Date().toISOString(),staffIds:staff.map(d=>d.id),charts,periods:[]};
+   const plan={year,sourceYear:2027,createdAt:new Date().toISOString(),staffIds:staff.map(d=>d.id),charts,periods:[],sourceSnapshot:sourcePeriodSnapshot(2027),sourceCheckedAt:new Date().toISOString()};
    localStorage.setItem(annualPlansKey,JSON.stringify({...current,[year]:plan}));
    message.textContent='Год '+year+' подготовлен: '+staff.length+' сотрудников, '+charts.length+' графиков, 0 периодов отпусков. Утвердить не позднее '+approvalDeadlineText(year)+'.';
    dlg.querySelector('#new-year-create').disabled=true;
+   drawExisting();
   }catch(err){message.textContent='Ошибка создания года: '+err.message}
  };
  dlg.showModal();
