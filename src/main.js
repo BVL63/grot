@@ -1,11 +1,13 @@
 import './style.css';
 import { seasonalityDialog, loadHistory, calculateSeasonality } from './seasonality.js';
 import { readAnnualVacationRecords } from './yearRecords.js';
+import { createYearStore } from './yearStoreV2.js';
+import { annualCalendarModel, renderAnnualCalendarTable } from './annualCalendarV2.js';
 import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.205';
+const APP_VERSION='2.0.0-dev.1';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -267,6 +269,58 @@ function annualPlanSourceStatus(plan){
  const current=sourcePeriodSnapshot(plan.sourceYear||2027);
  return JSON.stringify(current)===JSON.stringify(plan.sourceSnapshot)
   ?'Исходные данные актуальны':'Изменился график '+(plan.sourceYear||2027)+' года — проверьте КОН, КСН, приоритеты и остатки';
+}
+// Separate read-only preview of the future universal form. It must not write
+// to legacy or 2.0 annual data until editing has been fully migrated and tested.
+function openAnnualV2Preview(){
+ let dlg=document.querySelector('#grot-v2-preview');
+ if(!dlg){
+  dlg=document.createElement('dialog');dlg.id='grot-v2-preview';
+  dlg.style.cssText='width:min(96vw,1500px);max-width:96vw;max-height:92vh;padding:16px';
+  document.body.appendChild(dlg);
+ }
+ const years=[2025,2026,2027,...Object.keys(annualPlans()).map(Number).filter(y=>Number.isInteger(y)&&y>=2028)];
+ const storage=createYearStore(localStorage);
+ let year=displayYear,expanded=new Set();
+ if(!years.includes(year))year=2027;
+ const show=()=>{
+  let periods=[],staff=[],groups={};
+  try{
+   if(year<=2026){
+    periods=loadHistory().filter(p=>Number(p.year)===year);
+    // Legacy records may contain surnames only. Do not infer employee IDs.
+   }else if(year===2027){
+    periods=vacations.filter(p=>String(p.start||'').slice(0,4)==='2027');
+    const chart=activeVacationChart();
+    staff=drivers.filter(d=>chartContains(chart,d)&&isEligibleForYear(d,year)).map(d=>({...d,name:shortStaffName(d)}));
+    groups=Object.fromEntries(staff.map(d=>[String(d.id),chartGroup(chart,d)]));
+   }else{
+    const plan=annualPlans()[year];
+    const saved=storage.hasYear(year)?storage.readYear(year):null;
+    periods=saved?saved.periods:(plan?.periods||[]);
+    const ids=new Set((saved?.staffIds||plan?.staffIds||[]).map(String));
+    staff=drivers.filter(d=>ids.has(String(d.id))).map(d=>({...d,name:shortStaffName(d)}));
+    const chart=(saved?.charts||plan?.charts||[]).find(c=>c.allStaff===false);
+    groups=Object.fromEntries(staff.map(d=>[String(d.id),chart?.groupAssignments?.[d.id]||'']));
+   }
+   const model=annualCalendarModel(year,{staff,periods,groups});
+   const yearsOptions=[...new Set([...years,...storage.listYears()])].sort((a,b)=>a-b);
+   dlg.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2>ГРОТ 2.0 · общий календарь</h2><button type="button" id="grot-v2-close">Закрыть</button></div>'+
+    '<p class="muted">Предпросмотр без редактирования. Действующие данные и графики не изменяются.</p>'+
+    '<label>Год <select id="grot-v2-year">'+yearsOptions.map(y=>'<option value="'+y+'" '+(y===year?'selected':'')+'>'+y+'</option>').join('')+'</select></label>'+
+    '<div style="overflow:auto;max-height:65vh">'+renderAnnualCalendarTable(model,{expandedMonths:[...expanded]})+'</div>'+
+    '<p class="muted">Сотрудников/архивных записей: '+model.rows.length+' · Периодов: '+model.periodCount+'</p>';
+   dlg.querySelector('#grot-v2-close').onclick=()=>dlg.close();
+   dlg.querySelector('#grot-v2-year').onchange=e=>{year=Number(e.target.value);expanded.clear();show()};
+   dlg.querySelectorAll('[data-v2-month]').forEach(btn=>btn.onclick=()=>{
+    const month=Number(btn.dataset.v2Month);expanded.has(month)?expanded.delete(month):expanded.add(month);show();
+   });
+  }catch(e){
+   dlg.innerHTML='<h2>Не удалось открыть год '+year+'</h2><p>'+escapeHtml(e.message)+'</p><button type="button" id="grot-v2-close">Закрыть</button>';
+   dlg.querySelector('#grot-v2-close').onclick=()=>dlg.close();
+  }
+ };
+ show();dlg.showModal();
 }
 function openNewYearDialog(){
  const plans=annualPlans();
@@ -1298,7 +1352,7 @@ function render() {
         <details class="grot-menu">
           <summary>Графики</summary>
           <div class="grot-menu-panel">
-            <button type="button" id="vacation-charts-open">Графики отпусков</button><button type="button" id="new-year-open">＋ Новый год</button>
+            <button type="button" id="vacation-charts-open">Графики отпусков</button><button type="button" id="new-year-open">＋ Новый год</button><button type="button" id="grot-v2-preview-open">Календарь 2.0 · просмотр</button>
             <button type="button" id="seasonality-open">Анализ отпускной нагрузки · КОН / КСН / ИПО</button>
           </div>
         </details>
@@ -2012,6 +2066,7 @@ function render() {
    document.querySelector('#structure-leader-cancel').onclick=()=>leaderDialog.close();
   document.querySelector('#vacation-charts-open').onclick=vacationChartOpen;
   document.querySelector('#new-year-open').onclick=openNewYearDialog;
+  document.querySelector('#grot-v2-preview-open').onclick=openAnnualV2Preview;
   document.querySelector('#vacation-chart-add').onclick=()=>vacationChartEdit(null);
   document.querySelector('#vacation-charts-close').onclick=()=>document.querySelector('#vacation-charts-dialog').close();
   document.querySelector('#vacation-chart-cancel').onclick=()=>document.querySelector('#vacation-chart-members-dialog').close();
