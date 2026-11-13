@@ -2574,3 +2574,44 @@ html,body{height:100%;overflow:hidden}
   width:58px!important;min-width:58px!important;max-width:58px!important;
  }
 }
+
+/* GROT 0.3.189 — narrow Priority and Group; keep every sticky offset aligned. */
+#app>main>.scroll .annual-table:not(.archive-table){
+ --priority-column-width:64px!important;
+ --group-column-width:56px;
+}
+#app>main>.scroll .annual-table:not(.archive-table) :is(thead,tbody,tfoot) tr>:nth-child(2){
+ box-sizing:border-box!important;
+ width:var(--priority-column-width)!important;
+ min-width:var(--priority-column-width)!important;
+ max-width:var(--priority-column-width)!important;
+ padding-left:3px!important;
+ padding-right:3px!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) :is(thead,tbody,tfoot) .group,
+#app>main>.scroll .annual-table:not(.archive-table) tfoot tr>td:nth-child(3){
+ box-sizing:border-box!important;
+ left:calc(var(--staff-column-width) + var(--priority-column-width))!important;
+ width:var(--group-column-width)!important;
+ min-width:var(--group-column-width)!important;
+ max-width:var(--group-column-width)!important;
+ padding-left:3px!important;
+ padding-right:3px!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) thead .chart-action-icon{
+ width:38px!important;min-width:38px!important;max-width:38px!important;
+ height:38px!important;min-height:38px!important;padding:6px!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tbody .priority-detail{
+ max-width:100%!important;min-width:0!important;
+}
+@media(max-width:600px){
+ #app>main>.scroll .annual-table:not(.archive-table){
+  --priority-column-width:48px!important;
+  --group-column-width:44px;
+ }
+ #app>main>.scroll .annual-table:not(.archive-table) thead .chart-action-icon{
+  width:32px!important;min-width:32px!important;max-width:32px!important;
+  height:32px!important;min-height:32px!important;padding:5px!important;
+ }
+}
