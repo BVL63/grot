@@ -2533,3 +2533,44 @@ html,body{height:100%;overflow:hidden}
  left:calc(var(--staff-column-width) + var(--priority-column-width))!important;
  z-index:14!important;
 }
+
+/* GROT 0.3.188 — lock the first three total-row cells in both directions. */
+#app>main>.scroll .annual-table:not(.archive-table) tfoot tr>th:first-child,
+#app>main>.scroll .annual-table:not(.archive-table) tfoot tr>td:nth-child(2),
+#app>main>.scroll .annual-table:not(.archive-table) tfoot tr>td:nth-child(3){
+ position:sticky!important;
+ bottom:0!important;
+ box-sizing:border-box!important;
+ height:36px!important;
+ min-height:36px!important;
+ background:#dceaf3!important;
+ background-clip:padding-box!important;
+ z-index:25!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tfoot tr>th:first-child{
+ left:0!important;
+ width:var(--staff-column-width)!important;
+ min-width:var(--staff-column-width)!important;
+ max-width:var(--staff-column-width)!important;
+ z-index:27!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tfoot tr>td:nth-child(2){
+ left:var(--staff-column-width)!important;
+ width:var(--priority-column-width)!important;
+ min-width:var(--priority-column-width)!important;
+ max-width:var(--priority-column-width)!important;
+ z-index:26!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tfoot tr>td:nth-child(3){
+ left:calc(var(--staff-column-width) + var(--priority-column-width))!important;
+ width:76px!important;
+ min-width:76px!important;
+ max-width:76px!important;
+ border-right:2px solid #9eb6cb!important;
+ box-shadow:3px 0 5px -4px #283e56;
+}
+@media(max-width:600px){
+ #app>main>.scroll .annual-table:not(.archive-table) tfoot tr>td:nth-child(3){
+  width:58px!important;min-width:58px!important;max-width:58px!important;
+ }
+}
