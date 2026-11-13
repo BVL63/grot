@@ -5,7 +5,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.201';
+const APP_VERSION='0.3.202';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -247,6 +247,63 @@ function openGroupJournal(preferredCode=''){
  form.hidden=true;if(panel.open)panel.close();
  renderJournal();
  if(!dialog.open)dialog.showModal();
+}
+// New year is prepared without touching the current (2027) schedules.
+const annualPlansKey='grotAnnualPlansV1';
+function annualPlans(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(annualPlansKey)||'{}');
+  return saved&&typeof saved==='object'&&!Array.isArray(saved)?saved:{};
+ }catch{return {}}
+}
+function openNewYearDialog(){
+ const plans=annualPlans();
+ const next=Math.max(2028,...Object.keys(plans).map(Number).filter(Number.isInteger).map(y=>y+1));
+ let dlg=document.getElementById('new-year-dialog');
+ if(!dlg){
+  dlg=document.createElement('dialog');dlg.id='new-year-dialog';dlg.className='structure-dialog';
+  document.body.appendChild(dlg);
+ }
+ dlg.innerHTML='<h2>Новый год</h2><p>Создать новый график на основе состава и групп 2027 года. Даты отпусков не переносятся.</p>'+
+  '<label>Год <input id="new-year-value" type="number" min="2028" max="2100" step="1" value="'+next+'"></label>'+
+  '<p class="muted">Состав, группы и норматив минимальной численности копируются в отдельную запись года. Отпуска 2027 года останутся без изменений.</p>'+
+  '<p class="muted">Календарь нового года будет доступен после завершения перехода на общее годовое хранение.</p>'+
+  '<p id="new-year-message" role="alert"></p>'+
+  '<div class="actions"><button type="button" id="new-year-create">Создать</button><button type="button" id="new-year-close">Закрыть</button></div>';
+ dlg.querySelector('#new-year-close').onclick=()=>dlg.close();
+ dlg.querySelector('#new-year-create').onclick=()=>{
+  const year=Number(dlg.querySelector('#new-year-value').value);
+  const message=dlg.querySelector('#new-year-message');
+  if(!Number.isInteger(year)||year<2028||year>2100){message.textContent='Укажите год от 2028 до 2100.';return}
+  const current=annualPlans();
+  if(current[year]){message.textContent='Год '+year+' уже создан. Повторно он не переносится.';return}
+  const staff=drivers.filter(d=>isEligibleForYear(d,year)&&(!d.hireDate||d.hireDate<=year+'-12-31'));
+  const eligible=new Set(staff.map(d=>String(d.id)));
+  const charts=vacationCharts.filter(c=>Number(c.year||2027)===2027).map(c=>{
+   const members=[...chartMemberIds(c)].filter(id=>eligible.has(id));
+   const allowed=new Set(members);
+   const groupAssignments=Object.fromEntries(Object.entries(c.groupAssignments||{}).filter(([id])=>allowed.has(String(id))));
+   return {
+    ...c,id:String(c.id)+'-'+year,year,
+    staffIds:members.map(Number),allStaff:Boolean(c.allStaff),
+    includeStaffIds:(c.includeStaffIds||[]).filter(id=>allowed.has(String(id))),
+    excludeStaffIds:(c.excludeStaffIds||[]).filter(id=>allowed.has(String(id))),
+    groupAssignments,
+    groupDefinitions:(c.groupDefinitions||[]).map(g=>({...g})),
+    groupDescriptions:{...(c.groupDescriptions||{})},
+    groupMinimums:{...(c.groupMinimums||{})},
+    // Avoid inheriting approval and conflict decisions from the previous year.
+    status:'draft',approval:null,exceptions:[]
+   };
+  });
+  try{
+   const plan={year,sourceYear:2027,createdAt:new Date().toISOString(),staffIds:staff.map(d=>d.id),charts,periods:[]};
+   localStorage.setItem(annualPlansKey,JSON.stringify({...current,[year]:plan}));
+   message.textContent='Год '+year+' подготовлен: '+staff.length+' сотрудников, '+charts.length+' графиков, 0 периодов отпусков.';
+   dlg.querySelector('#new-year-create').disabled=true;
+  }catch(err){message.textContent='Ошибка создания года: '+err.message}
+ };
+ dlg.showModal();
 }
 function vacationChartOpen(){
  const dlg=document.querySelector('#vacation-charts-dialog');if(!dlg)return;
@@ -1132,7 +1189,7 @@ function render() {
         <details class="grot-menu">
           <summary>Графики</summary>
           <div class="grot-menu-panel">
-            <button type="button" id="vacation-charts-open">Графики отпусков</button>
+            <button type="button" id="vacation-charts-open">Графики отпусков</button><button type="button" id="new-year-open">＋ Новый год</button>
             <button type="button" id="seasonality-open">Анализ отпускной нагрузки · КОН / КСН / ИПО</button>
           </div>
         </details>
@@ -1311,7 +1368,7 @@ function render() {
   };
   document.querySelector('#backup-preview-save').onclick=async()=>{
     backupPreviewDialog.close();
-    const payload={format:'grot-backup',version:2,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides,organization:readOrganization(),structure:structureNodes,charts:vacationCharts,activeChartId:activeVacationChartId,positions:JSON.parse(localStorage.getItem(positionsKey)||'[]'),priorities:readPriorities(),seasonalityHistory:JSON.parse(localStorage.getItem('grot-seasonality-history-v1')||'[]')};
+    const payload={format:'grot-backup',version:2,year:2027,createdAt:new Date().toISOString(),staff:drivers,vacations,calendarOverrides,organization:readOrganization(),structure:structureNodes,charts:vacationCharts,activeChartId:activeVacationChartId,positions:JSON.parse(localStorage.getItem(positionsKey)||'[]'),priorities:readPriorities(),seasonalityHistory:JSON.parse(localStorage.getItem('grot-seasonality-history-v1')||'[]'),annualPlans:annualPlans()};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const now=new Date();const stamp=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+[now.getHours(),now.getMinutes(),now.getSeconds()].map(x=>String(x).padStart(2,'0')).join('-');
     const filename='grot-'+stamp+'.json';
@@ -1565,6 +1622,11 @@ function render() {
           [priorityKey,JSON.stringify(data.priorities)],
           ['grot-seasonality-history-v1',JSON.stringify(data.seasonalityHistory)]
         );
+      }
+      // Older backups did not include annual plans; keep existing plans when absent.
+      if(data.version===2&&data.annualPlans!==undefined){
+       if(!data.annualPlans||typeof data.annualPlans!=='object'||Array.isArray(data.annualPlans))throw Error('Некорректные данные новых лет в копии.');
+       writes.push([annualPlansKey,JSON.stringify(data.annualPlans)]);
       }
       const previous=writes.map(([k])=>[k,localStorage.getItem(k)]);
       try{for(const [k,v] of writes)localStorage.setItem(k,v);}
@@ -1840,6 +1902,7 @@ function render() {
    leaderSearch.oninput=renderLeaderChoices;
    document.querySelector('#structure-leader-cancel').onclick=()=>leaderDialog.close();
   document.querySelector('#vacation-charts-open').onclick=vacationChartOpen;
+  document.querySelector('#new-year-open').onclick=openNewYearDialog;
   document.querySelector('#vacation-chart-add').onclick=()=>vacationChartEdit(null);
   document.querySelector('#vacation-charts-close').onclick=()=>document.querySelector('#vacation-charts-dialog').close();
   document.querySelector('#vacation-chart-cancel').onclick=()=>document.querySelector('#vacation-chart-members-dialog').close();
