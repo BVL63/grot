@@ -10,7 +10,8 @@
     "build:desktop": "vite build --base=/grot/ && node scripts/copy-print-vendors.mjs && node scripts/generate-windows-icon.mjs",
     "desktop": "npm run build:desktop && electron .",
     "dist:win": "npm run build:desktop && electron-builder --win nsis --x64 --publish never",
-    "dist:portable": "npm run build:desktop && electron-builder --win portable --x64 --publish never"
+    "dist:portable": "npm run build:desktop && electron-builder --win portable --x64 --publish never",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
