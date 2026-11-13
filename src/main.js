@@ -4,7 +4,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.185';
+const APP_VERSION='0.3.186';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -791,6 +791,21 @@ function replaceDays(id, days) {
   vacations = vacations.filter(v => Number(v.driverId) !== id).concat(periods);
   localStorage.setItem(key, JSON.stringify(vacations));
 }
+// First-year leave: the six-month service date is measured from hiring, not January 1.
+function leaveSixMonthDate(hireDate){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(hireDate||''))return '';
+ const [year,month,day]=hireDate.split('-').map(Number);
+ const date=new Date(Date.UTC(year,month-1,day));
+ if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)return '';
+ const targetMonth=month-1+6;
+ const first=new Date(Date.UTC(year,targetMonth,1));
+ const last=new Date(Date.UTC(year,targetMonth+1,0)).getUTCDate();
+ return new Date(Date.UTC(first.getUTCFullYear(),first.getUTCMonth(),Math.min(day,last))).toISOString().slice(0,10);
+}
+function isEarlyFirstYearLeave(driver,period){
+ const threshold=leaveSixMonthDate(driver?.hireDate);
+ return Boolean(threshold&&period?.start&&period.start>=driver.hireDate&&period.start<threshold);
+}
 function periodsFor(id) {
   return vacations.filter(v => Number(v.driverId) === id && v.start && v.end).sort((a,b)=>a.start.localeCompare(b.start));
 }
@@ -1212,7 +1227,7 @@ function render() {
       <div class="editor-top"><p class="muted">Календарь 2027 года · выбор начала и окончания отпуска</p>
       <p id="range-hint">Выберите начало отпуска, затем окончание.</p></div>
       <div class="editor-calendar-scroll"><div id="range-calendar" class="range-calendar"></div></div>
-      <div class="editor-bottom"><div id="range-selected"></div><div class="periods-toolbar"><div class="editor-period-details"><div id="range-periods" class="period-scroll" tabindex="0"></div><div class="editor-summary-panel"><div id="day-count" class="day-count" aria-live="polite"></div><p id="editor-split-warning" class="rule-warning" role="status"></p><p id="form-error" role="alert"></p><div class="actions"><button type="button" id="editor-history">История отпусков</button><button type="button" id="cancel">Закрыть</button><button type="submit">Сохранить</button></div></div></div><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button><button type="button" id="period-save">Сохранить</button></div></div>
+      <div class="editor-bottom"><div id="range-selected"></div><div class="periods-toolbar"><div class="editor-period-details"><div id="range-periods" class="period-scroll" tabindex="0"></div><div class="editor-summary-panel"><div id="day-count" class="day-count" aria-live="polite"></div><div id="early-leave-control" class="early-leave-control" hidden></div><p id="editor-split-warning" class="rule-warning" role="status"></p><p id="form-error" role="alert"></p><div class="actions"><button type="button" id="editor-history">История отпусков</button><button type="button" id="cancel">Закрыть</button><button type="submit">Сохранить</button></div></div></div><div class="editor-mode-actions"><button type="button" id="mode-add">Добавить</button><button type="button" id="mode-edit">Изменить</button><button type="button" id="mode-delete">Удалить</button><button type="button" id="period-save">Сохранить</button></div></div>
       <input id="start" type="hidden"><input id="end" type="hidden"></div>
     </form></dialog>
     <dialog id="calendar-dialog"><h2>Производственный календарь — 2027</h2>
@@ -2092,7 +2107,7 @@ function render() {
     document.querySelector('#start').value=period?period.start:'';
     document.querySelector('#end').value=period?period.end:'';
     rangeStep=0;selectedDraft=-1;changingDraft=-1;editorMode="view";pendingDraft=null;
-    draftPeriods=period?[{start:period.start,end:period.end}]:periodsFor(id).map(p=>({start:p.start,end:p.end}));
+    draftPeriods=period?[{start:period.start,end:period.end,earlyLeaveApproved:Boolean(period.earlyLeaveApproved)}]:periodsFor(id).map(p=>({start:p.start,end:p.end,earlyLeaveApproved:Boolean(p.earlyLeaveApproved)}));
     document.querySelector('#start').value='';document.querySelector('#end').value='';
     drawRangeCalendar();
     document.querySelector('#form-error').textContent='';
@@ -2123,7 +2138,7 @@ function render() {
     });
     driverCard.showModal();
   }
-  document.querySelector('#person').onchange=()=>{pendingDraft=null;draftPeriods=periodsFor(Number(document.querySelector('#person').value)).map(p=>({start:p.start,end:p.end}));rangeStep=0;drawRangeCalendar();updateCount();};
+  document.querySelector('#person').onchange=()=>{pendingDraft=null;draftPeriods=periodsFor(Number(document.querySelector('#person').value)).map(p=>({start:p.start,end:p.end,earlyLeaveApproved:Boolean(p.earlyLeaveApproved)}));rangeStep=0;drawRangeCalendar();updateCount();};
   document.querySelectorAll('[data-driver]').forEach(el=>el.onclick=()=>openEditor(Number(el.dataset.driver),null,true));
   document.querySelector('#driver-history').onclick=()=>showDriverHistory(shortStaffName(drivers.find(d=>Number(d.id)===Number(currentDriver))||{}));
   document.querySelector('#editor-history').onclick=()=>{const id=Number(document.querySelector('#person').value);const driver=drivers.find(d=>Number(d.id)===id);if(driver)showDriverHistory(shortStaffName(driver));};
@@ -2189,6 +2204,25 @@ function render() {
       '<tr><th scope="row">Запланировано</th><td>'+planned+'</td></tr>'+
       '<tr><th scope="row">Осталось</th><td>'+remain+'</td></tr>'+
       '</tbody></table>';
+    const earlyBox=document.querySelector('#early-leave-control');
+    const threshold=leaveSixMonthDate(driver?.hireDate);
+    const premature=combined.some(p=>isEarlyFirstYearLeave(driver,p));
+    const beforeHire=combined.some(p=>driver?.hireDate&&p.start&&p.start<driver.hireDate);
+    if(earlyBox){
+      earlyBox.hidden=!(premature||beforeHire);
+      if(beforeHire){
+        earlyBox.innerHTML='<span class="early-leave-warning">⚠ Отпуск начинается раньше даты приёма на работу.</span>';
+      }else if(premature){
+        const allApproved=combined.filter(p=>isEarlyFirstYearLeave(driver,p)).every(p=>p.earlyLeaveApproved);
+        earlyBox.innerHTML='<span class="early-leave-warning">⚠ Отпуск ранее 6 месяцев стажа (с '+displayDate(threshold)+').</span>'+
+          '<label class="early-leave-check"><input id="early-leave-approved" type="checkbox" '+(allApproved?'checked':'')+' '+(editorMode==='view'?'disabled':'')+'> Досрочный отпуск согласован</label>';
+        const check=earlyBox.querySelector('#early-leave-approved');
+        if(check)check.onchange=()=>{
+          for(const p of draftPeriods)if(isEarlyFirstYearLeave(driver,p))p.earlyLeaveApproved=check.checked;
+          updateCount();
+        };
+      }
+    }
     document.querySelector('#editor-split-warning').textContent=combined.length>0&&!combined.some(p=>leaveDays(p.start,p.end)>=14)?'⚠ Нет ни одной части отпуска продолжительностью не менее 14 дней. Перед утверждением графика необходимо исправить.':'';
     document.querySelector('#form-error').textContent=remain<0?'Предупреждение: превышение на '+(-remain)+' дн. Периоды можно сохранить, фамилия будет выделена красным.':'';
     document.querySelector('#vacation-form button[type="submit"]').disabled=editorMode==='view';
@@ -2283,9 +2317,9 @@ function render() {
         if(hasOverlap(next,index)){editorError('Периоды отпуска не должны пересекаться.');return;}
         if(leaveDays(next.start,next.end)<1){editorError('В периоде нет учитываемых дней.');return;}
         if(pendingDraft&&index===draftPeriods.length){
-          draftPeriods.push({start:next.start,end:next.end});
+          draftPeriods.push({start:next.start,end:next.end,earlyLeaveApproved:false});
           pendingDraft=null;selectedDraft=index;changingDraft=index;editorMode='edit';
-        }else draftPeriods[index]={start:next.start,end:next.end};
+        }else draftPeriods[index]={start:next.start,end:next.end,earlyLeaveApproved:p.start===next.start&&p.end===next.end?Boolean(p.earlyLeaveApproved):false};
         rangeStep=0;document.querySelector('#start').value='';document.querySelector('#end').value='';
       }else if(pendingDraft&&index===draftPeriods.length)pendingDraft=next;
       else draftPeriods[index]=next;
@@ -2317,7 +2351,7 @@ function render() {
           if(!finish){editorError('Период выходит за пределы года.');return;}
           const next={start:date,end:finish};
           if(hasOverlap(next,changingDraft)){editorError('Периоды не должны пересекаться.');return;}
-          draftPeriods[changingDraft]=next;
+          draftPeriods[changingDraft]={...next,earlyLeaveApproved:false};
           rangeStep=1;
         }else{
           pendingDraft={start:date,end:'',days:''};rangeStep=1;
@@ -2330,7 +2364,7 @@ function render() {
         if(leaveDays(next.start,next.end)<1){editorError('Нет учитываемых дней отпуска.');return;}
         if(editorMode==='add'){
           draftPeriods.push(next);pendingDraft=null;selectedDraft=draftPeriods.length-1;changingDraft=selectedDraft;editorMode='edit';
-        }else draftPeriods[changingDraft]=next;
+        }else draftPeriods[changingDraft]={...next,earlyLeaveApproved:false};
         rangeStep=0;document.querySelector('#start').value='';document.querySelector('#end').value='';
       }
       editorError('');drawRangeCalendar();updateCount();updateEditorMode();
@@ -2356,10 +2390,10 @@ function render() {
     const driver=drivers.find(d=>d.id===id);
     const excess=sorted.reduce((n,p)=>n+leaveDays(p.start,p.end),0)-availableLeaveDays(driver);
     if(excess>0&&!confirm('Запланировано сверх доступного на '+excess+' дн. Сохранить с предупреждением?'))return false;
-    vacations=vacations.filter(v=>Number(v.driverId)!==id).concat(sorted.map(p=>({driverId:id,start:p.start,end:p.end})));
+    vacations=vacations.filter(v=>Number(v.driverId)!==id).concat(sorted.map(p=>({driverId:id,start:p.start,end:p.end,earlyLeaveApproved:Boolean(p.earlyLeaveApproved)})));
     store();
     editingPeriod=null;
-    draftPeriods=periodsFor(id).map(p=>({start:p.start,end:p.end}));
+    draftPeriods=periodsFor(id).map(p=>({start:p.start,end:p.end,earlyLeaveApproved:Boolean(p.earlyLeaveApproved)}));
     pendingDraft=null;rangeStep=0;changingDraft=-1;selectedDraft=-1;editorMode='view';
     document.querySelector('#start').value='';document.querySelector('#end').value='';
     drawRangeCalendar();updateCount();updateEditorMode();
