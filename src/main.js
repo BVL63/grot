@@ -4,7 +4,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.197';
+const APP_VERSION='0.3.198';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -60,6 +60,13 @@ function chartContains(chart,driver){return chartMemberIds(chart).has(String(dri
 function chartGroup(chart,d){
  if(!chart||chart.allStaff)return String(d.group||'');
  return Object.prototype.hasOwnProperty.call(chart.groupAssignments||{},String(d.id))?String(chart.groupAssignments[String(d.id)]||''):String(d.group||'');
+}
+function chartGroupLabel(chart,code){
+ const key=String(code||'').trim();
+ if(!key)return 'Без группы';
+ const name=String(chart?.groupDescriptions?.[key]||
+  chart?.groupDefinitions?.find(d=>String(d.code)===key)?.description||'').trim();
+ return name?key+' — '+name:key;
 }
 function chartGroups(chart){
  const groups=new Map();
@@ -160,7 +167,7 @@ function openGroupJournal(preferredCode=''){
  const refreshChecked=()=>{document.querySelector('#chart-group-assign-status').textContent='Выбрано: '+list.querySelectorAll('.group-assign-check:checked').length};
  const drawMembers=()=>{
   if(!selected){if(panel.open)panel.close();return}
-  document.querySelector('#chart-group-selected-label').textContent='Группа '+selected+' · '+(definitions().find(x=>x.code===selected)?.description||'');
+  document.querySelector('#chart-group-selected-label').textContent='Группа '+chartGroupLabel(chart,selected);
   list.innerHTML='<table class="group-assign-table"><thead><tr><th>✓</th><th>Сотрудник</th><th>Текущая группа</th></tr></thead><tbody>'+
    [...members].sort((a,b)=>{
     const aSelected=chartGroup(chart,a)===selected;
@@ -169,7 +176,7 @@ function openGroupJournal(preferredCode=''){
    }).map(d=>{
     const active=chartGroup(chart,d)===selected;
     return '<tr><td><input class="group-assign-check" type="checkbox" value="'+escapeHtml(String(d.id))+'" '+(active?'checked':'')+' aria-label="Выбрать '+escapeHtml(shortStaffName(d))+'"></td>'+
-     '<td>'+escapeHtml(shortStaffName(d))+'</td><td>'+escapeHtml(chartGroup(chart,d)||'—')+'</td></tr>';
+     '<td>'+escapeHtml(shortStaffName(d))+'</td><td>'+escapeHtml(chartGroupLabel(chart,chartGroup(chart,d)))+'</td></tr>';
    }).join('')+'</tbody></table>';
   list.querySelectorAll('.group-assign-check').forEach(input=>input.onchange=refreshChecked);
   refreshChecked();
@@ -2001,7 +2008,7 @@ function render() {
   const chartFilterMembers=()=>{const current=activeVacationChart();return drivers.filter(d=>chartContains(current,d)&&isEligibleForYear(d,2027)).sort((a,b)=>chartGroup(current,a).localeCompare(chartGroup(current,b),'ru',{numeric:true})||shortStaffName(a).localeCompare(shortStaffName(b),'ru'));};
   const getFilterValues=()=>activeFilter==='driver'
     ?chartFilterMembers().map(d=>({id:String(d.id),label:shortStaffName(d)}))
-    :[...new Set(chartFilterMembers().map(d=>chartGroup(activeVacationChart(),d)))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true})).map(g=>({id:g,label:g||'Без группы'}));
+    :[...new Set(chartFilterMembers().map(d=>chartGroup(activeVacationChart(),d)))].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true})).map(g=>({id:g,label:chartGroupLabel(activeVacationChart(),g)}));
   document.querySelectorAll('[data-filter-open]').forEach(b=>b.onclick=()=>{
     activeFilter=b.dataset.filterOpen;
     document.querySelector('#filter-title').textContent=activeFilter==='driver'?'Фильтр сотрудников':'Фильтр групп';
