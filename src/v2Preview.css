@@ -9,3 +9,15 @@
 .audit-results{display:grid;gap:8px}
 .audit-entry{padding:11px 13px;border:1px solid #d7dfe9;background:#f7f9fc;border-radius:6px;display:grid;gap:5px;overflow-wrap:anywhere;line-height:1.45}
 @media(max-width:520px){.audit-filters{grid-template-columns:1fr}}
+
+/* Единое расположение периодов для всех годов, как в согласованном 2027 */
+.grot-unified-year{table-layout:fixed;min-width:1130px}
+.grot-unified-year th[scope=row]{width:185px;min-width:185px;max-width:185px;white-space:normal}
+.grot-unified-year thead th{font-size:13px;padding:8px 4px}
+.grot-unified-year td{min-width:0;padding:4px 3px;height:56px}
+.grot-unified-year .vacation-period{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-width:0;margin:0 0 3px;padding:5px 2px;line-height:1.2;font-family:inherit;color:inherit;white-space:normal;overflow-wrap:anywhere}
+.grot-unified-year .vacation-period span{font-weight:normal;font-size:11px}
+.grot-unified-year .vacation-period strong{font-size:12px}
+.grot-unified-year .multi-month{min-height:46px;gap:6px}
+.grot-unified-year .multi-month span{font-size:12px}
+.grot-unified-year .single-month{min-height:52px}
