@@ -2691,3 +2691,33 @@ html,body{height:100%;overflow:hidden}
 #app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child>th:nth-child(3){
  border-right:2px solid #9eb6cb!important;
 }
+
+/* GROT 0.3.193 — prevent Priority from painting over the narrow Group column.
+   Group is the rightmost frozen column: it must sit ABOVE Priority on all rows. */
+#app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child>th:nth-child(3){
+ z-index:38!important;
+ background:#e7eef5!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) thead tr.calendar-days-row>th:nth-child(3){
+ z-index:37!important;
+ background:#f3f7fb!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tbody tr>td.group{
+ z-index:12!important;
+ background:#f5f7fa!important;
+ background-clip:border-box!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tfoot tr>td.group{
+ z-index:28!important;
+ background:#dceaf3!important;
+ background-clip:border-box!important;
+}
+/* The fixed columns remain slim; their controls may not widen table cells. */
+#app>main>.scroll .annual-table:not(.archive-table) :is(thead,tbody,tfoot) tr>:nth-child(2),
+#app>main>.scroll .annual-table:not(.archive-table) :is(thead,tbody,tfoot) tr>:nth-child(3){
+ overflow:hidden!important;
+ text-align:center!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) :is(thead,tbody) tr>:nth-child(3) button{
+ max-width:100%!important;
+}
