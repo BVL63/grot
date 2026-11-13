@@ -4,7 +4,7 @@ import { openPersonnelLoadReport } from './personnelLoad.js';
 let displayYear = 2027;
 let vacationStaffReturn = null;
 let prioritySortDirection = 0; // 0 = обычный порядок, 1 = возрастание, -1 = убывание
-const APP_VERSION='0.3.194';
+const APP_VERSION='0.3.195';
 import grotLogo from '../IMG_0637.jpeg';
 
 function forceGrotUpdate(){
@@ -2379,10 +2379,19 @@ function render() {
       editorError('');drawRangeCalendar();updateCount();updateEditorMode();
     });
   }
-  const originalDraft=()=>{const id=Number(document.querySelector('#person').value);return JSON.stringify((editingPeriod?[editingPeriod]:periodsFor(id)).map(p=>({start:p.start,end:p.end})).sort((a,b)=>a.start.localeCompare(b.start)));};
+  // Compare normalized vacation data, not editor-only object fields.
+  // Opening a saved period adds earlyLeaveApproved to the draft, but does not change it.
+  const comparablePeriods=periods=>JSON.stringify(periods.map(p=>({
+    start:p.start,end:p.end,earlyLeaveApproved:Boolean(p.earlyLeaveApproved)
+  })).sort((a,b)=>a.start.localeCompare(b.start)||a.end.localeCompare(b.end)));
+  const originalDraft=()=>{
+    const id=Number(document.querySelector('#person').value);
+    return comparablePeriods(editingPeriod?[editingPeriod]:periodsFor(id));
+  };
   const closeVacationEditor=()=>{
-    const current=JSON.stringify([...draftPeriods].sort((a,b)=>a.start.localeCompare(b.start)));
-    if((pendingDraft||current!==originalDraft())&&!confirm('Изменения не сохранены. Закрыть без сохранения?'))return;
+    const changed=comparablePeriods(draftPeriods)!==originalDraft();
+    const unfinished=Boolean(pendingDraft&&(pendingDraft.start||pendingDraft.end||pendingDraft.days));
+    if((changed||unfinished)&&!confirm('Изменения не сохранены. Закрыть без сохранения?'))return;
     dialog.close();
   };
   document.querySelector('#cancel').onclick=closeVacationEditor;
