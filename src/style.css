@@ -2448,3 +2448,57 @@ html,body{height:100%;overflow:hidden}
 @media(max-width:600px){
  #app>main>.scroll .annual-table:not(.archive-table){--staff-column-width:132px;--priority-column-width:56px}
 }
+
+/* GROT 0.3.185 — keep the two header rows separate and frozen columns opaque */
+#app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child{
+ height:62px!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child>th{
+ position:sticky!important;top:0!important;
+ height:62px!important;min-height:62px!important;
+ background:#e7eef5!important;
+ vertical-align:middle!important;
+ z-index:16!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) thead tr.calendar-days-row{
+ height:36px!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) thead tr.calendar-days-row>th{
+ position:sticky!important;top:62px!important;
+ height:36px!important;min-height:36px!important;
+ background:#f3f7fb!important;
+ vertical-align:middle!important;
+ z-index:14!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child>th.name,
+#app>main>.scroll .annual-table:not(.archive-table) thead tr:first-child>th.group{
+ z-index:19!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) thead tr.calendar-days-row>th.name,
+#app>main>.scroll .annual-table:not(.archive-table) thead tr.calendar-days-row>th.group{
+ z-index:18!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tbody th.name,
+#app>main>.scroll .annual-table:not(.archive-table) tbody td:nth-child(2),
+#app>main>.scroll .annual-table:not(.archive-table) tbody td.group{
+ position:sticky!important;
+ background:#f5f7fa!important;
+ background-clip:padding-box!important;
+ z-index:8!important;
+ isolation:isolate;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tbody th.name{left:0!important;z-index:10!important}
+#app>main>.scroll .annual-table:not(.archive-table) tbody td:nth-child(2){
+ left:var(--staff-column-width)!important;z-index:9!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tbody td.group{
+ left:calc(var(--staff-column-width) + var(--priority-column-width))!important;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tbody tr>td.day,
+#app>main>.scroll .annual-table:not(.archive-table) tbody tr>td.month-cell{
+ position:relative;z-index:0;
+}
+#app>main>.scroll .annual-table:not(.archive-table) tbody th.name .driver{
+ max-width:calc(100% - 24px)!important;
+ text-overflow:ellipsis!important;overflow:hidden!important;white-space:nowrap!important;
+}
