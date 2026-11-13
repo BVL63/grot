@@ -1,3 +1,4 @@
+import {inspectGrotBackup} from './grotBackupAdapterV2.js';
 /**
  * ГРОТ 2.0 — проверка импорта только в память пробной страницы.
  * Никакой доступ к localStorage, никакая запись в рабочую базу.
@@ -13,6 +14,7 @@ function validRecord(r){
 }
 export function inspectPreviewImport(data){
  if(!isObject(data))throw new Error('Файл должен содержать JSON-объект');
+ if(data.format==='grot-backup')return inspectGrotBackup(data);
  if(Array.isArray(data.records)){
   if(!Array.isArray(data.staff))throw new Error('Для формата 2.0 требуется массив staff');
   const ids=new Set(),problems=[];
