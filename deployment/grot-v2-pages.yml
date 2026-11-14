@@ -1,0 +1,57 @@
+name: GROT 2.0 — independent GitHub Pages
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout GROT 2.0 source (never main)
+        uses: actions/checkout@v4
+        with:
+          repository: BVL63/grot
+          ref: develop/v2
+          path: source
+          persist-credentials: false
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: source
+        run: npm install --no-audit --no-fund
+      - name: Run V2 tests
+        working-directory: source
+        run: node --test tests/*V2.test.js
+      - name: Build V2
+        working-directory: source
+        run: npm run build
+      - name: Make preview the standalone site's homepage
+        run: |
+          test -f source/dist/v2-preview.html
+          cp source/dist/v2-preview.html source/dist/index.html
+          printf "User-agent: *\nDisallow: /\n" > source/dist/robots.txt
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: source/dist
+      - name: Deploy independent site
+        id: deployment
+        uses: actions/deploy-pages@v4
