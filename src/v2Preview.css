@@ -21,3 +21,24 @@
 .grot-unified-year .multi-month{min-height:46px;gap:6px}
 .grot-unified-year .multi-month span{font-size:12px}
 .grot-unified-year .single-month{min-height:52px}
+
+/* При горизонтальной прокрутке левый заголовок должен оставаться над ФИО.
+   Ранее закреплялись только th[scope=row], поэтому месяцы проходили поверх него. */
+.grot-unified-year thead th:first-child{
+ position:sticky;
+ left:0;
+ z-index:4;
+ width:185px;
+ min-width:185px;
+ max-width:185px;
+ background:#edf2f8;
+ box-shadow:1px 0 0 #d7dfe9;
+}
+.grot-unified-year tbody th[scope=row]{
+ position:sticky;
+ left:0;
+ z-index:2;
+ background:#edf2f8;
+ box-shadow:1px 0 0 #d7dfe9;
+}
+.grot-unified-year thead th:not(:first-child){position:relative;z-index:1}
